@@ -519,7 +519,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
     body = f"""
     <header class="entry-head">
       <h1>Top Heroes Wiki</h1>
-      <p class="lede">Top Heroes 英雄 wiki。目前先公開薔薇公主、審判官和修女，其他英雄已列在目錄裡，條目會陸續補上。</p>
+      <p class="lede">Top Heroes 英雄 wiki。目前先公開薔薇公主、審判官、發明家和修女，其他英雄已列在目錄裡，條目會陸續補上。</p>
     </header>
     <section id="heroes">
       <h2>英雄</h2>
@@ -539,4 +539,4 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
       </ul>
     </section>
     """
-    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前已公開薔薇公主、審判官與修女。", body, depth=0, nav_current="index")
+    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前已公開薔薇公主、審判官、發明家與修女。", body, depth=0, nav_current="index")

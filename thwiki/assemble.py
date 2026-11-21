@@ -497,8 +497,12 @@ def assemble(hero_id: int) -> HeroPage:
             "show_type": c.get("show_type"),
             "suffix": suffix,
         }
+        typ = c.get("type")
         if suffix in (1, 2, 3, 11, 12):
             star_skill_ids.append(c["id"])
+        elif typ == 3 or as_int(typ) == 3:
+            # 上陣效果 is not 覺醒被動, even when the component suffix is 13.
+            pass
         elif as_int(c.get("show_type")) == 2:
             exclusive_skill_id = c["id"]
         elif as_int(c.get("show_type")) == 3 or suffix == 15:
@@ -528,23 +532,33 @@ def assemble(hero_id: int) -> HeroPage:
             "suffix": comp["id"] % 100,
         }
 
-    # Shared 11-star unlock skills (守護使者／戰爭使者) live outside the hero id range.
+    # Unlock skills listed in hero_star with 解鎖技能 (hero_star_desc_2).
+    # Shared skills such as 守護使者／戰爭使者 live outside the hero id range;
+    # some heroes instead unlock an in-range 上陣效果 (e.g. 閃爍懷錶) at 11 stars.
     unlock_skill_ids: list[int] = []
     unlock_at_star: dict[int, int] = {}
+    reserved = (awaken_passive_id, awaken_variant_id, exclusive_skill_id, spirit_skill_id)
     for r in catalog()["hero_star"]:
         if r["hero_id"] != hero_id or r.get("star_sub") != 0 or (r.get("star") or 0) < 1:
             continue
-        for sid in as_list(r.get("skills") or r.get("skill")):
+        skills = as_list(r.get("skills") or r.get("skill"))
+        desc_keys = as_list(r.get("desc"))
+        for i, sid in enumerate(skills):
             if sid in (-1, None, 0):
                 continue
-            if sid in skill_pack or sid in star_skill_ids or sid in (
-                awaken_passive_id, awaken_variant_id, exclusive_skill_id, spirit_skill_id
-            ):
+            dkey = desc_keys[i] if i < len(desc_keys) else ""
+            is_unlock = dkey == "hero_star_desc_2"
+            if sid in reserved or sid in unlock_skill_ids:
                 continue
-            extra = component(sid)
+            if not is_unlock and (sid in skill_pack or sid in star_skill_ids):
+                continue
+            extra = component(sid) or comp_by_id.get(sid)
             if not extra:
                 continue
-            skill_pack[sid] = pack_from_component(extra)
+            if sid not in skill_pack:
+                skill_pack[sid] = pack_from_component(extra)
+            if sid in star_skill_ids:
+                star_skill_ids.remove(sid)
             unlock_skill_ids.append(sid)
             unlock_at_star[sid] = r["star"]
 
@@ -1018,14 +1032,23 @@ def _build_notes(*, hero, hero_id, name, first, seconds, honor_group, honor_attr
     unlock_skill_ids = unlock_skill_ids or []
     unlock_at_star = unlock_at_star or {}
     if unlock_skill_ids:
-        parts = []
+        own_parts = []
+        shared_parts = []
+        lo, hi = hero_id * 100, hero_id * 100 + 100
         for sid in unlock_skill_ids:
             crow = component(sid) or {}
             sname = t(crow.get("name")) or str(sid)
             star = unlock_at_star.get(sid)
             star_bit = f"英雄星 {star} " if star else ""
-            parts.append(f"{star_bit}另解鎖{sname}（組件 {sid}）")
-        bits.append("、".join(parts) + "；這是共用解鎖技能，不是本英雄獨立組件號段。")
+            piece = f"{star_bit}另解鎖{sname}（組件 {sid}）"
+            if lo <= sid < hi:
+                own_parts.append(piece)
+            else:
+                shared_parts.append(piece)
+        if own_parts:
+            bits.append("、".join(own_parts) + "；此為本英雄組件號段內、以「解鎖技能」寫在英雄星上的技能。")
+        if shared_parts:
+            bits.append("、".join(shared_parts) + "；這是共用解鎖技能，不是本英雄獨立組件號段。")
     # talent groups
     tal_bits = []
     for row in talents:
