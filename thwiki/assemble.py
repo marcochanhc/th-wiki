@@ -71,10 +71,27 @@ def upgrade_texts(comp) -> list[str]:
     return ups
 
 
+def as_int(value):
+    if value in (None, "", -1):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def skill_kind(comp: dict, desc: str, name: str) -> str:
     suffix = comp["id"] % 100
     typ = comp.get("type")
-    show = comp.get("show_type")
+    show = as_int(comp.get("show_type"))
+    # Prefer official type / show_type so heroes whose 專武／英靈
+    # occupy suffix 13／14 (not 14／15) still classify correctly.
+    if typ == 3 or as_int(typ) == 3:
+        return "上陣效果"
+    if show == 2:
+        return "進階技能"
+    if show == 3:
+        return "後段進階技能"
     if suffix in (1, 2, 3):
         if "必殺" in (desc or "") or "必殺" in (name or ""):
             return "必殺技"
@@ -82,10 +99,10 @@ def skill_kind(comp: dict, desc: str, name: str) -> str:
     if suffix == 4:
         return "技能升級／變體"
     if suffix in (11, 12, 13):
-        return "上陣效果" if typ == 3 else "被動"
-    if show == 2 or suffix == 14:
+        return "被動"
+    if suffix == 14:
         return "進階技能"
-    if show == 3 or suffix in (15, 16):
+    if suffix in (15, 16):
         return "後段進階技能"
     return "其他"
 
@@ -114,6 +131,14 @@ def official_stars() -> dict:
         "red": (6, 10, "紅色星（英雄星 6–10）"),
         "white": (11, 15, "白色星（英雄星 11–15）"),
     }
+
+
+def as_list(value) -> list:
+    if value in (None, "", -1):
+        return []
+    if isinstance(value, list):
+        return value
+    return [value]
 
 
 # --- skins / suits ---------------------------------------------------------
@@ -474,37 +499,78 @@ def assemble(hero_id: int) -> HeroPage:
         }
         if suffix in (1, 2, 3, 11, 12):
             star_skill_ids.append(c["id"])
+        elif as_int(c.get("show_type")) == 2:
+            exclusive_skill_id = c["id"]
+        elif as_int(c.get("show_type")) == 3 or suffix == 15:
+            spirit_skill_id = c["id"]
+        elif suffix == 14:
+            exclusive_skill_id = c["id"]
         elif suffix == 13:
             awaken_passive_id = c["id"]
         elif suffix == 4:
             awaken_variant_id = c["id"]
-        elif c.get("show_type") == 2 or suffix == 14:
-            exclusive_skill_id = c["id"]
-        elif c.get("show_type") == 3 or suffix == 15:
-            spirit_skill_id = c["id"]
         prev_name = cname
         prev_params = merge_params(inherit_p, param_list(c, 1))
         prev_special = c.get("special_desc") or inherit_s
 
+    def pack_from_component(comp: dict, inherit_p=None, inherit_s=None) -> dict:
+        cname = t(comp.get("name")) or ""
+        desc = primary_text(comp, inherit_p, inherit_s)
+        ups = upgrade_texts(comp)
+        kind = skill_kind(comp, desc, cname)
+        return {
+            "id": comp["id"],
+            "name": cname,
+            "kind": kind,
+            "desc": desc,
+            "ups": ups,
+            "show_type": comp.get("show_type"),
+            "suffix": comp["id"] % 100,
+        }
+
+    # Shared 11-star unlock skills (守護使者／戰爭使者) live outside the hero id range.
+    unlock_skill_ids: list[int] = []
+    unlock_at_star: dict[int, int] = {}
+    for r in catalog()["hero_star"]:
+        if r["hero_id"] != hero_id or r.get("star_sub") != 0 or (r.get("star") or 0) < 1:
+            continue
+        for sid in as_list(r.get("skills") or r.get("skill")):
+            if sid in (-1, None, 0):
+                continue
+            if sid in skill_pack or sid in star_skill_ids or sid in (
+                awaken_passive_id, awaken_variant_id, exclusive_skill_id, spirit_skill_id
+            ):
+                continue
+            extra = component(sid)
+            if not extra:
+                continue
+            skill_pack[sid] = pack_from_component(extra)
+            unlock_skill_ids.append(sid)
+            unlock_at_star[sid] = r["star"]
+
     def skill_source_label(sk: dict) -> str:
+        if sk["id"] in unlock_skill_ids:
+            star = unlock_at_star.get(sk["id"])
+            if star:
+                return f"英雄升星（{star} 星解鎖技能）"
+            return "英雄升星（解鎖技能）"
         if sk["suffix"] in (1, 2, 3, 11, 12):
             return "英雄升星"
-        if sk["suffix"] == 13:
-            return "覺醒被動技能"
-        if sk["suffix"] == 4:
-            # find the skill it upgrades: same hero, suffix 03 (必殺)
-            base = comp_by_id.get(sk["id"] - 1)  # 04 is usually 03+1
-            # safer: suffix 03
-            base = next((c for c in comps if c["id"] % 100 == 3), None)
-            base_name = t(base.get("name")) if base else ""
-            return f"覺醒強化技能（強化{base_name}）" if base_name else "覺醒強化技能"
         if sk["id"] == exclusive_skill_id and exclusive_name:
             return f"專武「{exclusive_name}」專屬技能"
         if sk["id"] == spirit_skill_id and spirit_name:
             return f"英靈「{spirit_name}」專屬技能"
+        if sk["suffix"] == 13:
+            return "覺醒被動技能"
+        if sk["suffix"] == 4:
+            # find the skill it upgrades: same hero, suffix 03 (必殺)
+            base = next((c for c in comps if c["id"] % 100 == 3), None)
+            base_name = t(base.get("name")) if base else ""
+            return f"覺醒強化技能（強化{base_name}）" if base_name else "覺醒強化技能"
         return sk["kind"]
 
     source_order = list(star_skill_ids)
+    source_order.extend(unlock_skill_ids)
     if awaken_passive_id:
         source_order.append(awaken_passive_id)
     if awaken_variant_id:
@@ -529,17 +595,30 @@ def assemble(hero_id: int) -> HeroPage:
         items = []
         for r in star_rows:
             if lo <= r["star"] <= hi:
-                skills = r.get("skills") or r.get("skill") or []
-                levels = r.get("skill_levels") or r.get("skill_level") or []
-                if not isinstance(skills, list):
-                    skills = [skills]
-                if not isinstance(levels, list):
-                    levels = [levels]
-                sid = skills[0] if skills and skills[0] not in (-1, None) else None
-                slv = levels[0] if levels else None
-                sname = t((comp_by_id.get(sid) or {}).get("name")) if sid else ""
-                # Interface N is skill_level (1/2/3), not the table raw alone in other columns.
-                text = fill_text(t("hero_star_desc_1"), [sname, slv])
+                skills = as_list(r.get("skills") or r.get("skill"))
+                levels = as_list(r.get("skill_levels") or r.get("skill_level"))
+                desc_keys = as_list(r.get("desc"))
+                desc_names = as_list(r.get("desc_2"))
+                bits = []
+                for i, sid in enumerate(skills):
+                    if sid in (-1, None, 0):
+                        continue
+                    if i < len(desc_names) and desc_names[i]:
+                        sname = t(desc_names[i]) or ""
+                    else:
+                        crow = comp_by_id.get(sid) or component(sid) or {}
+                        sname = t(crow.get("name")) if crow else ""
+                    slv = levels[i] if i < len(levels) else None
+                    dkey = desc_keys[i] if i < len(desc_keys) else "hero_star_desc_1"
+                    raw = t(dkey) if dkey else t("hero_star_desc_1")
+                    # hero_star_desc_2 is「解鎖技能{0}」; others take name + skill star.
+                    if "{1}" not in (raw or ""):
+                        text = fill_text(raw, [sname])
+                    else:
+                        text = fill_text(raw, [sname, slv])
+                    if text:
+                        bits.append(text)
+                text = "；".join(bits)
                 items.append({"count": r["star"] - lo + 1, "tint": tint, "text": text, "hero_star": r["star"]})
         tracks.append({"tint": tint, "heading": heading, "items": items})
 
@@ -550,6 +629,10 @@ def assemble(hero_id: int) -> HeroPage:
         return {"heading": heading, "text": body, "upgrades": [f"升級：{u}" for u in sk["ups"]]}
 
     star_skills = [pack_skill_block(sid) for sid in star_skill_ids]
+    for sid in unlock_skill_ids:
+        star = unlock_at_star.get(sid)
+        extra = f"{star} 星解鎖技能" if star else "解鎖技能"
+        star_skills.append(pack_skill_block(sid, extra))
 
     # awaken stages (star 1-4, star_sub=0)
     awaken = [
@@ -758,7 +841,11 @@ def assemble(hero_id: int) -> HeroPage:
                     )
                 else:
                     leftover_note = f"表上另有一欄隊伍屬性為{leftover}，不自行斷定它等於第幾星。"
-            parts.insert(0, f"此套可升星至 {int(star_max)}，星級名為{names}。收集屬性依各星隊伍屬性寫如下。")
+            if names:
+                star_intro = f"此套可升星至 {int(star_max)}，星級名為{names}。收集屬性依各星隊伍屬性寫如下。"
+            else:
+                star_intro = f"此套可升星至 {int(star_max)}。表上沒有另列星級名。收集屬性依各星隊伍屬性寫如下。"
+            parts.insert(0, star_intro)
             feature_sections.append({
                 "id": f"skin-{sid}",
                 "heading": sname,
@@ -804,8 +891,11 @@ def assemble(hero_id: int) -> HeroPage:
         rec_intro = f"並出現在官方「最佳聯盟」名單（{rec_join}）"
     else:
         rec_intro = "官方「最佳聯盟」名單未列"
+    # Only say 已開放 when hide=-1, as on the published 審判官／修女 pages.
+    # hide=1 is not a 未開放 flag; do not invent either wording from that field.
+    open_bit = f"{pronoun}已開放，" if hero.get("hide") == -1 else ""
     intro = (
-        f"{name}是{faction}的{role}。{pronoun}已開放，{rec_intro}。"
+        f"{name}是{faction}的{role}。{open_bit}{rec_intro}。"
         f"英雄屬性是{tag_line}。"
         f"{first['name']}的官方說明是「{first_dec}」。{second_prose}"
     )
@@ -830,6 +920,8 @@ def assemble(hero_id: int) -> HeroPage:
         talents=talents,
         talent_percent=talent_percent,
         awaken=awaken,
+        unlock_skill_ids=unlock_skill_ids,
+        unlock_at_star=unlock_at_star,
         has_lead=False,
     )
 
@@ -881,7 +973,8 @@ def assemble(hero_id: int) -> HeroPage:
 
 
 def _build_notes(*, hero, hero_id, name, first, seconds, honor_group, honor_attr,
-                 exclusive, spirit, talents, talent_percent, awaken, has_lead) -> str:
+                 exclusive, spirit, talents, talent_percent, awaken,
+                 unlock_skill_ids=None, unlock_at_star=None, has_lead=False) -> str:
     attrs = catalog()["attribute_by_id"]
     honor_name = A.attr_name(honor_attr) if honor_attr else ""
     is_race = (attrs.get(honor_attr) or {}).get("is_race") if honor_attr else None
@@ -920,6 +1013,19 @@ def _build_notes(*, hero, hero_id, name, first, seconds, honor_group, honor_attr
         )
     else:
         bits.append("資料表沒有英靈列。")
+    if not awaken:
+        bits.append("資料表 hero_awaken 沒有本英雄的覺醒列，組件表也沒有獨立的覺醒被動或覺醒強化技能。")
+    unlock_skill_ids = unlock_skill_ids or []
+    unlock_at_star = unlock_at_star or {}
+    if unlock_skill_ids:
+        parts = []
+        for sid in unlock_skill_ids:
+            crow = component(sid) or {}
+            sname = t(crow.get("name")) or str(sid)
+            star = unlock_at_star.get(sid)
+            star_bit = f"英雄星 {star} " if star else ""
+            parts.append(f"{star_bit}另解鎖{sname}（組件 {sid}）")
+        bits.append("、".join(parts) + "；這是共用解鎖技能，不是本英雄獨立組件號段。")
     # talent groups
     tal_bits = []
     for row in talents:

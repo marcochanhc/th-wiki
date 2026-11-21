@@ -214,6 +214,8 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
             skill_intro += f"{aw_names[0]}與{aw_names[1]}則屬於覺醒，分別寫在對應區塊。"
         else:
             skill_intro += "覺醒技能寫在對應區塊。"
+    elif skill_intro.endswith("，"):
+        skill_intro = skill_intro[:-1] + "。"
     if not page.spirit:
         skill_intro += "資料表沒有" + page.name + "的英靈列，因此沒有英靈專屬技能。"
 
@@ -231,6 +233,26 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
             H(r["related"], terms),
         ])
 
+    n_star = len(page.star_skills)
+    has_unlock = any("解鎖" in (sk.get("heading") or "") for sk in page.star_skills)
+    if has_unlock:
+        star_skill_count_line = (
+            f"下面是這{n_star}個會隨英雄星提升或在指定英雄星解鎖的技能全文，可與上表對到是哪一檔英雄星解鎖哪一階技能星。"
+        )
+    else:
+        star_skill_count_line = (
+            f"下面是這{n_star}個會隨英雄星提升的技能全文，可與上表對到是哪一檔英雄星解鎖哪一階技能星。"
+        )
+
+    if page.awaken_rows or page.awaken_skills:
+        awaken_inner = (
+            f'<p>{H("下表是覺醒階段的官方短述；其後再附圖鑑裡的技能全文與升級加成。兩者用字可能略有出入，都照原文保留，不互相改寫。", terms)}</p>'
+            + table(["階段", "名稱", "官方短述", "關聯技能"], aw_rows)
+            + skill_blocks(page.awaken_skills, terms)
+        )
+    else:
+        awaken_inner = f'<p>{H("資料表沒有" + page.name + "的覺醒階段列，也沒有覺醒被動或覺醒強化技能。此處不虛擬覺醒內容。", terms)}</p>'
+
     skills = f"""
     <section id="skills">
       <h2>技能與覺醒</h2>
@@ -240,14 +262,12 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
         <h3>英雄升星與技能星</h3>
         <p>{H("遊戲介面以金、紅、白三色各 1 至 5 顆星來顯示，對應英雄星 1–5、6–10、11–15。文案格式是「技能名提升至N星」，這裡的 N 是介面上的技能星（1／2／3），不是資料表裡的 skill_level 原值。對照畫面與 hero_star 表（star_sub=0）後，對應如下。", terms)}</p>
         {''.join(track_html)}
-        <p>{H("下面是這五個會隨英雄星提升的技能全文，可與上表對到是哪一檔英雄星解鎖哪一階技能星。", terms)}</p>
+        <p>{H(star_skill_count_line, terms)}</p>
         {skill_blocks(page.star_skills, terms)}
       </section>
       <section id="awaken">
         <h3>覺醒階段</h3>
-        <p>{H("下表是覺醒階段的官方短述；其後再附圖鑑裡的技能全文與升級加成。兩者用字可能略有出入，都照原文保留，不互相改寫。", terms)}</p>
-        {table(["階段", "名稱", "官方短述", "關聯技能"], aw_rows)}
-        {skill_blocks(page.awaken_skills, terms)}
+        {awaken_inner}
       </section>
     </section>
     """
@@ -352,7 +372,9 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
         belong_bits = []
         for su in page.suits:
             for sn in su["skins"]:
-                belong_bits.append(f"{sn}屬{su['name']}")
+                sname = su["name"]
+                sep = " " if sname and sname[0].isascii() else ""
+                belong_bits.append(f"{sn}屬{sep}{sname}")
         rows = []
         for su in page.suits:
             for r in su["rows"]:
@@ -497,7 +519,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
     body = f"""
     <header class="entry-head">
       <h1>Top Heroes Wiki</h1>
-      <p class="lede">Top Heroes 英雄 wiki。目前先公開審判官和修女，其他英雄已列在目錄裡，條目會陸續補上。</p>
+      <p class="lede">Top Heroes 英雄 wiki。目前先公開薔薇公主、審判官和修女，其他英雄已列在目錄裡，條目會陸續補上。</p>
     </header>
     <section id="heroes">
       <h2>英雄</h2>
@@ -517,4 +539,4 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
       </ul>
     </section>
     """
-    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前已公開審判官與修女兩條。", body, depth=0, nav_current="index")
+    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前已公開薔薇公主、審判官與修女。", body, depth=0, nav_current="index")

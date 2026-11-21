@@ -7,8 +7,8 @@ Do not invent second-group tags or extend the 審判官 ÷100 talent lock.
 
 from __future__ import annotations
 
-# First public build: TOC + these two hero entries.
-PUBLISH_IDS = [10031, 10027]
+# Published hero entries, in 聯盟 roster order among those already built.
+PUBLISH_IDS = [10043, 10031, 10027]
 
 # Heroes that already have a generated page (for internal links only).
 PAGE_IDS = set(PUBLISH_IDS)
@@ -127,6 +127,22 @@ def roster_display_name(hero_id: int, name: str | None) -> str:
 
 
 HERO_OVERRIDES = {
+    10043: {
+        "second_tags": ["爆發", "控制"],
+        "role_blurb": "前排坦克，用減傷、護盾和勇氣層數幫隊伍撐傷害",
+        "pronoun": "她",
+        "talent_percent": False,
+        "gear": {
+            "rows": [
+                ("目前可用", "凱旋之歌或雷霆庇護"),
+                ("過渡", "品質 5 用大地的守護者"),
+                ("後期", "血之怒（未開放）"),
+            ],
+            "why": "為什麼選這套*：鼓起勇氣、抓緊武器提供減傷；鼓起勇氣升級與專武專屬技能堅定庇護會給護盾（堅定庇護依最大生命，聯盟英雄雙倍）。英靈是聖殿誓騎，專屬技能誓約騎士在必殺時提供真實傷害與控制免疫。英雄屬性是坦克、爆發、控制，其中坦克的效果是受到傷害-5%；爆發、控制的官方說明沒有再加百分比。凱旋之歌 4 件寫明「坦克英雄裝備時效果提升 600%」，與第一組「坦克」相符，但客戶端是否只認這一欄尚未驗證。天賦槽 3 是抵抗研究（抗暴），與套裝如何疊加尚未驗證。完整傷害結算順序也尚未驗證。後期血之怒依玩家確認尚未開放。資料表沒有覺醒列，裝備推算也不依賴覺醒技能。",
+            "extra": "套裝效果詳見裝備圖鑑（本靜態站尚未搬入圖鑑分冊）。",
+        },
+        "community": "後期前排核心，多數 2026 年末討論的聯盟陣都會放她。",
+    },
     10031: {
         "second_tags": ["持續", "增益"],
         # Portraits reserved on the template; do not publish lead art for now.
@@ -177,7 +193,13 @@ COMMON_TERMS = [
     "修女·智慧女神【Ⅳ】",
     "修女·智慧女神【II】",
     "修女·智慧女神【I】",
+    "薔薇公主·海軍上將",
+    "薔薇公主·寶石騎士",
+    "薔薇公主·武神之靈",
     "薔薇公主·曇花月影",
+    "薔薇公主·亞絲翠",
+    "薔薇公主·女王",
+    "薔薇公主·木蘭",
     "修女·純潔之戀",
     "審判·狂熱之愛",
     "審判官·傑克船長",
@@ -234,6 +256,16 @@ COMMON_TERMS = [
     "冰封之焰",
     "暮光之戰",
     "觀星學士",
+    "聖殿誓騎",
+    "王國之夢",
+    "堅定庇護",
+    "誓約騎士",
+    "鼓起勇氣",
+    "抓緊武器",
+    "守護使者",
+    "抵抗研究",
+    "盛開",
+    "荊棘",
     "薔薇公主",
     "發明家",
     "聖徒",
@@ -263,6 +295,8 @@ COMMON_TERMS = [
     "增益",
     "治療",
     "個體",
+    "爆發",
+    "控制",
     "不屈",
     "永恆",
     "審判",

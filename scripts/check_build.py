@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sanity-check the built index and 審判官 / 修女 pages against locked rules."""
+"""Sanity-check the built index and 薔薇公主 / 審判官 / 修女 pages against locked rules."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 JUDGE = DOCS / "heroes" / "10031.html"
 NUN = DOCS / "heroes" / "10027.html"
+ROSE = DOCS / "heroes" / "10043.html"
 INDEX = DOCS / "index.html"
 
 
@@ -122,16 +123,23 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
 
     # Only published hero pages may be linked from the index body.
     hero_hrefs = re.findall(r'href="([^"]*heroes/\d+\.html)"', index)
-    allowed = {"heroes/10031.html", "heroes/10027.html"}
+    allowed = {"heroes/10043.html", "heroes/10031.html", "heroes/10027.html"}
     got_hrefs = set()
     for href in hero_hrefs:
         tail = href.rsplit("/", 2)
         norm = "/".join(tail[-2:]) if len(tail) >= 2 else href
         got_hrefs.add(norm)
     if got_hrefs != allowed:
-        fail(f"index: hero links should be only 10031/10027, got {sorted(got_hrefs)}", errors)
+        fail(f"index: hero links should be only 10043/10031/10027, got {sorted(got_hrefs)}", errors)
+    if 'href="heroes/10043.html"' not in index or "薔薇公主" not in it:
+        fail("index: 薔薇公主 should be a real link to heroes/10043.html", errors)
+    # 薔薇公主 must not still be marked 尚未公開 now that the page exists.
+    league = section_html(index, "faction-league") or ""
+    for item in li_texts(league):
+        if item.startswith("薔薇公主") and "尚未公開" in item:
+            fail("index: published 薔薇公主 should not be marked 尚未公開", errors)
     # Unpublished / unreleased names must not be wrapped in an anchor.
-    for hid in ("10029", "10032", "10007", "15032", "15033", "15039", "10043"):
+    for hid in ("10029", "10032", "10007", "15032", "15033", "15039", "10050", "10033"):
         if re.search(rf'href="[^"]*{hid}\.html"', index):
             fail(f"index: should not link unbuilt hero {hid}", errors)
 
@@ -195,7 +203,7 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
 
 def main() -> int:
     errors = []
-    for p in (INDEX, JUDGE, NUN):
+    for p in (INDEX, JUDGE, NUN, ROSE):
         if not p.exists():
             fail(f"missing {p}", errors)
     if errors:
@@ -205,9 +213,10 @@ def main() -> int:
     index = INDEX.read_text(encoding="utf-8")
     judge = JUDGE.read_text(encoding="utf-8")
     nun = NUN.read_text(encoding="utf-8")
-    jt, nt, it = text_of(judge), text_of(nun), text_of(index)
+    rose = ROSE.read_text(encoding="utf-8")
+    jt, nt, rt, it = text_of(judge), text_of(nun), text_of(rose), text_of(index)
 
-    for html, label in ((index, "index"), (judge, "審判官"), (nun, "修女")):
+    for html, label in ((index, "index"), (judge, "審判官"), (nun, "修女"), (rose, "薔薇公主")):
         if 'lang="zh-Hant"' not in html:
             fail(f"{label}: missing lang=zh-Hant", errors)
         nav_m = re.search(r'<nav class="site-nav"[^>]*>.*?</nav>', html, flags=re.S)
@@ -224,9 +233,9 @@ def main() -> int:
     check_index(index, it, errors)
 
     # tags
-    if "稱號屬性" in jt or "稱號屬性" in nt:
+    if "稱號屬性" in jt or "稱號屬性" in nt or "稱號屬性" in rt:
         fail("used 稱號屬性 instead of 英雄屬性", errors)
-    if "英雄屬性" not in jt or "英雄屬性" not in nt:
+    if "英雄屬性" not in jt or "英雄屬性" not in nt or "英雄屬性" not in rt:
         fail("missing 英雄屬性 label", errors)
     if "坦克、持續、增益" not in jt:
         fail("審判官 tags should be 坦克、持續、增益", errors)
@@ -236,6 +245,18 @@ def main() -> int:
         fail("審判官 missing locked 受到傷害-5%", errors)
     if "治療效果+5%" not in nt:
         fail("修女 missing locked 治療效果+5%", errors)
+    if "坦克" not in rt or "受到傷害-5%" not in rt:
+        fail("薔薇公主 should show first-group 坦克 and 受到傷害-5%", errors)
+    if "坦克、爆發、控制" not in rt:
+        fail("薔薇公主 tags should be 坦克、爆發、控制", errors)
+    if "坦克、持續" in rt or "坦克、增益" in rt:
+        fail("薔薇公主 must not inherit 審判官 second-group tags", errors)
+    if "尚未經玩家面板確認" in rt or "本頁不推算" in rt or "本頁不為她推算第二組英雄屬性" in rt:
+        fail("薔薇公主 should no longer say second-group tags are unconfirmed", errors)
+    if "偏向於使用技能在短時間內造成高額傷害" not in rt or "能夠對敵人造成控制" not in rt:
+        fail("薔薇公主 missing official 爆發／控制 descriptions", errors)
+    if "後兩項沒有百分比" not in rt or "玩家確認面板" not in rt:
+        fail("薔薇公主 should note 爆發／控制 have no percentage and are panel-confirmed", errors)
 
     # talents
     for s in ("90.00%", "270.00%", "30.00%", "3.00%", "9.00%", "1.00%"):
@@ -250,9 +271,18 @@ def main() -> int:
         fail("修女 talents missing raw values 9,000 / 27,000 / 3,000", errors)
     if "治療增效" not in nt:
         fail("修女 missing 治療增效", errors)
+    # 薔薇公主 must stay raw, not inherit ÷100
+    if "90.00%" in rt or "270.00%" in rt:
+        fail("薔薇公主 talents must stay 原值, not inherit 審判官 percentages", errors)
+    if "9,000" not in rt or "27,000" not in rt or "3,000" not in rt:
+        fail("薔薇公主 talents missing raw values 9,000 / 27,000 / 3,000", errors)
+    if "進攻戰略" not in rt or "持久策略" not in rt or "抵抗研究" not in rt:
+        fail("薔薇公主 talent names missing", errors)
+    if "格擋研究" in rt:
+        fail("薔薇公主 slot 3 is 抵抗研究, not 格擋研究", errors)
 
     # appearance split tables
-    for label, html in (("審判官", judge), ("修女", nun)):
+    for label, html in (("審判官", judge), ("修女", nun), ("薔薇公主", rose)):
         if "收集屬性" not in html or "裝備屬性" not in html or "解鎖來源" not in html or "時裝幣" not in html:
             fail(f"{label}: 外觀 tables not split as required", errors)
         if re.search(r">—<|>–<|>－<", html):
@@ -270,7 +300,7 @@ def main() -> int:
         fail("pairing prose should use 雙方成對屬性", errors)
     if "僅在雲海紀行賽季中生效" not in jt or "僅在雲海紀行賽季中生效" not in nt:
         fail("missing official skin_season_6 quote", errors)
-    if "蔷薇" in jt or "蔷薇" in nt or "蔷薇" in it or "蕊薇" in it:
+    if "蔷薇" in jt or "蔷薇" in nt or "蔷薇" in rt or "蔷薇" in it or "蕊薇" in it or "蕊薇" in rt:
         fail("typo 蔷薇 or 蕊薇 (should be 薔薇)", errors)
     if "契約之獅" in jt or "壁克" in jt:
         fail("wrong terms 契約之獅 or 壁克", errors)
@@ -283,30 +313,74 @@ def main() -> int:
     if "英靈「" in nt and "誓約" in nt:
         fail("修女 should not invent an 英靈", errors)
 
-    # no invented 薔薇公主 page link
-    if re.search(r'href="[^"]*薔薇', jt) or "10043.html" in jt:
-        fail("should not invent a link to unbuilt 薔薇公主 entry", errors)
+    if "王國之夢" not in rt:
+        fail("薔薇公主 missing exclusive 王國之夢", errors)
+    if "聖殿誓騎" not in rt:
+        fail("薔薇公主 missing 英靈 聖殿誓騎", errors)
+    if "堅定庇護" not in rt or "專武專屬技能" not in rt:
+        fail("薔薇公主 missing 專武專屬技能 堅定庇護", errors)
+    if "專武「王國之夢」專屬技能" not in rt:
+        fail("薔薇公主 source table should label 堅定庇護 as 專武專屬技能", errors)
+    if "堅定庇護覺醒被動" in rt.replace(" ", "").replace("\n", ""):
+        fail("薔薇公主 堅定庇護 must not be labelled 覺醒被動技能", errors)
+    if "誓約騎士" not in rt or "英靈專屬技能" not in rt:
+        fail("薔薇公主 missing 英靈專屬技能 誓約騎士", errors)
+    if "守護使者" not in rt:
+        fail("薔薇公主 missing 11-star unlock skill 守護使者", errors)
+    if "資料表沒有" not in rt or "覺醒" not in rt:
+        fail("薔薇公主 should state there is no 覺醒 in the tables", errors)
+    for skin in ("薔薇公主·女王", "薔薇公主·海軍上將", "薔薇公主·木蘭", "薔薇公主·亞絲翠",
+                 "薔薇公主·寶石騎士", "薔薇公主·武神之靈", "薔薇公主·曇花月影"):
+        if skin not in rt:
+            fail(f"薔薇公主 missing skin {skin}", errors)
+    if "可升至 2 星，見下方星級表" not in rt:
+        fail("薔薇公主 star-up skins should point to star table", errors)
+    if "雙方成對屬性" not in rt or "審判·殘月騎士" not in rt:
+        fail("薔薇公主 曇花月影 should describe pairing with 審判·殘月騎士", errors)
+    if "海皇霸主" not in rt or "Top Heroes X 馴龍高手聯名限定" not in rt:
+        fail("薔薇公主 collection suits missing", errors)
+    if "凱旋之歌" not in rt or "雷霆庇護" not in rt or "大地的守護者" not in rt or "血之怒" not in rt:
+        fail("薔薇公主 recommended gear mainline missing", errors)
+    # Official links on her page may point to published heroes only.
+    rose_hrefs = set(re.findall(r'href="([^"]*\d+\.html)"', rose))
+    for href in rose_hrefs:
+        tail = href.rsplit("/", 1)[-1]
+        if tail not in {"10043.html", "10031.html", "10027.html"}:
+            fail(f"薔薇公主 has link to unpublished hero page {href}", errors)
+    for hid in ("10050", "10033", "10046", "10018", "10053"):
+        if re.search(rf'href="[^"]*{hid}\.html"', rose):
+            fail(f"薔薇公主 should not invent a link to unbuilt hero {hid}", errors)
 
-    if "建議裝備" not in jt or "建議裝備" not in nt:
+    # Published sibling cards may link 薔薇公主; 審判官 also has the 殘月騎士 pairing.
+    if "10043.html" not in judge:
+        fail("審判官 should now link the published 薔薇公主 entry", errors)
+    if "10043.html" not in nun:
+        fail("修女 should link the published 薔薇公主 entry in 相關條目", errors)
+    if "審判·殘月騎士" not in jt or "薔薇公主·曇花月影" not in jt:
+        fail("審判官 殘月騎士 should describe pairing with 薔薇公主·曇花月影", errors)
+    if "曇花月影" in nt or "殘月騎士" in nt:
+        fail("修女 should not invent a 薔薇公主 pairing", errors)
+
+    if "建議裝備" not in jt or "建議裝備" not in nt or "建議裝備" not in rt:
         fail("missing 建議裝備 section", errors)
-    if "（推算，不是官方最佳裝備）" in jt or "（推算，不是官方最佳裝備）" in nt:
+    if "（推算，不是官方最佳裝備）" in jt or "（推算，不是官方最佳裝備）" in nt or "（推算，不是官方最佳裝備）" in rt:
         fail("disclaimer should not sit inline with gear names", errors)
-    if "社群備註" not in jt or "社群備註" not in nt:
+    if "社群備註" not in jt or "社群備註" not in nt or "社群備註" not in rt:
         fail("missing 社群備註 heading", errors)
 
-    if "star-white" not in judge or "star-white" not in nun:
+    if "star-white" not in judge or "star-white" not in nun or "star-white" not in rose:
         fail("15-star display should include white star icons", errors)
 
     # Homepage is a compact roster, not portrait cards.
     # Hero pages still reserve a portrait slot; no character art in the build.
     if "lead-placeholder" in index or "hero-card" in index:
         fail("index: homepage should list names, not hero cards or portrait placeholders", errors)
-    for html, label in ((index, "index"), (judge, "審判官"), (nun, "修女")):
+    for html, label in ((index, "index"), (judge, "審判官"), (nun, "修女"), (rose, "薔薇公主")):
         if "10031-lead.jpg" in html or 'src="lead.jpg"' in html or "th-art/page/lead" in html:
             fail(f"{label}: should not embed a character portrait", errors)
         if "<img" in html.lower():
             fail(f"{label}: unexpected <img> (placeholder must not be a broken image tag)", errors)
-    for html, label in ((judge, "審判官"), (nun, "修女")):
+    for html, label in ((judge, "審判官"), (nun, "修女"), (rose, "薔薇公主")):
         if "lead-placeholder" not in html:
             fail(f"{label}: missing reserved lead-image placeholder", errors)
     lead_out = DOCS / "assets" / "img" / "10031-lead.jpg"
@@ -332,7 +406,7 @@ def main() -> int:
         for msg in errors:
             print(" -", msg)
         return 1
-    print("ok: TOC + 審判官 + 修女 passed locked-rule checks")
+    print("ok: TOC + 薔薇公主 + 審判官 + 修女 passed locked-rule checks")
     return 0
 
 
