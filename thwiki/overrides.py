@@ -13,6 +13,119 @@ PUBLISH_IDS = [10031, 10027]
 # Heroes that already have a generated page (for internal links only).
 PAGE_IDS = set(PUBLISH_IDS)
 
+# Official roster and order from handbook 01–03 圖鑑「名單總覽」.
+# Keep this list as the homepage source of truth; do not invent names or reorder.
+# name is None: show the id only (15032 / 15033 / 15039).
+# UNRELEASED_HERO_IDS are unreleased in the game, which is not the same as
+# "尚未公開" on this wiki.
+
+UNRELEASED_HERO_IDS = frozenset({10029})  # 牧羊人
+
+ROSTER: list[tuple[str, str, list[tuple[int, str | None]]]] = [
+    (
+        "聯盟",
+        "faction-league",
+        [
+            (10043, "薔薇公主"),
+            (10031, "審判官"),
+            (10050, "發明家"),
+            (10033, "聖徒"),
+            (10046, "主教"),
+            (10027, "修女"),
+            (10018, "守秘人"),
+            (10025, "火法師"),
+            (10030, "吟遊詩人"),
+            (10024, "觀星學士"),
+            (10003, "牧師"),
+            (10004, "騎士"),
+            (10014, "遊俠"),
+            (10029, "牧羊人"),
+            (10032, "老闆娘"),
+            (10053, "鈴蘭女僕"),
+            (10001, "戰士"),
+            (10006, "老法師"),
+            (15032, None),
+            (15033, None),
+        ],
+    ),
+    (
+        "自然",
+        "faction-nature",
+        [
+            (10042, "豪士"),
+            (10049, "中壇元帥"),
+            (10051, "花藝師"),
+            (10036, "森之少女"),
+            (10037, "妖精"),
+            (10044, "喚潮使"),
+            (10019, "樹人守衛"),
+            (10035, "賢者"),
+            (10040, "風行者"),
+            (10008, "德魯伊"),
+            (10005, "舞孃"),
+            (10012, "尋路者"),
+            (10013, "祭司"),
+            (10021, "守望者"),
+            (10026, "石匠"),
+            (10054, "大冒險家"),
+            (10002, "弓箭手"),
+            (10007, "藥劑師"),
+        ],
+    ),
+    (
+        "部族",
+        "faction-tribe",
+        [
+            (10039, "沙漠王子"),
+            (10048, "馴獸師"),
+            (10047, "行者"),
+            (10038, "通靈師"),
+            (10045, "女巫"),
+            (10041, "風暴聖女"),
+            (10017, "蠻鬥士"),
+            (10020, "劍術教官"),
+            (10023, "荒野獵手"),
+            (10028, "術士"),
+            (10034, "薩滿"),
+            (10011, "盜賊"),
+            (10015, "罪犯"),
+            (10016, "鬥者"),
+            (10022, "獵人"),
+            (10052, "暗影牧師"),
+            (10009, "鐵匠"),
+            (10010, "護衛"),
+            (15039, None),
+        ],
+    ),
+]
+
+# Placeholder catalogue headings on the public index; no links yet.
+CODEX_ITEMS = [
+    "專武",
+    "英靈",
+    "造型",
+    "裝備",
+    "領主裝備",
+    "士兵",
+    "秘寶",
+    "寵物",
+    "符文",
+    "天賦",
+    "科技",
+    "裝飾物",
+    "城堡外觀",
+]
+
+
+def roster_display_name(hero_id: int, name: str | None) -> str:
+    """Public label for the index list. Unreleased heroes include （未開放）."""
+    if not name:
+        return str(hero_id)
+    if hero_id in UNRELEASED_HERO_IDS:
+        return f"{name}（未開放）"
+    return name
+
+
 HERO_OVERRIDES = {
     10031: {
         "second_tags": ["持續", "增益"],

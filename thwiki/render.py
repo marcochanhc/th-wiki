@@ -3,7 +3,14 @@ from __future__ import annotations
 from .assemble import HeroPage, hero_href, official_stars
 from .highlight import highlight, highlight_lines
 from .htmlutil import e, table, tag
-from .overrides import PAGE_IDS, PUBLISH_IDS
+from .overrides import (
+    CODEX_ITEMS,
+    PAGE_IDS,
+    PUBLISH_IDS,
+    ROSTER,
+    UNRELEASED_HERO_IDS,
+    roster_display_name,
+)
 from .paths import DATA_CUTOFF
 from .strings import t
 
@@ -42,18 +49,27 @@ def asset_prefix(depth: int) -> str:
     return "" if depth == 0 else "../" * depth
 
 
+def site_nav_items(prefix: str) -> list[tuple[str, str, str]]:
+    """Shared top nav: home plus in-page index anchors. No per-hero links."""
+    home = f"{prefix}index.html"
+    items = [
+        ("index", home, "首頁"),
+        ("heroes", f"{home}#heroes", "英雄"),
+    ]
+    for faction, anchor, _heroes in ROSTER:
+        items.append((anchor, f"{home}#{anchor}", faction))
+    items += [
+        ("codex", f"{home}#codex", "圖鑑"),
+        ("about", f"{home}#about", "關於本站"),
+    ]
+    return items
+
+
 def page_shell(title: str, summary: str, body: str, depth: int, nav_current: str = "") -> str:
     prefix = asset_prefix(depth)
-    nav = [
-        ("index.html" if depth else "index.html", f"{prefix}index.html", "首頁"),
-    ]
-    # hero nav
-    from .assemble import hero_name
-    for hid in PUBLISH_IDS:
-        nav.append((str(hid), f"{prefix}heroes/{hid}.html", hero_name(hid)))
     nav_html = []
-    for key, href, label in nav:
-        cls = ' class="current"' if key == nav_current or label == nav_current else ""
+    for key, href, label in site_nav_items(prefix):
+        cls = ' class="current"' if key == nav_current else ""
         nav_html.append(f'<a href="{href}"{cls}>{e(label)}</a>')
     return f"""<!DOCTYPE html>
 <html lang="zh-Hant">
@@ -77,7 +93,7 @@ def page_shell(title: str, summary: str, body: str, depth: int, nav_current: str
   </main>
   <footer class="site-footer">
     <div class="inner">
-      <p>資料表截到 {DATA_CUTOFF}（香港時間所標日期）。本站由資料表與共用樣板生成，不是官方 wiki。</p>
+      <p>資料截至 {DATA_CUTOFF}（香港時間）。這不是官方 wiki。</p>
       <p><a href="#top">回到頂部</a></p>
     </div>
   </footer>
@@ -452,36 +468,53 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
         + toc_list(toc)
         + lead + skills + exclusive_sec + spirit_sec + appear_sec + gear_sec + bonds_sec + notes_sec + comm_sec
     )
-    return page_shell(title, summary, body, depth=depth, nav_current=str(page.hero_id))
+    return page_shell(title, summary, body, depth=depth, nav_current="")
 
 
-def render_home(heroes: list[HeroPage]) -> str:
-    cards = []
-    for p in heroes:
-        href = f"heroes/{p.hero_id}.html"
-        tags = "、".join(p.tags)
-        cards.append(
-            f'<a class="hero-card" href="{href}">'
-            f"{lead_placeholder(card=True)}<div><h2>{e(p.name)}</h2>"
-            f"<p class=\"meta\">{e(p.faction)}／{e(tags)}</p>"
-            f"<p>編號 {p.hero_id}</p></div></a>"
+def render_roster_item(hero_id: int, name: str | None) -> str:
+    label = roster_display_name(hero_id, name)
+    if hero_id in PAGE_IDS:
+        return f'<li><a href="heroes/{hero_id}.html">{e(label)}</a></li>'
+    # Unreleased-in-game (牧羊人) is labelled in the name; do not also mark 尚未公開.
+    status = ""
+    if hero_id not in UNRELEASED_HERO_IDS:
+        status = ' <span class="wiki-status">尚未公開</span>'
+    return f'<li><span>{e(label)}</span>{status}</li>'
+
+
+def render_home(heroes: list[HeroPage] | None = None) -> str:
+    del heroes  # roster comes from the locked index, not assembled pages
+    factions = []
+    for faction, anchor, entries in ROSTER:
+        items = "".join(render_roster_item(hid, name) for hid, name in entries)
+        factions.append(
+            f'<section id="{anchor}">'
+            f"<h3>{e(faction)}</h3>"
+            f'<ul class="hero-roster">{items}</ul>'
+            "</section>"
         )
+    codex = "".join(f"<li>{e(item)}</li>" for item in CODEX_ITEMS)
     body = f"""
     <header class="entry-head">
       <h1>Top Heroes Wiki</h1>
-      <p class="lede">由遊戲資料表與共用樣板生成的靜態英雄 wiki。目前先公開審判官與修女兩條；其餘英雄將用同一套樣板陸續生成，不必逐頁手改版面。</p>
+      <p class="lede">Top Heroes 英雄 wiki。目前先公開審判官和修女，其他英雄已列在目錄裡，條目會陸續補上。</p>
     </header>
-    <section>
-      <h2>英雄條目</h2>
-      <div class="hero-index">{''.join(cards)}</div>
+    <section id="heroes">
+      <h2>英雄</h2>
+      {''.join(factions)}
     </section>
-    <section>
+    <section id="codex">
+      <h2>圖鑑</h2>
+      <p>以下分類稍後再補。</p>
+      <ul class="codex-index">{codex}</ul>
+    </section>
+    <section id="about">
       <h2>關於本站</h2>
       <ul>
-        <li>語言為繁體中文。條目版面共用同一套樣板：簡介、技能與覺醒、專武、英靈與天賦、外觀、建議裝備、羈絆、資料說明、社群備註。</li>
-        <li>數值以資料表為準。稱號百分比、審判官已確認天賦的換算規則是鎖定呈現，不會自行推到外觀、羈絆或其他英雄。</li>
-        <li>攻略手冊的圖鑑分冊尚未搬到本靜態站。GitHub Pages 公開部署尚未進行。</li>
+        <li>這是繁體中文的英雄 wiki，不是官方網站。</li>
+        <li>英雄條目會介紹技能與覺醒、專武、英靈與天賦、外觀、建議裝備和羈絆。</li>
+        <li>數值以遊戲裡看到的為準。建議裝備只是參考，不是官方指定。</li>
       </ul>
     </section>
     """
-    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前收錄審判官與修女。", body, depth=0, nav_current="index.html")
+    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前已公開審判官與修女兩條。", body, depth=0, nav_current="index")
