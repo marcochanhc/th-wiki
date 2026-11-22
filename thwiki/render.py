@@ -349,11 +349,26 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
             ff_s = "／".join(str(x) for x in ff)
         else:
             ff_s = str(ff)
+        sixth_header = sp.get("sixth_header") or "專屬屬性"
+        sixth_rows = sp.get("sixth_rows") or sp.get("reduce_rows") or []
+        sixth_max = sixth_rows[-1][1] if sixth_rows else ""
+        self_line = ""
+        if sp.get("self_attr_text"):
+            self_line = sp["self_attr_text"] + "。"
+        intro = (
+            f"{sp['name']}是{page.name}的英靈。專屬技能是{sp['skill']}，寫在下面的英靈專屬技能，不當作一般升星或覺醒技能。"
+            f"技能戰力為 {ff_s}。滿級第 6 項專屬屬性是{sixth_header} {sixth_max}。"
+            "屬性顯示依 show_type：1（3、4、1098）寫點數，無百分號、無千位分符、不加加號；"
+            "2（103、104、第 6 項專屬屬性，以及專屬技能列 attribute_self）為原值÷100，兩位小數加百分號，不加加號。"
+            "1 級第 6 項為 0.00%。升級戰力照表上整數書寫（滿級 627500），不改成畫面的 628K。"
+            "這套規則只用於英靈屬性，不套到專武、稱號或羈絆。"
+            f"{self_line}關鍵等級（1／25／50／75／100）見下表。"
+        )
         spirit_html = f"""
         <section>
           <h3>英靈{H(sp['name'], terms)}</h3>
-          <p>{H(f"{sp['name']}是{page.name}的英靈。專屬技能是{sp['skill']}，寫在下面的英靈專屬技能，不當作一般升星或覺醒技能。技能戰力為 {ff_s}。滿級第 6 項專屬屬性是技能減傷 {sp['reduce_rows'][-1][1]}（表上原值，不是英雄屬性，不換算成百分比）。關鍵等級原值（1／25／50／75／100）見下表。", terms)}</p>
-          {table(["等級", "技能減傷（原值）"], [[e(a), e(b)] for a, b in sp["reduce_rows"]])}
+          <p>{H(intro, terms)}</p>
+          {table(["等級", H(sixth_header, terms)], [[e(a), e(b)] for a, b in sixth_rows])}
           <section>
             <h4>英靈專屬技能：{H(sp['skill'], terms)}</h4>
             <p>{H(sp['skill'] + '：' + sp['desc'], terms)}</p>

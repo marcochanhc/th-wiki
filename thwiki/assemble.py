@@ -940,33 +940,60 @@ def assemble(hero_id: int) -> HeroPage:
     # spirit block
     spirit = None
     if spirit_row and spirit_skill_id:
+        # Reuse 英靈總表 formatters; import lazily to avoid a module cycle.
+        from .valhalla_tables import (
+            COMMON_ATTR_IDS,
+            _self_attr_text,
+            _self_attrs,
+            attr_header,
+            attr_map,
+            format_attr,
+        )
+
         sk = skill_pack[spirit_skill_id]
         levels = [1, 25, 50, 75, 100]
         lvup = [r for r in catalog()["hero_valhalla_lvup"] if r["index"] == hero_id]
         by_lv = {r["lv"]: r for r in lvup}
-        red_rows = []
+        sixth_id = None
+        for lv in (100, 1):
+            row = by_lv.get(lv)
+            if not row:
+                continue
+            extra = [aid for aid in attr_map(row.get("attrs")) if aid not in COMMON_ATTR_IDS]
+            if len(extra) != 1:
+                raise ValueError(f"{hero_id} lv{lv} does not have exactly one exclusive attr")
+            sixth_id = extra[0]
+            break
+        if sixth_id is None:
+            raise ValueError(f"{hero_id} missing hero_valhalla_lvup rows")
+        for lv, row in by_lv.items():
+            extra = [aid for aid in attr_map(row.get("attrs")) if aid not in COMMON_ATTR_IDS]
+            if extra != [sixth_id]:
+                raise ValueError(f"{hero_id} exclusive attr type changes at lv {lv}")
+        sixth_rows = []
         ranks = []
         for i, lv in enumerate(levels, start=1):
             row = by_lv.get(lv)
-            dmg = 0
+            raw_sixth = 0
             if row:
-                d = {a: b for a, b in row.get("attrs") or []}
-                dmg = d.get(21, 0)
-                ff = (row.get("skillArr") or [[None, i]])[0]
-            # skill text at this rank
+                raw_sixth = attr_map(row.get("attrs")).get(sixth_id, 0)
             if i == 1:
                 text = sk["desc"]
             else:
                 text = sk["ups"][i - 2] if i - 2 < len(sk["ups"]) else ""
             ranks.append(f"{lv} 級（技能 {i} 階）：{text}")
-            red_rows.append((f"{lv} 級", str(dmg)))
-        forces = (comp_by_id.get(spirit_skill_id) or {}).get("fightforces") or (comp_by_id.get(spirit_skill_id) or {}).get("fightforce")
+            sixth_rows.append((f"{lv} 級", format_attr(sixth_id, raw_sixth)))
+        comp = comp_by_id.get(spirit_skill_id) or component(spirit_skill_id) or {}
+        forces = comp.get("fightforces") or comp.get("fightforce")
         spirit = {
             "name": spirit_name,
             "skill": sk["name"],
             "desc": sk["desc"],
             "ranks": ranks,
-            "reduce_rows": red_rows,
+            "sixth_id": sixth_id,
+            "sixth_header": attr_header(sixth_id),
+            "sixth_rows": sixth_rows,
+            "self_attr_text": _self_attr_text(_self_attrs(comp)),
             "fightforce": forces,
             "comp_id": spirit_skill_id,
             "fragment": int("12" + str(hero_id)[2:]),
@@ -1270,6 +1297,12 @@ def _build_notes(*, hero, hero_id, name, first, seconds, honor_group, honor_attr
     if spirit:
         bits.append(
             f"英靈專屬技能{spirit['skill']} {spirit['comp_id']}（show_type=3），專屬碎片物品 id {spirit['fragment']}。"
+        )
+        bits.append(
+            "英靈屬性依 show_type 書寫：1（3、4、1098）寫點數，無百分號、無千位分符、不加加號；"
+            "2（103、104、第 6 項專屬屬性，以及專屬技能列 attribute_self）為原值÷100，兩位小數加百分號。"
+            "升級戰力照表上整數書寫（滿級 627500），不改成 628K。"
+            "這套規則只用於英靈屬性，不套到專武、稱號或羈絆。"
         )
     else:
         bits.append("資料表沒有英靈列。")

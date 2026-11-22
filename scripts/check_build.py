@@ -1085,6 +1085,104 @@ def check_valhalla_page(html: str, errors: list[str]) -> None:
         fail(f"valhalla marginal table should have levels 1–100, got n={len(t3)}", errors)
 
 
+
+# 15 spirits on hero pages; sixth-attr display must follow the public 英靈總表 rules.
+SPIRIT_HERO_SIXTH = {
+    10043: ("薔薇公主", "技能減傷（21）", "50.00%"),
+    10031: ("審判官", "技能減傷（21）", "50.00%"),
+    10050: ("發明家", "技能減傷（21）", "50.00%"),
+    10033: ("聖徒", "技能增傷（20）", "50.00%"),
+    10046: ("主教", "增傷（18）", "50.00%"),
+    10042: ("豪士", "技能減傷（21）", "50.00%"),
+    10049: ("中壇元帥", "抗暴（9）", "30.00%"),
+    10051: ("花藝師", "技能減傷（21）", "50.00%"),
+    10037: ("妖精", "吸血（15）", "30.00%"),
+    10044: ("喚潮使", "吸血（15）", "20.00%"),
+    10039: ("沙漠王子", "抗暴（9）", "30.00%"),
+    10048: ("馴獸師", "格擋（16）", "30.00%"),
+    10047: ("行者", "增傷（18）", "50.00%"),
+    10045: ("女巫", "技能減傷（21）", "50.00%"),
+    10041: ("風暴聖女", "技能增傷（20）", "50.00%"),
+}
+# Key-level sixth values at 1／25／50／75／100, keyed by the max display.
+SIXTH_KEY_LEVELS = {
+    "50.00%": ["0.00%", "10.00%", "25.00%", "35.00%", "50.00%"],
+    "30.00%": ["0.00%", "6.00%", "15.00%", "21.00%", "30.00%"],
+    "20.00%": ["0.00%", "4.00%", "10.00%", "14.00%", "20.00%"],
+}
+SPIRIT_SELF_ATTR = {
+    10044: "技能增傷（20）各階 0.00%／10.00%／10.00%／10.00%／10.00%",
+    10041: "技能暴擊傷害（87）各階 0.00%／15.00%／15.00%／15.00%／15.00%",
+}
+JUDGE_SIXTH_LEVELS = [
+    ("1 級", "0.00%"),
+    ("25 級", "10.00%"),
+    ("50 級", "25.00%"),
+    ("75 級", "35.00%"),
+    ("100 級", "50.00%"),
+]
+
+
+def spirit_section(html: str) -> str:
+    m = re.search(r"<h3>英靈.*?<h3>天賦", html, flags=re.S)
+    return m.group(0) if m else ""
+
+
+def check_hero_valhalla_attrs(errors: list[str]) -> None:
+    """Hero-page 英靈 attrs must use the public table show_type rules."""
+    for hid, (label, header, max_v) in SPIRIT_HERO_SIXTH.items():
+        path = DOCS / "heroes" / f"{hid}.html"
+        if not path.exists():
+            fail(f"{label}: missing hero page {path}", errors)
+            continue
+        html = path.read_text(encoding="utf-8")
+        block = spirit_section(html)
+        if not block:
+            fail(f"{label}: missing 英靈 subsection", errors)
+            continue
+        body = text_of(block)
+        if "不換算成百分比" in body or "表上原值，不是英雄屬性" in body:
+            fail(f"{label}: 英靈 subsection still says attributes are raw / not converted", errors)
+        if "關鍵等級原值" in body or "技能減傷（原值）" in body:
+            fail(f"{label}: 英靈 subsection still labels sixth attr as 原值", errors)
+        if f"滿級第 6 項專屬屬性是{header} {max_v}" not in body:
+            fail(f"{label}: missing 滿級第 6 項 {header} {max_v}", errors)
+        if header not in body:
+            fail(f"{label}: missing sixth-attr header {header}", errors)
+        if "這套規則只用於英靈屬性，不套到專武、稱號或羈絆" not in body:
+            fail(f"{label}: missing 英靈-only show_type disclaimer", errors)
+        if "1 級第 6 項為 0.00%" not in body:
+            fail(f"{label}: should say lv1 sixth attr is 0.00%", errors)
+        # Table values at 1／25／50／75／100.
+        expected = SIXTH_KEY_LEVELS[max_v]
+        cells = re.findall(r"<tr><td>([^<]+)</td><td>([^<]+)</td></tr>", block)
+        got = [val for _, val in cells]
+        if got != expected:
+            fail(f"{label}: sixth-attr key levels {got} != {expected}", errors)
+        if hid in SPIRIT_SELF_ATTR and SPIRIT_SELF_ATTR[hid] not in body:
+            fail(f"{label}: missing skill attribute_self {SPIRIT_SELF_ATTR[hid]}", errors)
+        if hid not in SPIRIT_SELF_ATTR and "技能列自身屬性" in body:
+            fail(f"{label}: unexpected skill attribute_self line", errors)
+
+    # 審判官: explicit lv1／25／50／75／100 readout; 專武 still stays raw.
+    judge = (DOCS / "heroes" / "10031.html").read_text(encoding="utf-8")
+    jblock = spirit_section(judge)
+    jbody = text_of(jblock)
+    for lv, val in JUDGE_SIXTH_LEVELS:
+        if not re.search(rf"{re.escape(lv)}\s*{re.escape(val)}", jbody):
+            fail(f"審判官: missing {lv} {val} in 英靈 table", errors)
+    exclusive = section_html(judge, "exclusive") or ""
+    if "這是表上原值，不是英雄屬性，不換算成百分比" not in text_of(exclusive):
+        fail("審判官: 專武自身屬性 must still say 表上原值，不換算成百分比", errors)
+    # 織夢花靈 rank 5 both placeholders stay 60; 行者 rank 4 keeps 全體部落.
+    fairy = text_of((DOCS / "heroes" / "10037.html").read_text(encoding="utf-8"))
+    if "60" not in fairy:
+        fail("妖精: 惡作劇 rank 5 should still fill placeholders with 60", errors)
+    walker = text_of((DOCS / "heroes" / "10047.html").read_text(encoding="utf-8"))
+    if "全體部落" not in walker:
+        fail("行者: 齊天鎮岳 rank 4 should still quote 全體部落", errors)
+
+
 def main() -> int:
     errors = []
     for p in (INDEX, EXCLUSIVE, VALHALLA, JUDGE, NUN, ROSE, INVENTOR):
@@ -1394,6 +1492,7 @@ def main() -> int:
     if re.search(r"顯示.?50.{0,12}10050|10050.{0,12}顯示.?50", jt + nt + rt + vt + it):
         fail("must not claim display 50 equals internal id 10050", errors)
 
+    check_hero_valhalla_attrs(errors)
     check_new_league_pages(errors)
     check_nature_tribe_pages(errors)
 
