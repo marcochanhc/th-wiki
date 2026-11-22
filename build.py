@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT))
 from thwiki.assemble import assemble
 from thwiki.overrides import PUBLISH_IDS
 from thwiki.paths import DOCS_DIR, PROJECT_ROOT, STATIC_DIR
+from thwiki.exclusive_tables import render_exclusive_page
 from thwiki.render import render_hero, render_home
 
 
@@ -39,6 +40,10 @@ def main() -> int:
         out = heroes_dir / f"{hid}.html"
         out.write_text(render_hero(page), encoding="utf-8")
         print(f"wrote {out.relative_to(PROJECT_ROOT)}")
+
+    exclusive = DOCS_DIR / "exclusive.html"
+    exclusive.write_text(render_exclusive_page(), encoding="utf-8")
+    print(f"wrote {exclusive.relative_to(PROJECT_ROOT)}")
 
     index = DOCS_DIR / "index.html"
     index.write_text(render_home(pages), encoding="utf-8")

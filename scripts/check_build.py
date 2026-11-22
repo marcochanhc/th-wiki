@@ -15,6 +15,7 @@ NUN = DOCS / "heroes" / "10027.html"
 ROSE = DOCS / "heroes" / "10043.html"
 INVENTOR = DOCS / "heroes" / "10050.html"
 INDEX = DOCS / "index.html"
+EXCLUSIVE = DOCS / "exclusive.html"
 
 
 def text_of(html: str) -> str:
@@ -199,8 +200,11 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         items = li_texts(codex)
         if items != CODEX_ITEMS:
             fail(f"index 圖鑑 items mismatch {items!r}", errors)
-        if re.search(r"<a\b", codex):
-            fail("index 圖鑑 placeholders must not have links", errors)
+        if not re.search(r'<a href="exclusive.html">專武</a>', codex):
+            fail("index 圖鑑 專武 should link to exclusive.html", errors)
+        other = re.sub(r'<a href="exclusive.html">專武</a>', "專武", codex)
+        if re.search(r"<a\b", other):
+            fail("index 圖鑑 should only link 專武 among the catalogue items", errors)
 
     for term in GAMEPLAY_TERMS:
         if term in it:
@@ -225,6 +229,10 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         fail("index 關於本站 should say this is not official", errors)
     if "目前聯盟、自然和部族的英雄條目都已公開。" not in it:
         fail("index lede should say alliance, nature and tribe pages are all published", errors)
+    if "專武總表也已公開" not in it:
+        fail("index lede should say the exclusive tables are public", errors)
+    if 'href="exclusive.html"' not in index:
+        fail("index should link to exclusive.html", errors)
     if "目前先公開薔薇公主、審判官、發明家和修女" in it:
         fail("index lede still only lists the first four published heroes", errors)
     if "條目會陸續補上" in it:
@@ -858,9 +866,132 @@ def check_nature_tribe_pages(errors: list[str]) -> None:
             fail(f"must not claim display number equals internal id {hid}", errors)
 
 
+
+def check_exclusive_page(html: str, errors: list[str]) -> None:
+    if not html:
+        fail("exclusive: missing page", errors)
+        return
+    if 'lang="zh-Hant"' not in html:
+        fail("exclusive: missing lang=zh-Hant", errors)
+    if "<title>Top Heroes Wiki｜專武總表</title>" not in html:
+        fail("exclusive: unexpected title", errors)
+    for banner in ("未發佈", "只供預覽", "只供本機預覽", "尚未列入公開"):
+        if banner in html:
+            fail(f"exclusive: unpublished banner still present: {banner}", errors)
+    if "本頁列出 35 把專武" not in html:
+        fail("exclusive: missing public lede", errors)
+    if 'href="assets/css/site.css"' not in html:
+        fail("exclusive: should use site CSS at assets/css/site.css", errors)
+
+    nav_m = re.search(r'<nav class="site-nav"[^>]*>.*?</nav>', html, flags=re.S)
+    if not nav_m:
+        fail("exclusive: missing site-nav", errors)
+    else:
+        nav = nav_m.group(0)
+        if re.search(r"heroes/\d+\.html", nav):
+            fail("exclusive: site-nav should not link individual hero pages", errors)
+        for needle in ("index.html", "index.html#heroes", "index.html#codex", "index.html#about"):
+            if needle not in nav:
+                fail(f"exclusive: site-nav missing {needle}", errors)
+
+    t = text_of(html)
+    for bad in ("部落", "壁克", "契約之獅", "愛情蠶惑", "未發佈樣板"):
+        if bad in html or bad in t:
+            fail(f"exclusive: forbidden term {bad}", errors)
+    if "愛情蛊惑" not in t:
+        fail("exclusive: missing official 愛情蛊惑 spelling", errors)
+    if "思維火花" not in t or "共鳴" not in t:
+        fail("exclusive: missing 發明家 exclusive 思維火花／共鳴", errors)
+    if "2.80%" in html or "+2.80" in html:
+        fail("exclusive: must not convert 英雄攻擊 280 into +2.80%", errors)
+    if "依分欄推算" not in t:
+        fail("exclusive: marginal ratios must be labelled 依分欄推算", errors)
+    if "裝備屬性" not in t or "突破屬性" not in t:
+        fail("exclusive: missing the two-track interface labels", errors)
+
+    def rows_in(section_id: str) -> list[list[str]]:
+        m = re.search(rf'id="{section_id}".*?(?=<section id="t|<section id="notes"|</main>)', html, flags=re.S)
+        if not m:
+            return []
+        out = []
+        for tr in re.findall(r"<tr>(.*?)</tr>", m.group(0), flags=re.S):
+            cells = [re.sub(r"<[^>]+>", "", c) for c in re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", tr, flags=re.S)]
+            cells = [re.sub(r"[ \t\r\n]+", " ", c).strip() for c in cells]
+            if cells:
+                out.append(cells)
+        return out
+
+    t1 = [r for r in rows_in("t1") if r and r[0].endswith("級") and r[0] != "等級"]
+    if len(t1) != 20:
+        fail(f"exclusive table 1 should have 20 levels, got {len(t1)}", errors)
+    elif t1[0] != ["1 級", "5", "5"] or t1[-1] != ["20 級", "150", "1185"]:
+        fail(f"exclusive table 1 first/last row mismatch: {t1[0]} / {t1[-1]}", errors)
+
+    t2 = [r for r in rows_in("t2") if r and r[0].isdigit()]
+    if len(t2) != 25:
+        fail(f"exclusive table 2 should have 25 steps, got {len(t2)}", errors)
+    else:
+        if t2[-1][0] != "25" or t2[-1][5] != "2385":
+            fail(f"exclusive table 2 total should be 2385, got {t2[-1]}", errors)
+        if "2 星" not in t2[9][-1]:
+            fail(f"exclusive table 2 should mark the 2-star gate on step 10: {t2[9]}", errors)
+        if "5 星" not in t2[24][-1]:
+            fail(f"exclusive table 2 should mark the 5-star gate on step 25: {t2[24]}", errors)
+
+    t3 = [r for r in rows_in("t3") if r and r[0] in ("聯盟", "自然", "部族")]
+    if len(t3) != 35:
+        fail(f"exclusive table 3 should have 35 rows, got {len(t3)}", errors)
+    else:
+        from collections import Counter
+        split = Counter(r[0] for r in t3)
+        if dict(split) != {"聯盟": 12, "自然": 11, "部族": 12}:
+            fail(f"exclusive table 3 faction split mismatch {dict(split)}", errors)
+        if t3[0][0] != "聯盟" or t3[12][0] != "自然" or t3[23][0] != "部族":
+            fail("exclusive table 3 should be ordered 聯盟 → 自然 → 部族", errors)
+        noah = [r for r in t3 if "諾亞金鈴" in "".join(r)]
+        yarn = [r for r in t3 if "英雄絮語" in "".join(r)]
+        if not noah or "森之少女" not in "".join(noah[0]) or "10036" not in "".join(noah[0]):
+            fail(f"exclusive: 諾亞金鈴 should belong to 森之少女 10036, got {noah}", errors)
+        if any("牧羊人" in "".join(r) and "諾亞金鈴" in "".join(r) and "不是牧羊人" not in "".join(r) for r in t3):
+            fail("exclusive: 諾亞金鈴 must not be owned by 牧羊人", errors)
+        if not yarn or "15032" not in "".join(yarn[0]):
+            fail(f"exclusive: 英雄絮語 should belong to 15032, got {yarn}", errors)
+        if any("老闆娘" in "".join(r) and "英雄絮語" in "".join(r) and "不與老闆娘合成同一人" not in "".join(r) for r in yarn):
+            fail("exclusive: 英雄絮語 must not be merged with 老闆娘", errors)
+        if any(r[0] != "—" and "牧羊人" in r[1] for r in t3):
+            fail("exclusive table 3 must not include a 牧羊人 row", errors)
+        if 'href="heroes/10031.html"' not in html:
+            fail("exclusive: 審判官 should link to heroes/10031.html", errors)
+        if 'href="heroes/10036.html"' not in html or 'href="heroes/15032.html"' not in html:
+            fail("exclusive: 森之少女 and 15032 should have relative hero links", errors)
+
+    if "公正領域冷卻時間減少1秒且範圍提升" not in t:
+        fail("exclusive: missing 公正領域 rank 5 official text", errors)
+    if "提高我方全體聯盟英雄4%減傷與10%生命值" not in t:
+        fail("exclusive: missing 公正領域 rank 4 official text", errors)
+    if "解鎖老闆娘全新專屬裝備" not in t:
+        fail("exclusive: 英雄絮語 should quote the official 老闆娘 shard blurb", errors)
+    if "1185" not in t and "1,185" not in t:
+        fail("exclusive: missing upgrade total 1185", errors)
+    if "2385" not in t and "2,385" not in t:
+        fail("exclusive: missing breakthrough total 2385", errors)
+
+    t4u = [r for r in rows_in("t4-up") if r and r[0].endswith("級") and r[0] != "等級"]
+    if len(t4u) != 20:
+        fail(f"exclusive upgrade-marginal should have 20 rows, got {len(t4u)}", errors)
+    elif t4u[0][1:7] != ["5", "170", "4225", "280", "560", "3176"]:
+        fail(f"exclusive lv1 marginal row should keep raw 英雄攻擊 280, got {t4u[0]}", errors)
+
+    t4b = [r for r in rows_in("t4-br") if r and r[0].isdigit()]
+    if len(t4b) != 25:
+        fail(f"exclusive breakthrough-marginal should have 25 rows, got {len(t4b)}", errors)
+    elif "英雄生命 4000" not in "".join(t4b[4]):
+        fail(f"exclusive 1-star extra big attr missing: {t4b[4]}", errors)
+
+
 def main() -> int:
     errors = []
-    for p in (INDEX, JUDGE, NUN, ROSE, INVENTOR):
+    for p in (INDEX, EXCLUSIVE, JUDGE, NUN, ROSE, INVENTOR):
         if not p.exists():
             fail(f"missing {p}", errors)
     if errors:
@@ -888,7 +1019,12 @@ def main() -> int:
                 if needle not in nav:
                     fail(f"{label}: site-nav missing {needle}", errors)
 
+    exclusive_html = EXCLUSIVE.read_text(encoding="utf-8")
     check_index(index, it, errors)
+    check_exclusive_page(exclusive_html, errors)
+    for html, label in ((exclusive_html, "專武總表"),):
+        if 'lang="zh-Hant"' not in html:
+            fail(f"{label}: missing lang=zh-Hant", errors)
 
     # tags
     if "稱號屬性" in jt or "稱號屬性" in nt or "稱號屬性" in rt or "稱號屬性" in vt:
@@ -1168,7 +1304,7 @@ def main() -> int:
         for msg in errors:
             print(" -", msg)
         return 1
-    print("ok: TOC + all published alliance, nature and tribe hero pages passed locked-rule checks")
+    print("ok: TOC + exclusive tables + all published alliance, nature and tribe hero pages passed locked-rule checks")
     return 0
 
 

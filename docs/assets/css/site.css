@@ -153,7 +153,8 @@ section, h2, h3 { scroll-margin-top: 0.8rem; }
 
 .table-wrap { overflow-x: auto; margin: 0.8rem 0 1.1rem; }
 table { width: 100%; border-collapse: collapse; background: var(--bg-card); font-size: 0.95rem; }
-th, td { border: 1px solid var(--line); padding: 0.4rem 0.55rem; text-align: left; vertical-align: top; }
+th, td { border: 1px solid var(--line); padding: 0.4rem 0.55rem; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.table-wrap td { white-space: pre-wrap; }
 th { background: rgba(138, 106, 20, 0.08); font-weight: 600; }
 
 details.skill { background: var(--bg-card); border: 1px solid var(--line); border-radius: 6px; padding: 0.4rem 0.8rem; margin: 0.45rem 0; }
