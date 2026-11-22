@@ -16,6 +16,7 @@ ROSE = DOCS / "heroes" / "10043.html"
 INVENTOR = DOCS / "heroes" / "10050.html"
 INDEX = DOCS / "index.html"
 EXCLUSIVE = DOCS / "exclusive.html"
+VALHALLA = DOCS / "valhalla.html"
 
 
 def text_of(html: str) -> str:
@@ -202,9 +203,12 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
             fail(f"index 圖鑑 items mismatch {items!r}", errors)
         if not re.search(r'<a href="exclusive.html">專武</a>', codex):
             fail("index 圖鑑 專武 should link to exclusive.html", errors)
+        if not re.search(r'<a href="valhalla.html">英靈</a>', codex):
+            fail("index 圖鑑 英靈 should link to valhalla.html", errors)
         other = re.sub(r'<a href="exclusive.html">專武</a>', "專武", codex)
+        other = re.sub(r'<a href="valhalla.html">英靈</a>', "英靈", other)
         if re.search(r"<a\b", other):
-            fail("index 圖鑑 should only link 專武 among the catalogue items", errors)
+            fail("index 圖鑑 should only link 專武 and 英靈 among the catalogue items", errors)
 
     for term in GAMEPLAY_TERMS:
         if term in it:
@@ -229,10 +233,14 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         fail("index 關於本站 should say this is not official", errors)
     if "目前聯盟、自然和部族的英雄條目都已公開。" not in it:
         fail("index lede should say alliance, nature and tribe pages are all published", errors)
-    if "專武總表也已公開" not in it:
-        fail("index lede should say the exclusive tables are public", errors)
+    if "專武總表和英靈總表也已公開" not in it:
+        fail("index lede should say the exclusive and valhalla tables are public", errors)
+    if "專武總表和英靈總表已公開，其餘分類稍後再補" not in it:
+        fail("index 圖鑑 should say 專武 and 英靈 catalogs are public and others will follow", errors)
     if 'href="exclusive.html"' not in index:
         fail("index should link to exclusive.html", errors)
+    if 'href="valhalla.html"' not in index:
+        fail("index should link to valhalla.html", errors)
     if "目前先公開薔薇公主、審判官、發明家和修女" in it:
         fail("index lede still only lists the first four published heroes", errors)
     if "條目會陸續補上" in it:
@@ -989,9 +997,97 @@ def check_exclusive_page(html: str, errors: list[str]) -> None:
         fail(f"exclusive 1-star extra big attr missing: {t4b[4]}", errors)
 
 
+
+def check_valhalla_page(html: str, errors: list[str]) -> None:
+    if not html:
+        fail("valhalla: missing page", errors)
+        return
+    if 'lang="zh-Hant"' not in html:
+        fail("valhalla: missing lang=zh-Hant", errors)
+    if "<title>Top Heroes Wiki｜英靈總表</title>" not in html:
+        fail("valhalla: unexpected title", errors)
+    for banner in ("未發佈", "本機預覽", "不是線上目錄", "preview-banner"):
+        if banner in html:
+            fail(f"valhalla: unpublished banner still present: {banner}", errors)
+    if "本頁列出 15 隻英靈的升級素材、共通屬性、各隻專屬屬性與專屬技能，以及素材消耗對能力提升的邊際效果。" not in html:
+        fail("valhalla: missing public lede", errors)
+    if 'href="assets/css/site.css"' not in html:
+        fail("valhalla: should use site CSS at assets/css/site.css", errors)
+    nav_m = re.search(r'<nav class="site-nav"[^>]*>.*?</nav>', html, flags=re.S)
+    if not nav_m:
+        fail("valhalla: missing site-nav", errors)
+    else:
+        nav = nav_m.group(0)
+        if re.search(r"heroes/\d+\.html", nav):
+            fail("valhalla: site-nav should not link individual hero pages", errors)
+        for needle in ("index.html", "index.html#heroes", "index.html#codex", "index.html#about"):
+            if needle not in nav:
+                fail(f"valhalla: site-nav missing {needle}", errors)
+    for bad in ("契約之獅", "部落英雄", "壁克"):
+        if bad in html:
+            fail(f"valhalla: forbidden term {bad}", errors)
+    it = text_of(html)
+    if "3.60%" not in html:
+        fail("valhalla: missing lv1 英雄攻擊 3.60%", errors)
+    if re.search(r"\+3\.60%", html):
+        fail("valhalla: must not write +3.60%", errors)
+    if "320.00%" not in html or "960.00%" not in html:
+        fail("valhalla: missing lv100 英雄攻擊／英雄生命 percentages", errors)
+    if "627500" not in html:
+        fail("valhalla: missing lv100 power 627500", errors)
+    if "8,000" in html or "240,000" in html:
+        fail("valhalla: show_type 1 values must not use thousands separators", errors)
+    if "英雄攻擊（3，點數）" not in html or "英雄攻擊（103）" not in html:
+        fail("valhalla: missing id-qualified 英雄攻擊 headers", errors)
+    if "英雄生命（4，點數）" not in html or "英雄生命（104）" not in html:
+        fail("valhalla: missing id-qualified 英雄生命 headers", errors)
+    if "英雄等級上限（1098）" not in html:
+        fail("valhalla: missing 英雄等級上限（1098） header", errors)
+    if "技能減傷（21）" not in it or "50.00%" not in html:
+        fail("valhalla: missing 技能減傷（21） 50.00%", errors)
+    if "3,163" not in it and "3163" not in html:
+        fail("valhalla: missing shard total 3,163", errors)
+    if "即可解鎖妖精英靈" not in it:
+        fail("valhalla: missing official 妖精 shard phrase 即可解鎖妖精英靈", errors)
+    if re.search(r'<span class="term">妖精</span>\s*<span class="term">英靈</span>', html):
+        fail("valhalla: 即可解鎖妖精英靈 must not be split into two .term spans", errors)
+    if "傷害提升60%" not in html:
+        fail("valhalla: 惡作劇 rank 5 should fill both {0} with 60", errors)
+    if "全體部落" not in html:
+        fail("valhalla: 齊天鎮岳 rank 4 should quote 全體部落", errors)
+    if "1-501,10001-19999" not in html:
+        fail("valhalla: missing current unlock_server value", errors)
+    if "1-501,10001-10728" not in html:
+        fail("valhalla: missing historical unlock_server note", errors)
+    if "已開放" in html and "不標已開放" not in it:
+        fail("valhalla: must not mark spirits 已開放", errors)
+    if "資料截至 2026-11-22" not in it:
+        fail("valhalla: data cutoff should be 2026-11-22", errors)
+    if "資料截至 2026-11-05" in it:
+        fail("valhalla: must not use the global 2026-11-05 cutoff on this page", errors)
+    if "依分欄推算" not in html:
+        fail("valhalla: marginal ratios must be labelled 依分欄推算", errors)
+    if 'href="heroes/10031.html"' not in html or 'href="heroes/10037.html"' not in html:
+        fail("valhalla: missing relative hero links", errors)
+    names = [
+        "英靈「誓約之獅」", "英靈「聖靈天使」", "英靈「發條守衛」", "英靈「聖殿誓騎」", "英靈「聖諭祭司」",
+        "英靈「翠竹青龍」", "英靈「蓮身護法」", "英靈「幽影梵蓮」", "英靈「織夢花靈」", "英靈「娜迦女王」",
+        "英靈「沙漠死神」", "英靈「金焰犬神」", "英靈「上古魔猿」", "英靈「巫毒祭司」", "英靈「風暴領主」",
+    ]
+    missing = [n for n in names if n not in it]
+    if missing:
+        fail(f"valhalla: missing spirit names {missing}", errors)
+    t1 = re.findall(r'id="u-lv-(\d+)"', html)
+    if t1 != [str(i) for i in range(1, 101)]:
+        fail(f"valhalla table 1 should have levels 1–100, got {t1[:5]}... n={len(t1)}", errors)
+    t3 = re.findall(r'id="m-lv-(\d+)"', html)
+    if t3 != [str(i) for i in range(1, 101)]:
+        fail(f"valhalla marginal table should have levels 1–100, got n={len(t3)}", errors)
+
+
 def main() -> int:
     errors = []
-    for p in (INDEX, EXCLUSIVE, JUDGE, NUN, ROSE, INVENTOR):
+    for p in (INDEX, EXCLUSIVE, VALHALLA, JUDGE, NUN, ROSE, INVENTOR):
         if not p.exists():
             fail(f"missing {p}", errors)
     if errors:
@@ -1020,9 +1116,11 @@ def main() -> int:
                     fail(f"{label}: site-nav missing {needle}", errors)
 
     exclusive_html = EXCLUSIVE.read_text(encoding="utf-8")
+    valhalla_html = VALHALLA.read_text(encoding="utf-8")
     check_index(index, it, errors)
     check_exclusive_page(exclusive_html, errors)
-    for html, label in ((exclusive_html, "專武總表"),):
+    check_valhalla_page(valhalla_html, errors)
+    for html, label in ((exclusive_html, "專武總表"), (valhalla_html, "英靈總表")):
         if 'lang="zh-Hant"' not in html:
             fail(f"{label}: missing lang=zh-Hant", errors)
 
@@ -1304,7 +1402,7 @@ def main() -> int:
         for msg in errors:
             print(" -", msg)
         return 1
-    print("ok: TOC + exclusive tables + all published alliance, nature and tribe hero pages passed locked-rule checks")
+    print("ok: TOC + exclusive tables + valhalla tables + all published alliance, nature and tribe hero pages passed locked-rule checks")
     return 0
 
 

@@ -236,3 +236,30 @@ li { margin: 0.2rem 0; }
   .hero-roster,
   .codex-index { grid-template-columns: 1fr; }
 }
+
+/* Catalog tables: sticky header, denser 100-row tables, inline charts. */
+.jump-nav { font-size: 0.92rem; color: var(--muted); }
+.jump-nav a { margin-right: 0.45rem; }
+.table-dense table { font-size: 0.88rem; }
+.table-wrap thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  background-image: linear-gradient(rgba(138, 106, 20, 0.08), rgba(138, 106, 20, 0.08));
+  z-index: 2;
+}
+.chart-block { margin: 1rem 0 1.5rem; }
+.chart-block svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.chart-block figcaption {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.45rem 0 0;
+  line-height: 1.65;
+}

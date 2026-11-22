@@ -552,13 +552,15 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
     def render_codex_item(item: str) -> str:
         if item == "專武":
             return f'<li><a href="exclusive.html">{e(item)}</a></li>'
+        if item == "英靈":
+            return f'<li><a href="valhalla.html">{e(item)}</a></li>'
         return f"<li>{e(item)}</li>"
 
     codex = "".join(render_codex_item(item) for item in CODEX_ITEMS)
     body = f"""
     <header class="entry-head">
       <h1>Top Heroes Wiki</h1>
-      <p class="lede">Top Heroes 英雄 wiki。目前聯盟、自然和部族的英雄條目都已公開。專武總表也已公開。</p>
+      <p class="lede">Top Heroes 英雄 wiki。目前聯盟、自然和部族的英雄條目都已公開。專武總表和英靈總表也已公開。</p>
     </header>
     <section id="heroes">
       <h2>英雄</h2>
@@ -566,7 +568,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
     </section>
     <section id="codex">
       <h2>圖鑑</h2>
-      <p>專武總表已公開，其餘分類稍後再補。</p>
+      <p>專武總表和英靈總表已公開，其餘分類稍後再補。</p>
       <ul class="codex-index">{codex}</ul>
     </section>
     <section id="about">
@@ -578,4 +580,4 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
       </ul>
     </section>
     """
-    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前聯盟、自然和部族的英雄條目都已公開。專武總表也已公開。", body, depth=0, nav_current="index")
+    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前聯盟、自然和部族的英雄條目都已公開。專武總表和英靈總表也已公開。", body, depth=0, nav_current="index")

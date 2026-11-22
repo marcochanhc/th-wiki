@@ -14,6 +14,7 @@ from thwiki.assemble import assemble
 from thwiki.overrides import PUBLISH_IDS
 from thwiki.paths import DOCS_DIR, PROJECT_ROOT, STATIC_DIR
 from thwiki.exclusive_tables import render_exclusive_page
+from thwiki.valhalla_tables import render_valhalla_page
 from thwiki.render import render_hero, render_home
 
 
@@ -44,6 +45,10 @@ def main() -> int:
     exclusive = DOCS_DIR / "exclusive.html"
     exclusive.write_text(render_exclusive_page(), encoding="utf-8")
     print(f"wrote {exclusive.relative_to(PROJECT_ROOT)}")
+
+    valhalla = DOCS_DIR / "valhalla.html"
+    valhalla.write_text(render_valhalla_page(), encoding="utf-8")
+    print(f"wrote {valhalla.relative_to(PROJECT_ROOT)}")
 
     index = DOCS_DIR / "index.html"
     index.write_text(render_home(pages), encoding="utf-8")
