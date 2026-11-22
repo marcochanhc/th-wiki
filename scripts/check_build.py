@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sanity-check the built index and published alliance hero pages against locked rules."""
+"""Sanity-check the built index and published alliance, nature, and tribe hero pages against locked rules."""
 
 from __future__ import annotations
 
@@ -124,10 +124,7 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
 
     # Only published hero pages may be linked from the index body.
     hero_hrefs = re.findall(r'href="([^"]*heroes/\d+\.html)"', index)
-    published = [
-        10043, 10031, 10050, 10033, 10046, 10027, 10018, 10025, 10030, 10024,
-        10003, 10004, 10014, 10029, 10032, 10053, 10001, 10006, 15032, 15033,
-    ]
+    published = PUBLISHED_IDS
     allowed = {f"heroes/{hid}.html" for hid in published}
     got_hrefs = set()
     for href in hero_hrefs:
@@ -135,7 +132,7 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         norm = "/".join(tail[-2:]) if len(tail) >= 2 else href
         got_hrefs.add(norm)
     if got_hrefs != allowed:
-        fail(f"index: hero links should be all published alliance pages, got {sorted(got_hrefs)}", errors)
+        fail(f"index: hero links should be all published pages, got {sorted(got_hrefs)}", errors)
     if 'href="heroes/10043.html"' not in index or "薔薇公主" not in it:
         fail("index: 薔薇公主 should be a real link to heroes/10043.html", errors)
     if 'href="heroes/10050.html"' not in index or "發明家" not in it:
@@ -151,11 +148,6 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
     for item in li_texts(league):
         if "尚未公開" in item:
             fail(f"index: published league entry should not be marked 尚未公開: {item}", errors)
-    # Nature / tribe / unbuilt ids must not be wrapped in an anchor.
-    for hid in ("10007", "15039", "10036", "10042", "10039", "10037"):
-        if re.search(rf'href="[^"]*{hid}\.html"', index):
-            fail(f"index: should not link unbuilt hero {hid}", errors)
-
     if "牧羊人（未開放）" not in it:
         fail("index: 牧羊人 should be labelled 未開放", errors)
     # The 牧羊人 list item must not also say 尚未公開.
@@ -172,6 +164,27 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         fail("index: 藥劑師 should be listed under 自然", errors)
     if "玩家確認" in it or "由玩家確認" in it:
         fail("index: must not mention 玩家確認", errors)
+
+    # All nature and tribe entries are now published links, not 尚未公開.
+    for sid, names, id_list, label in (
+        ("faction-nature", NATURE_NAMES, NATURE_IDS, "nature"),
+        ("faction-tribe", TRIBE_NAMES, TRIBE_IDS, "tribe"),
+    ):
+        block = section_html(index, sid) or ""
+        for item in li_texts(block):
+            if "尚未公開" in item:
+                fail(f"index: published {label} entry should not be marked 尚未公開: {item}", errors)
+            if "未開放" in item:
+                fail(f"index: {label} entry must not be marked 未開放: {item}", errors)
+        for hid, display in zip(id_list, names):
+            if f'href="heroes/{hid}.html"' not in index:
+                fail(f"index: {display} should be a real link to heroes/{hid}.html", errors)
+    if "15039" not in it:
+        fail("index: 15039 should appear as the id only", errors)
+    tribe = section_html(index, "faction-tribe") or ""
+    for item in li_texts(tribe):
+        if "15039" in item and core_name(item) != "15039":
+            fail(f"index: 15039 must not invent a Chinese name: {item}", errors)
 
     for bad in ("蕊薇", "蔷薇", "遊俺", "舞嬢", "蠾鬥士", "契約之獅", "壁克"):
         if bad in index:
@@ -210,19 +223,28 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
             fail(f"index 關於本站 still too technical: {jargon}", errors)
     if "不是官方" not in about_t:
         fail("index 關於本站 should say this is not official", errors)
-    if "目前聯盟英雄的條目都已公開" not in it and "目前聯盟英雄條目都已公開" not in it:
-        fail("index lede should say all alliance hero pages are published", errors)
+    if "目前聯盟、自然和部族的英雄條目都已公開。" not in it:
+        fail("index lede should say alliance, nature and tribe pages are all published", errors)
     if "目前先公開薔薇公主、審判官、發明家和修女" in it:
         fail("index lede still only lists the first four published heroes", errors)
-    if "自然" not in it or "部族" not in it:
-        fail("index lede should still mention 自然 and 部族 as upcoming", errors)
+    if "條目會陸續補上" in it:
+        fail("index lede should not still say remaining pages are upcoming", errors)
 
 
 
-PUBLISHED_IDS = [
+LEAGUE_IDS = [
     10043, 10031, 10050, 10033, 10046, 10027, 10018, 10025, 10030, 10024,
     10003, 10004, 10014, 10029, 10032, 10053, 10001, 10006, 15032, 15033,
 ]
+NATURE_IDS = [
+    10042, 10049, 10051, 10036, 10037, 10044, 10019, 10035, 10040, 10008,
+    10005, 10012, 10013, 10021, 10026, 10054, 10002, 10007,
+]
+TRIBE_IDS = [
+    10039, 10048, 10047, 10038, 10045, 10041, 10017, 10020, 10023, 10028,
+    10034, 10011, 10015, 10016, 10022, 10052, 10009, 10010, 15039,
+]
+PUBLISHED_IDS = LEAGUE_IDS + NATURE_IDS + TRIBE_IDS
 
 EXPECTED_TAGS = {
     10033: ("傷害、爆發、群體", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "專注於造成群體傷害"], "後兩項沒有百分比"),
@@ -276,7 +298,7 @@ TYPOS = ("蔷薇", "蕊薇", "遊俺", "舞嬢", "蠾鬥士", "契約之獅", "�
 def check_new_league_pages(errors: list[str]) -> None:
     pages = {}
     texts = {}
-    for hid in PUBLISHED_IDS:
+    for hid in LEAGUE_IDS:
         path = DOCS / "heroes" / f"{hid}.html"
         if not path.exists():
             fail(f"missing {path}", errors)
@@ -285,7 +307,7 @@ def check_new_league_pages(errors: list[str]) -> None:
         pages[hid] = html
         texts[hid] = text_of(html)
 
-    new_ids = [hid for hid in PUBLISHED_IDS if hid not in {10043, 10031, 10050, 10027}]
+    new_ids = [hid for hid in LEAGUE_IDS if hid not in {10043, 10031, 10050, 10027}]
     for hid in new_ids:
         html = pages.get(hid)
         if not html:
@@ -334,10 +356,6 @@ def check_new_league_pages(errors: list[str]) -> None:
         for bad in TYPOS:
             if bad in html:
                 fail(f"{label} typo or wrong term {bad}", errors)
-        # Nature / tribe pages are not built; do not invent links.
-        for other in ("10007", "10036", "10037", "10039", "10042", "15039"):
-            if re.search(rf'href="[^"]*{other}\\.html"', html):
-                fail(f"{label} should not invent a link to unbuilt hero {other}", errors)
         if hid in (15032, 15033):
             if f"<title>Top Heroes Wiki｜{hid}</title>" not in html:
                 fail(f"{hid} title should use the id only, not an invented Chinese name", errors)
@@ -512,6 +530,334 @@ def check_new_league_pages(errors: list[str]) -> None:
             fail(f"must not claim display number equals internal id {hid}", errors)
 
 
+
+NATURE_TRIBE_TAGS = {
+    10042: ("坦克、持續、增益", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠為隊友提供加強效果"], "後兩項沒有百分比"),
+    10049: ("坦克、爆發、控制", "受到傷害-5%", ["偏向於使用技能在短時間內造成高額傷害", "能夠對敵人造成控制"], "後兩項沒有百分比"),
+    10051: ("輔助、控制、增益", "生命上限+5%", ["能夠對敵人造成控制", "能夠為隊友提供加強效果"], "後兩項沒有百分比"),
+    10036: ("輔助、控制、召喚", "生命上限+5%", ["能夠對敵人造成控制", "能夠召喚額外單位參與戰鬥"], "後兩項沒有百分比"),
+    10037: ("傷害、爆發、控制", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "能夠對敵人造成控制"], "後兩項沒有百分比"),
+    10044: ("傷害、控制、召喚", "最終傷害+3%", ["能夠對敵人造成控制", "能夠召喚額外單位參與戰鬥"], "後兩項沒有百分比"),
+    10019: ("坦克、持續、增益", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠為隊友提供加強效果"], "後兩項沒有百分比"),
+    10035: ("坦克、持續、減益", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠使敵人受到弱化效果"], "後兩項沒有百分比"),
+    10040: ("傷害、爆發、個體", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "專注於造成個體傷害"], "後兩項沒有百分比"),
+    10008: ("治療、增益、召喚", "治療效果+5%", ["能夠為隊友提供加強效果", "能夠召喚額外單位參與戰鬥"], "後兩項沒有百分比"),
+    10005: ("輔助、增益", "生命上限+5%", ["能夠為隊友提供加強效果"], "後項沒有百分比"),
+    10012: ("傷害、持續、群體", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項沒有百分比"),
+    10013: ("傷害、召喚", "最終傷害+3%", ["能夠召喚額外單位參與戰鬥"], "後項沒有百分比"),
+    10021: ("傷害、爆發、減益", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "能夠使敵人受到弱化效果"], "後兩項沒有百分比"),
+    10026: ("傷害、控制、群體", "最終傷害+3%", ["能夠對敵人造成控制", "專注於造成群體傷害"], "後兩項沒有百分比"),
+    10054: ("輔助、增益、減益", "生命上限+5%", ["能夠為隊友提供加強效果", "能夠使敵人受到弱化效果"], "後兩項沒有百分比"),
+    10002: ("傷害、群體", "最終傷害+3%", ["專注於造成群體傷害"], "後項沒有百分比"),
+    10007: ("治療、群體", "治療效果+5%", ["專注於造成群體傷害"], "後項沒有百分比"),
+    10039: ("坦克、持續、群體", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項沒有百分比"),
+    10048: ("坦克、控制、增益", "受到傷害-5%", ["能夠對敵人造成控制", "能夠為隊友提供加強效果"], "後兩項沒有百分比"),
+    10047: ("傷害、控制、召喚", "最終傷害+3%", ["能夠對敵人造成控制", "能夠召喚額外單位參與戰鬥"], "後兩項沒有百分比"),
+    10038: ("輔助、增益、群體", "生命上限+5%", ["能夠為隊友提供加強效果", "專注於造成群體傷害"], "後兩項沒有百分比"),
+    10045: ("治療、持續、控制", "治療效果+5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠對敵人造成控制"], "後兩項沒有百分比"),
+    10041: ("傷害、持續、群體", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項沒有百分比"),
+    10017: ("坦克、控制、減益", "受到傷害-5%", ["能夠對敵人造成控制", "能夠使敵人受到弱化效果"], "後兩項沒有百分比"),
+    10020: ("坦克、持續、群體", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項沒有百分比"),
+    10023: ("傷害、持續、增益", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠為隊友提供加強效果"], "後兩項沒有百分比"),
+    10028: ("輔助、增益、減益", "生命上限+5%", ["能夠為隊友提供加強效果", "能夠使敵人受到弱化效果"], "後兩項沒有百分比"),
+    10034: ("治療、持續、群體", "治療效果+5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項沒有百分比"),
+    10011: ("傷害、減益", "最終傷害+3%", ["能夠使敵人受到弱化效果"], "後項沒有百分比"),
+    10015: ("輔助、減益", "生命上限+5%", ["能夠使敵人受到弱化效果"], "後項沒有百分比"),
+    10016: ("傷害、持續", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰"], "後項沒有百分比"),
+    10022: ("傷害、爆發、控制", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "能夠對敵人造成控制"], "後兩項沒有百分比"),
+    10052: ("治療、持續、減益", "治療效果+5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠使敵人受到弱化效果"], "後兩項沒有百分比"),
+    10009: ("輔助、增益", "生命上限+5%", ["能夠為隊友提供加強效果"], "後項沒有百分比"),
+    10010: ("坦克、控制", "受到傷害-5%", ["能夠對敵人造成控制"], "後項沒有百分比"),
+}
+
+NATURE_TRIBE_GEAR = {
+    10042: ("凱旋之歌", "雷霆庇護", "大地的守護者", "血之怒"),
+    10049: ("凱旋之歌", "雷霆庇護", "大地的守護者", "血之怒"),
+    10051: ("聖光祝福", "冠軍的英姿", "騎士榮光"),
+    10036: ("聖光祝福", "冠軍的英姿", "騎士榮光"),
+    10037: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10044: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10019: ("凱旋之歌", "雷霆庇護", "大地的守護者", "血之怒"),
+    10035: ("凱旋之歌", "雷霆庇護", "大地的守護者", "血之怒"),
+    10040: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10008: ("生命之力", "騎士榮光"),
+    10005: ("聖光祝福", "冠軍的英姿", "騎士榮光"),
+    10012: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10013: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10021: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10026: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10054: ("聖光祝福", "冠軍的英姿", "騎士榮光"),
+    10002: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10007: ("生命之力", "騎士榮光"),
+    10039: ("凱旋之歌", "雷霆庇護", "大地的守護者", "血之怒"),
+    10048: ("凱旋之歌", "雷霆庇護", "大地的守護者", "血之怒"),
+    10047: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10038: ("聖光祝福", "冠軍的英姿", "騎士榮光"),
+    10045: ("生命之力", "騎士榮光"),
+    10041: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10017: ("凱旋之歌", "雷霆庇護", "大地的守護者", "血之怒"),
+    10020: ("凱旋之歌", "雷霆庇護", "大地的守護者", "血之怒"),
+    10023: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10028: ("聖光祝福", "冠軍的英姿", "騎士榮光"),
+    10034: ("生命之力", "騎士榮光"),
+    10011: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10015: ("聖光祝福", "冠軍的英姿", "騎士榮光"),
+    10016: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10022: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
+    10052: ("生命之力", "騎士榮光"),
+    10009: ("聖光祝福", "冠軍的英姿", "騎士榮光"),
+    10010: ("凱旋之歌", "雷霆庇護", "大地的守護者", "血之怒"),
+    15039: ("凱旋之歌", "雷霆庇護", "大地的守護者", "血之怒"),
+}
+
+NATURE_TRIBE_NAMES = {
+    10042: "豪士", 10049: "中壇元帥", 10051: "花藝師", 10036: "森之少女", 10037: "妖精",
+    10044: "喚潮使", 10019: "樹人守衛", 10035: "賢者", 10040: "風行者", 10008: "德魯伊",
+    10005: "舞孃", 10012: "尋路者", 10013: "祭司", 10021: "守望者", 10026: "石匠",
+    10054: "大冒險家", 10002: "弓箭手", 10007: "藥劑師",
+    10039: "沙漠王子", 10048: "馴獸師", 10047: "行者", 10038: "通靈師", 10045: "女巫",
+    10041: "風暴聖女", 10017: "蠻鬥士", 10020: "劍術教官", 10023: "荒野獵手", 10028: "術士",
+    10034: "薩滿", 10011: "盜賊", 10015: "罪犯", 10016: "鬥者", 10022: "獵人",
+    10052: "暗影牧師", 10009: "鐵匠", 10010: "護衛", 15039: "15039",
+}
+
+NATURE_TRIBE_OPEN = {
+    10036, 10019, 10035, 10040, 10008, 10005, 10013, 10002, 10007,
+    10038, 10020, 10023, 10028, 10034, 10011, 10015, 10016, 10009, 10010,
+}
+TALENT_PANEL_CHECK_IDS = {10007, 10005, 10028, 10021, 10039}
+NOT_UNRELEASED = {10012, 10042, 10039, 10041, 15039}
+CAP10_IDS = {10002, 10007, 10009, 10010}
+CAP20_IDS = {10005, 10013, 10011, 10015, 10016}
+NATURE_REC_IDS = {10042, 10049, 10051, 10036, 10037, 10044, 10019, 10035, 10040, 10008}
+TRIBE_REC_IDS = {10039, 10048, 10047, 10038, 10045, 10041, 10017, 10020, 10023, 10028, 10034}
+
+
+def check_nature_tribe_pages(errors: list[str]) -> None:
+    pages = {}
+    texts = {}
+    for hid in NATURE_IDS + TRIBE_IDS:
+        path = DOCS / "heroes" / f"{hid}.html"
+        if not path.exists():
+            fail(f"missing {path}", errors)
+            continue
+        html = path.read_text(encoding="utf-8")
+        pages[hid] = html
+        texts[hid] = text_of(html)
+
+    for hid in NATURE_IDS + TRIBE_IDS:
+        html = pages.get(hid)
+        if not html:
+            continue
+        vt = texts[hid]
+        label = NATURE_TRIBE_NAMES[hid]
+        if 'lang="zh-Hant"' not in html:
+            fail(f"{label}: missing lang=zh-Hant", errors)
+        if "稱號屬性" in vt:
+            fail(f"{label}: used 稱號屬性 instead of 英雄屬性", errors)
+        if "英雄屬性" not in vt:
+            fail(f"{label}: missing 英雄屬性 label", errors)
+        if "頭像（待補）" not in html:
+            fail(f"{label}: missing portrait placeholder 頭像（待補）", errors)
+        if hid in NATURE_TRIBE_OPEN:
+            if "已開放" not in vt:
+                fail(f"{label}: hide=-1 should say 已開放", errors)
+        else:
+            if "見資料說明" not in vt:
+                fail(f"{label}: hide=1 status should be 見資料說明", errors)
+            if re.search(r"已開放", section_html(html, "lead") or ""):
+                fail(f"{label}: hide=1 must not be announced as 已開放", errors)
+        if hid in NOT_UNRELEASED:
+            if "未開放" in (section_html(html, "lead") or "") or re.search(r"（未開放）", section_html(html, "lead") or ""):
+                fail(f"{label} must not be marked 未開放", errors)
+        if hid in NATURE_TRIBE_TAGS:
+            tags, locked, decs, pct_note = NATURE_TRIBE_TAGS[hid]
+            if tags not in vt:
+                fail(f"{label} tags should be {tags}", errors)
+            if locked not in vt:
+                fail(f"{label} missing locked {locked}", errors)
+            for dec in decs:
+                if dec not in vt:
+                    fail(f"{label} missing official description {dec}", errors)
+            if pct_note not in vt or "玩家確認面板" not in vt:
+                fail(f"{label} should note second-group has no percentage and is panel-confirmed", errors)
+        if hid == 15039:
+            if "第二組標籤尚未經玩家面板確認，本頁不推算" not in vt:
+                fail("15039 should say second-group tags are unconfirmed and not inferred", errors)
+            if "暫缺" in vt:
+                fail("15039 must not write 暫缺 as a public tag", errors)
+            if f"<title>Top Heroes Wiki｜{hid}</title>" not in html:
+                fail("15039 title should use the id only, not an invented Chinese name", errors)
+        for piece in NATURE_TRIBE_GEAR.get(hid, ()):
+            if piece not in vt:
+                fail(f"{label} recommended gear missing {piece}", errors)
+        if "（推算，不是官方最佳裝備）" in html:
+            fail(f"{label} should not put 推算 note inline beside gear names", errors)
+        for bad in TYPOS:
+            if bad in html:
+                fail(f"{label} typo or wrong term {bad}", errors)
+        if "由玩家確認" in vt:
+            fail(f"{label} public page must not say 由玩家確認", errors)
+        if "這不是寫死所有伺服器、所有英雄都讀舊表" not in vt and ("所有伺服器都讀舊表" in vt or "所有伺服器、所有英雄都讀同一張表" in vt):
+            fail(f"{label} must not say every server reads the old talent table", errors)
+        if "契約之獅" in vt or "壁克" in vt:
+            fail(f"{label} wrong term 契約之獅 or 壁克", errors)
+
+    # Talent display
+    q3 = [hid for hid in NATURE_IDS + TRIBE_IDS if hid not in CAP10_IDS | CAP20_IDS]
+    for hid in q3:
+        vt = texts.get(hid, "")
+        label = NATURE_TRIBE_NAMES[hid]
+        if "90.00%" not in vt or "270.00%" not in vt:
+            fail(f"{label} slots with 所有士兵攻擊／生命 should show 90.00%／270.00%", errors)
+        if hid in TALENT_PANEL_CHECK_IDS:
+            if "已用面板確認" not in vt:
+                fail(f"{label} should say talent values were panel-confirmed", errors)
+            if "不是本英雄自己的面板確認" in vt:
+                fail(f"{label} must not be worded as if percentages were only borrowed", errors)
+        else:
+            if "依已確認的前服天賦面板規則" not in vt or "不是本英雄自己的面板確認" not in vt:
+                fail(f"{label} percent talents should cite the confirmed 前服 rule, not own-panel confirmation", errors)
+        if "不曾用審判官面板的÷100 推算" in vt:
+            fail(f"{label} must not say the locked ÷100 rule was not applied", errors)
+
+    for hid in CAP10_IDS:
+        vt = texts.get(hid, "")
+        label = NATURE_TRIBE_NAMES[hid]
+        if "2.00%" not in vt or "20.00%" not in vt or "6.00%" not in vt or "60.00%" not in vt:
+            fail(f"{label} slots 1／2 should show converted 2.00%／20.00% and 6.00%／60.00%", errors)
+        if hid in TALENT_PANEL_CHECK_IDS:
+            if "已用面板確認" not in vt:
+                fail(f"{label} should say talent values were panel-confirmed", errors)
+            if "不是本英雄自己的面板確認" in vt:
+                fail(f"{label} must not be worded as if percentages were only borrowed", errors)
+        else:
+            if "依已確認的前服天賦面板規則" not in vt or "不是本英雄自己的面板確認" not in vt:
+                fail(f"{label} percent talents should cite the confirmed 前服 rule, not own-panel confirmation", errors)
+
+    for hid in CAP20_IDS:
+        vt = texts.get(hid, "")
+        label = NATURE_TRIBE_NAMES[hid]
+        if "2.50%" not in vt or "50.00%" not in vt or "7.50%" not in vt or "150.00%" not in vt:
+            fail(f"{label} slots 1／2 should show converted 2.50%／50.00% and 7.50%／150.00%", errors)
+        if hid in TALENT_PANEL_CHECK_IDS:
+            if "已用面板確認" not in vt:
+                fail(f"{label} should say talent values were panel-confirmed", errors)
+            if "不是本英雄自己的面板確認" in vt:
+                fail(f"{label} must not be worded as if percentages were only borrowed", errors)
+        else:
+            if "依已確認的前服天賦面板規則" not in vt or "不是本英雄自己的面板確認" not in vt:
+                fail(f"{label} percent talents should cite the confirmed 前服 rule, not own-panel confirmation", errors)
+
+    # Spot-check converted slot-3 percents and point talents.
+    for hid, needles in (
+        (10042, ("1.00%", "30.00%")),
+        (10049, ("0.67%", "20.00%")),
+        (10036, ("1.67%", "50.00%")),
+        (10039, ("1.67%", "50.00%")),
+        (10019, ("1.33%", "40.00%")),
+        (10023, ("2.00%", "60.00%")),
+        (15039, ("1.67%", "50.00%")),
+    ):
+        vt = texts.get(hid, "")
+        label = NATURE_TRIBE_NAMES[hid]
+        for needle in needles:
+            if needle not in vt:
+                fail(f"{label} talent should show converted {needle}", errors)
+
+    watcher_html = pages.get(10021, "")
+    watcher_tal = text_of(section_html(watcher_html, "spirit-talents") or "")
+    watcher = texts.get(10021, "")
+    if "67" not in watcher or "2000" not in watcher:
+        fail("守望者 士兵擴編 should show point values 67 and 2000", errors)
+    if "67%" in watcher_tal or "2000%" in watcher_tal or "+67" in watcher_tal or "2,000" in watcher_tal:
+        fail("守望者 士兵擴編 must not use percent, plus, or thousands separators", errors)
+    if "已用面板確認" not in watcher:
+        fail("守望者 should say talent values were panel-confirmed", errors)
+
+    warlock_html = pages.get(10028, "")
+    warlock_tal = text_of(section_html(warlock_html, "spirit-talents") or "")
+    warlock = texts.get(10028, "")
+    if "12000" not in warlock or "360000" not in warlock:
+        fail("術士 資源掠奪 should show point values 12000 and 360000", errors)
+    if "12,000" in warlock_tal or "360,000" in warlock_tal or "12000%" in warlock_tal or "360000%" in warlock_tal:
+        fail("術士 資源掠奪 must not use thousands separators or percent", errors)
+    if "已用面板確認" not in warlock:
+        fail("術士 should say talent values were panel-confirmed", errors)
+
+    # Appearance percent / point display: at least one nature and one tribe skin line.
+    shark_like = texts.get(10042, "")  # 豪士 skins, percent form if present
+    x39 = texts.get(15039, "")
+    if "英雄生命+10.00%" not in x39 or "普攻距離+5.00%" not in x39:
+        fail("15039 沙漠王子·鬼武者 should show 普攻距離+5.00% and 英雄生命+10.00%", errors)
+
+    # Official rec cutoff by faction
+    for hid in NATURE_REC_IDS:
+        vt = texts.get(hid, "")
+        if "此資料截到 2026-11-05，表內沒有以 S4、S5、S6 為名的自然推薦更新。" not in vt:
+            fail(f"{NATURE_TRIBE_NAMES[hid]} missing official nature rec cutoff note", errors)
+        if "聯盟推薦更新" in vt:
+            fail(f"{NATURE_TRIBE_NAMES[hid]} must not use the 聯盟 rec cutoff sentence", errors)
+        if "最佳聯盟" in vt:
+            fail(f"{NATURE_TRIBE_NAMES[hid]} must not use 最佳聯盟 wording", errors)
+    for hid in TRIBE_REC_IDS:
+        vt = texts.get(hid, "")
+        if "此資料截到 2026-11-05，表內沒有以 S4、S5、S6 為名的部族推薦更新。" not in vt:
+            fail(f"{NATURE_TRIBE_NAMES[hid]} missing official tribe rec cutoff note", errors)
+        if "聯盟推薦更新" in vt:
+            fail(f"{NATURE_TRIBE_NAMES[hid]} must not use the 聯盟 rec cutoff sentence", errors)
+        if "最佳聯盟" in vt:
+            fail(f"{NATURE_TRIBE_NAMES[hid]} must not use 最佳聯盟 wording", errors)
+
+    # 藥劑師 is nature
+    alchemist = texts.get(10007, "")
+    if "自然" not in alchemist:
+        fail("藥劑師 should be listed as 自然", errors)
+    if "部族" in (section_html(pages.get(10007, ""), "lead") or ""):
+        fail("藥劑師 lead must not call her 部族", errors)
+
+    # 森之少女 / 牧羊人 cross
+    girl_html = pages.get(10036, "")
+    girl = texts.get(10036, "")
+    stars = section_html(girl_html, "star-skills") or ""
+    exclusive = section_html(girl_html, "exclusive") or ""
+    awaken = section_html(girl_html, "awaken") or section_html(girl_html, "skills") or ""
+    for skill in ("綿羊衝鋒", "牧羊人之鈴", "咩咩守護", "生命之歌", "復仇"):
+        if skill not in girl:
+            fail(f"森之少女 missing star skill {skill}", errors)
+    if "諾亞金鈴" not in text_of(exclusive) and "諾亞金鈴" not in girl:
+        fail("森之少女 should list exclusive 諾亞金鈴", errors)
+    if "諾亞之聲" not in girl:
+        fail("森之少女 missing exclusive skill 諾亞之聲", errors)
+    if "森林之歌" not in girl or "春之祝福" not in girl:
+        fail("森之少女 missing awaken skills 森林之歌／春之祝福", errors)
+    if 'href="10029.html"' not in girl_html:
+        fail("森之少女 should formally link to 牧羊人 page 10029.html", errors)
+
+    # 牧羊人 must still exclude her exclusive/awaken package, and may now link to her page.
+    shepherd_path = DOCS / "heroes" / "10029.html"
+    if shepherd_path.exists():
+        shepherd_html = shepherd_path.read_text(encoding="utf-8")
+        if "森之少女條目尚未公開" in shepherd_html or "這裡不自製連結" in text_of(shepherd_html):
+            fail("牧羊人 should no longer say 森之少女 is unpublished or refuse a link", errors)
+        if 'href="10036.html"' not in shepherd_html:
+            fail("牧羊人 should formally link to 森之少女 page 10036.html", errors)
+
+    # Official odd spelling on 神賜之沙
+    for hid in (10039, 15039):
+        vt = texts.get(hid, "")
+        if "冷却時間" not in vt:
+            fail(f"{NATURE_TRIBE_NAMES[hid]} should keep official spelling 冷却時間 on 神賜之沙", errors)
+
+    # display server number must not be claimed equal to internal id
+    blob = "".join(texts.get(hid, "") for hid in NATURE_IDS + TRIBE_IDS)
+    for hid in NATURE_IDS + TRIBE_IDS:
+        if hid >= 15000:
+            continue
+        if re.search(rf"顯示.?{int(str(hid)[2:])}.{{0,12}}{hid}|{hid}.{{0,12}}顯示.?{int(str(hid)[2:])}", blob):
+            fail(f"must not claim display number equals internal id {hid}", errors)
+
+
 def main() -> int:
     errors = []
     for p in (INDEX, JUDGE, NUN, ROSE, INVENTOR):
@@ -674,22 +1020,14 @@ def main() -> int:
         fail("薔薇公主 collection suits missing", errors)
     if "凱旋之歌" not in rt or "雷霆庇護" not in rt or "大地的守護者" not in rt or "血之怒" not in rt:
         fail("薔薇公主 recommended gear mainline missing", errors)
-    # Official links may point to published heroes only (all alliance pages in this build).
-    allowed_hero_pages = {
-        "10043.html", "10031.html", "10050.html", "10033.html", "10046.html",
-        "10027.html", "10018.html", "10025.html", "10030.html", "10024.html",
-        "10003.html", "10004.html", "10014.html", "10029.html", "10032.html",
-        "10053.html", "10001.html", "10006.html", "15032.html", "15033.html",
-    }
+    # Official links may point to published heroes only.
+    allowed_hero_pages = {f"{hid}.html" for hid in PUBLISHED_IDS}
     for html, label in ((rose, "薔薇公主"), (judge, "審判官"), (nun, "修女"), (inventor, "發明家")):
         hrefs = set(re.findall(r'href="([^"]*\d+\.html)"', html))
         for href in hrefs:
             tail = href.rsplit("/", 1)[-1]
             if tail not in allowed_hero_pages:
                 fail(f"{label} has link to unpublished hero page {href}", errors)
-    for hid in ("10007", "10036", "10037", "10039", "10042", "15039"):
-        if re.search(rf'href="[^"]*{hid}\.html"', rose + judge + nun + inventor):
-            fail(f"published pages should not invent a link to unbuilt hero {hid}", errors)
 
     # Published sibling cards may link each other; 審判官 also has the 殘月騎士 pairing.
     if "10043.html" not in judge:
@@ -823,13 +1161,14 @@ def main() -> int:
         fail("must not claim display 50 equals internal id 10050", errors)
 
     check_new_league_pages(errors)
+    check_nature_tribe_pages(errors)
 
     if errors:
         print(f"{len(errors)} check(s) failed:")
         for msg in errors:
             print(" -", msg)
         return 1
-    print("ok: TOC + all published alliance hero pages passed locked-rule checks")
+    print("ok: TOC + all published alliance, nature and tribe hero pages passed locked-rule checks")
     return 0
 
 

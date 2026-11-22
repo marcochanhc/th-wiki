@@ -9,7 +9,7 @@ from .overrides import (
     COMMON_TERMS,
     HERO_OVERRIDES,
     PAGE_IDS,
-    REC_CUTOFF_NOTE,
+    rec_cutoff_note,
     SEASON_LABEL,
 )
 from .paths import DATA_CUTOFF
@@ -301,8 +301,8 @@ def talent_attr_pair(row: dict) -> tuple:
 # Point attrs are show_type=1 (including 1018, 1093): no %, no plus, no thousands.
 # This rule is only for hero talents, not titles or 羈絆.
 TALENT_POINT_ATTRS = frozenset({1018, 1093})
-# Only 審判官 among currently built pages has his own panel confirming the %.
-TALENT_PANEL_HERO_IDS = frozenset({10031})
+# These heroes have their own panel confirming the talent percentages / points.
+TALENT_PANEL_HERO_IDS = frozenset({10031, 10007, 10005, 10028, 10021, 10039})
 
 
 def format_talent_number(attr_id: int, value, *, max_lv: int | None = None, is_max_col: bool = False) -> tuple[str, str]:
@@ -989,10 +989,11 @@ def assemble(hero_id: int) -> HeroPage:
         if hero_id in TALENT_PANEL_HERO_IDS:
             talent_intro += (
                 "天賦屬性依面板把表上原值除以 100，寫成兩位小數；"
-                "審判官的數值已用他自己的面板確認。"
+                f"{name}的數值已用面板確認。"
                 "這種換算只用於英雄天賦，不推到羈絆或稱號。"
-                "格擋與套裝同層如何疊加尚未驗證。"
             )
+            if hero_id == 10031:
+                talent_intro += "格擋與套裝同層如何疊加尚未驗證。"
         else:
             talent_intro += (
                 "天賦屬性依已確認的前服天賦面板規則，把表上原值除以 100，寫成兩位小數。"
@@ -1122,7 +1123,7 @@ def assemble(hero_id: int) -> HeroPage:
     # intro
     pronoun = ov.get("pronoun")
     role = ov.get("role_blurb") or "英雄"
-    recs = rec_labels(hero_id)
+    recs = rec_labels(hero_id, title_has=faction or "聯盟")
     rec_join = "、".join(recs) if recs else "未出現"
     tag_line = "、".join(tags) if tags else first["name"]
     first_dec = first.get("dec") or ""
@@ -1140,10 +1141,11 @@ def assemble(hero_id: int) -> HeroPage:
     else:
         second_prose = "第二組標籤尚未經玩家面板確認，本頁不推算。"
 
+    rec_title = f"最佳{faction}" if faction in {"聯盟", "自然", "部族"} else "最佳聯盟"
     if recs:
-        rec_intro = f"並出現在官方「最佳聯盟」名單（{rec_join}）"
+        rec_intro = f"並出現在官方「{rec_title}」名單（{rec_join}）"
     else:
-        rec_intro = "官方「最佳聯盟」名單未列"
+        rec_intro = f"官方「{rec_title}」名單未列"
     # Only say 已開放 when hide=-1, as on the published 審判官／修女 pages.
     # hide=1 is not a 未開放 flag; do not invent either wording from that field.
     if hero.get("hide") == -1:
@@ -1160,7 +1162,7 @@ def assemble(hero_id: int) -> HeroPage:
 
     rec_text = ""
     if recs:
-        rec_text = f"官方「最佳聯盟」出場：{rec_join}。{REC_CUTOFF_NOTE}"
+        rec_text = f"官方「{rec_title}」出場：{rec_join}。{rec_cutoff_note(faction)}"
 
     # notes
     notes = _build_notes(

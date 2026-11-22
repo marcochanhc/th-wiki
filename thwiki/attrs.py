@@ -49,6 +49,13 @@ SKILL301_FACTION = {
     10010: "部族",
 }
 
+# Locked catalogue faction when honor_group and skill text cannot place the hero.
+# 藥劑師 (10007) skills have no faction wording; public pages just use 自然
+# and must not say 由玩家確認.
+FACTION_LOCK = {
+    10007: "自然",
+}
+
 
 def attr_name(attr_id: int) -> str:
     row = catalog()["attribute_by_id"].get(int(attr_id)) or {}
@@ -251,4 +258,6 @@ def hero_faction(hero_id: int) -> tuple[str | None, str, int | None, int | None]
         return fac, "honor", group, attr_id
     if hero_id in SKILL301_FACTION:
         return SKILL301_FACTION[hero_id], "skill301", group, attr_id
+    if hero_id in FACTION_LOCK:
+        return FACTION_LOCK[hero_id], "lock", group, attr_id
     return None, "unknown", group, attr_id

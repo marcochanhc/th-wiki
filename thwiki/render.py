@@ -1,6 +1,26 @@
 from __future__ import annotations
 
 from .assemble import HeroPage, hero_href, official_stars
+
+
+def link_cross_heroes(notes_html: str, current_id: int) -> str:
+    """Turn the 牧羊人／森之少女 cross mention into a formal in-page link."""
+    pairs = {10029: (10036, "森之少女"), 10036: (10029, "牧羊人")}
+    if current_id not in pairs:
+        return notes_html
+    other, name = pairs[current_id]
+    href = hero_href(other)
+    if not href:
+        return notes_html
+    span = f'<span class="term">{e(name)}</span>'
+    linked = f'<a href="{href}">{span}</a>'
+    if span in notes_html:
+        return notes_html.replace(span, linked, 1)
+    if e(name) in notes_html:
+        return notes_html.replace(e(name), f'<a href="{href}">{e(name)}</a>', 1)
+    return notes_html
+
+
 from .highlight import highlight, highlight_lines
 from .htmlutil import e, table, tag
 from .overrides import (
@@ -422,17 +442,18 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
             for k, v in page.gear["rows"]
         )
         extra = f"<p>{H(page.gear['extra'], terms)}</p>" if page.gear.get("extra") else ""
+        guide = page.faction if page.faction in {"聯盟", "自然", "部族"} else "聯盟"
         gear_sec = f"""
         <section id="gear">
           <h2>建議裝備*</h2>
           <aside class="callout" aria-label="推算／非官方">
             <strong>推算／非官方</strong>
-            <p>建議裝備是依技能、專武、覺醒、英靈、天賦，再搭配英雄屬性做的整體推算，不是只看英雄屬性，也不是已鎖定的客戶端傷害模擬。下列主線與原因照錄已發布的聯盟圖鑑，不另行改主線。</p>
+            <p>建議裝備是依技能、專武、覺醒、英靈、天賦，再搭配英雄屬性做的整體推算，不是只看英雄屬性，也不是已鎖定的客戶端傷害模擬。下列主線與原因照錄已發布的{guide}圖鑑，不另行改主線。</p>
           </aside>
           <div class="gear-list">{rows}</div>
           <p>{H(page.gear['why'], terms)}</p>
           {extra}
-          <p>{H("*建議裝備是推算，不是官方最佳裝備。主線與備選照錄已發布的聯盟圖鑑，不另行改寫。", terms)}</p>
+          <p>{H("*建議裝備是推算，不是官方最佳裝備。主線與備選照錄已發布的" + guide + "圖鑑，不另行改寫。", terms)}</p>
         </section>
         """
     else:
@@ -477,10 +498,11 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
     </section>
     """
 
+    notes_html = link_cross_heroes(H(page.notes, terms), page.hero_id)
     notes_sec = f"""
     <section id="notes">
       <h2>資料說明</h2>
-      <p>{H(page.notes, terms)}</p>
+      <p>{notes_html}</p>
     </section>
     """
     comm = page.community or "本頁暫無社群備註。"
@@ -531,7 +553,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
     body = f"""
     <header class="entry-head">
       <h1>Top Heroes Wiki</h1>
-      <p class="lede">Top Heroes 英雄 wiki。目前聯盟英雄的條目都已公開，自然和部族的英雄已列在目錄裡，條目會陸續補上。</p>
+      <p class="lede">Top Heroes 英雄 wiki。目前聯盟、自然和部族的英雄條目都已公開。</p>
     </header>
     <section id="heroes">
       <h2>英雄</h2>
@@ -551,4 +573,4 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
       </ul>
     </section>
     """
-    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前聯盟英雄條目都已公開。", body, depth=0, nav_current="index")
+    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前聯盟、自然和部族的英雄條目都已公開。", body, depth=0, nav_current="index")
