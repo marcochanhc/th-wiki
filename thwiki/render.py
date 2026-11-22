@@ -209,8 +209,11 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
         skill_intro += f"{page.spirit['skill']}是英靈「{page.spirit['name']}」的專屬技能，"
     # awaken names
     aw_names = [s["heading"].split("（")[0] for s in page.awaken_skills]
+    aw_linked = any("覺醒表關聯" in (s.get("heading") or "") for s in page.awaken_skills)
     if aw_names:
-        if len(aw_names) == 2:
+        if aw_linked:
+            skill_intro += "覺醒表列出的關聯技能寫在對應區塊。"
+        elif len(aw_names) == 2:
             skill_intro += f"{aw_names[0]}與{aw_names[1]}則屬於覺醒，分別寫在對應區塊。"
         else:
             skill_intro += "覺醒技能寫在對應區塊。"
@@ -235,9 +238,18 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
 
     n_star = len(page.star_skills)
     has_unlock = any("解鎖" in (sk.get("heading") or "") for sk in page.star_skills)
-    if has_unlock:
+    has_variant = any("技能升級／變體" in (sk.get("heading") or "") for sk in page.star_skills)
+    if has_unlock and has_variant:
+        star_skill_count_line = (
+            f"下面是這{n_star}個技能全文，包括會隨英雄星提升或在指定英雄星解鎖的技能，以及資料表另列的技能升級／變體。"
+        )
+    elif has_unlock:
         star_skill_count_line = (
             f"下面是這{n_star}個會隨英雄星提升或在指定英雄星解鎖的技能全文，可與上表對到是哪一檔英雄星解鎖哪一階技能星。"
+        )
+    elif has_variant:
+        star_skill_count_line = (
+            f"下面是這{n_star}個技能全文，包括會隨英雄星提升的技能，以及資料表另列的技能升級／變體。"
         )
     else:
         star_skill_count_line = (
@@ -382,7 +394,7 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
         suit_html = f"""
         <section id="skin-suits">
           <h3>收集套裝</h3>
-          <p>{H("收集套裝在另一張表，啟用條件照錄，不把後檔當成前檔的增量。" + "，".join(belong_bits) + "。", terms)}</p>
+          <p>{H("收集套裝的效果只寫當前檔，不加總前面各檔。範圍用「套裝英雄」與「全英雄」。" + "，".join(belong_bits) + "。", terms)}</p>
           {table(["套裝", "條件", "效果"], rows)}
         </section>
         """
@@ -394,7 +406,7 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
     appear_sec = f"""
     <section id="appearance">
       <h2>外觀</h2>
-      <p>{H("可收集造型有收集屬性（介面標籤；對應表上隊伍屬性，擁有即可生效），部分還有裝備屬性（介面標籤；對應自身屬性）。數值都是原值，不自行換算成百分比。覺醒造型沒有這兩欄。升星、成對、賽季與收集套裝寫在下方分節，不是單套外觀自己的欄位。", terms)}</p>
+      <p>{H("可收集造型有收集屬性與裝備屬性。收集屬性裡，自身欄用該英雄名稱，隊伍欄用「全部」。百分比寫成加號與兩位小數，點數寫成加號、沒有百分號也沒有千分位。覺醒造型沒有這兩欄。升星、成對、賽季與收集套裝寫在下方分節。", terms)}</p>
       <p>{H(appear_noart, terms)}</p>
       {table(["名稱", "收集屬性", "裝備屬性"], attr_rows)}
       {table(["名稱", "編號", "解鎖來源", "時裝幣"], unlock_rows)}
@@ -519,7 +531,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
     body = f"""
     <header class="entry-head">
       <h1>Top Heroes Wiki</h1>
-      <p class="lede">Top Heroes 英雄 wiki。目前先公開薔薇公主、審判官、發明家和修女，其他英雄已列在目錄裡，條目會陸續補上。</p>
+      <p class="lede">Top Heroes 英雄 wiki。目前聯盟英雄的條目都已公開，自然和部族的英雄已列在目錄裡，條目會陸續補上。</p>
     </header>
     <section id="heroes">
       <h2>英雄</h2>
@@ -539,4 +551,4 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
       </ul>
     </section>
     """
-    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前已公開薔薇公主、審判官、發明家與修女。", body, depth=0, nav_current="index")
+    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前聯盟英雄條目都已公開。", body, depth=0, nav_current="index")

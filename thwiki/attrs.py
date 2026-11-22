@@ -87,10 +87,65 @@ def parse_pairs(raw) -> list[tuple[int, str]]:
     return pairs
 
 
+# Point attrs that appear on skins / suits / pairings / season effects.
+# show_type=1 is the general rule; these ids are named in handbook 15.
+SKIN_POINT_ATTRS = frozenset({64, 22, 1019, 1098})
+
+
+def is_point_attr(attr_id: int) -> bool:
+    """True for show_type=1 / type=1 point attributes (no percent conversion)."""
+    if attr_id is None:
+        return False
+    aid = int(attr_id)
+    if aid in SKIN_POINT_ATTRS:
+        return True
+    row = catalog()["attribute_by_id"].get(aid) or {}
+    if row.get("show_type") == 1 or row.get("type") == 1:
+        return True
+    return False
+
+
+def format_skin_number(attr_id: int, value) -> str:
+    """Skin / suit / pairing / season display: +percent or +points.
+
+    show_type=2: raw / 100, plus sign, two decimals, percent sign.
+    show_type=1: plus sign, no percent, no thousands separator.
+    Do not use this for titles or 羈絆.
+    """
+    n = int(float(str(value).strip().replace(",", "")))
+    if is_point_attr(attr_id):
+        return f"+{n}"
+    return f"+{n / 100:.2f}%"
+
+
+def format_skin_attr(attr_id: int, value) -> str:
+    return f"{attr_name(attr_id)}{format_skin_number(attr_id, value)}"
+
+
+def format_skin_pairs(raw, *, scope: str | None = None, joiner: str = "；") -> str:
+    """Format hero-skin attribute pairs with an optional scope label per attr.
+
+    Used only for 自身／隊伍／套裝／成對／賽季效果. Bonds still use format_raw_pairs().
+    """
+    pairs = parse_pairs(raw)
+    if not pairs:
+        return "無"
+    parts = []
+    for attr_id, value in pairs:
+        if attr_id is None:
+            item = str(value)
+        else:
+            item = format_skin_attr(attr_id, value)
+        if scope and attr_id is not None:
+            item = f"{scope} {item}"
+        parts.append(item)
+    return joiner.join(parts)
+
+
 def format_raw_pairs(raw, joiner: str = "、") -> str:
     """Format attribute pairs as official names plus raw points.
 
-    Never apply the title_attr or talent percentage locks here.
+    Used for 羈絆. Never apply title, talent, or skin percentage conversion here.
     """
     pairs = parse_pairs(raw)
     if not pairs:

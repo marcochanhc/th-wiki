@@ -165,26 +165,61 @@ def fashion_coins(skin: dict) -> str:
     return "無"
 
 
-def star_team_rows(skin: dict) -> list[tuple[str, str]]:
-    """Build 星級 / 收集屬性 rows from team_attr_1..n (parallel per-star lists)."""
-    series = []
+def _pairs_to_map(raw) -> dict[int, int]:
+    out: dict[int, int] = {}
+    for attr_id, value in A.parse_pairs(raw):
+        if attr_id is None:
+            continue
+        out[int(attr_id)] = int(float(str(value).strip().replace(",", "")))
+    return out
+
+
+def _star_tier_maps(skin: dict) -> list[dict[int, int]]:
+    """Parse team_attr_1..n, where each field is successive-star values of one attr."""
+    by_star: list[dict[int, int]] = []
     for i in range(1, 5):
         raw = skin.get(f"team_attr_{i}")
         if not raw:
             continue
-        # values may be '103|300,103|600' meaning star1, star2 of the same attr
         parts = [p.strip() for p in str(raw).split(",") if p.strip()]
-        series.append(parts)
-    if not series:
+        for star_idx, part in enumerate(parts):
+            while len(by_star) <= star_idx:
+                by_star.append({})
+            by_star[star_idx].update(_pairs_to_map(part))
+    return by_star
+
+
+def _ordered_attr_ids(base: dict[int, int], tiers: list[dict[int, int]]) -> list[int]:
+    order: list[int] = []
+    for mapping in [base, *tiers]:
+        for aid in mapping:
+            if aid not in order:
+                order.append(aid)
+    return order
+
+
+def _format_team_collect(mapping: dict[int, int], order: list[int]) -> str:
+    scope = t("skin_title_1") or "全部"
+    parts = [f"{scope} {A.format_skin_attr(aid, mapping[aid])}" for aid in order if aid in mapping]
+    return "；".join(parts) if parts else "無"
+
+
+def star_team_rows(skin: dict) -> list[tuple[str, str]]:
+    """Build 星級 / 收集屬性 rows: team_attr base + the current star tier.
+
+    Max star uses the last tier. Faction-only attrs with no base use the tier alone.
+    """
+    base = _pairs_to_map(skin.get("team_attr"))
+    tiers = _star_tier_maps(skin)
+    if not tiers:
         return []
-    n_stars = max(len(s) for s in series)
+    order = _ordered_attr_ids(base, tiers)
     rows = []
-    for i in range(n_stars):
-        pairs = []
-        for series_parts in series:
-            if i < len(series_parts):
-                pairs.append(series_parts[i])
-        rows.append((f"{i + 1} 星", A.format_raw_pairs(",".join(pairs))))
+    for i, tier in enumerate(tiers):
+        combined = dict(base)
+        for aid, val in tier.items():
+            combined[aid] = combined.get(aid, 0) + val
+        rows.append((f"{i + 1} 星", _format_team_collect(combined, order)))
     return rows
 
 
@@ -208,26 +243,36 @@ def collection_suits_for(skin_ids: set[int]) -> list[dict]:
         if not members & skin_ids:
             continue
         name = t(suit.get("name")) or str(suit["id"])
-        needs = []
         raw_need = suit.get("suit_star_need")
+        # Official condition: 收集{0}件套裝. Do not invent a star requirement
+        # when the second number is 0, and do not sum later tiers into earlier ones.
+        tmpl = t("hero_skin_suit_3") or "收集{0}件套裝"
+        needs = []
         if raw_need:
             for seg in str(raw_need).split(","):
                 n = seg.split("|", 1)[0]
-                needs.append(f"收集 {n} 件")
-        # zip attribute columns by threshold; do not treat later as delta of earlier
-        cols = []
-        for field in ("attibute_1", "attibute_2", "attibute_3",
-                      "suit_hero_attibute_1", "suit_hero_attibute_2", "suit_hero_attibute_3"):
+                needs.append(tmpl.replace("{0}", str(n)))
+        scope_hero = t("hero_skin_suit_12") or "套裝英雄"
+        scope_all = t("hero_skin_suit_13") or "全英雄"
+        hero_cols = []
+        all_cols = []
+        for field in ("suit_hero_attibute_1", "suit_hero_attibute_2", "suit_hero_attibute_3"):
             raw = suit.get(field)
-            if not raw:
-                continue
-            cols.append([p.strip() for p in str(raw).split(",") if p.strip()])
+            if raw:
+                hero_cols.append([p.strip() for p in str(raw).split(",") if p.strip()])
+        for field in ("attibute_1", "attibute_2", "attibute_3"):
+            raw = suit.get(field)
+            if raw:
+                all_cols.append([p.strip() for p in str(raw).split(",") if p.strip()])
         rows = []
         for i, cond in enumerate(needs):
             parts = []
-            for col in cols:
+            for col in hero_cols:
                 if i < len(col):
-                    parts.append(A.format_raw_pairs(col[i]))
+                    parts.append(A.format_skin_pairs(col[i], scope=scope_hero, joiner="、"))
+            for col in all_cols:
+                if i < len(col):
+                    parts.append(A.format_skin_pairs(col[i], scope=scope_all, joiner="、"))
             rows.append({"condition": cond, "effect": "、".join(p for p in parts if p and p != "無") or "無"})
         # which of this hero's skins belong
         belong = sorted(members & skin_ids)
@@ -240,9 +285,81 @@ def collection_suits_for(skin_ids: set[int]) -> list[dict]:
     return out
 
 
+
+def talent_attr_pair(row: dict) -> tuple:
+    """Prefer heroAttrs; some slots only have playerAttrs (lord / map attributes)."""
+    for key in ("heroAttrs", "playerAttrs", "hero_attr", "player_attr"):
+        pair = row.get(key)
+        if pair and len(pair) >= 2:
+            return pair[0], pair[1]
+    raise ValueError(f"talent group {row.get('group_id')} level {row.get('level')} has no attribute pair")
+
+
 # --- talents ----------------------------------------------------------------
 
-def talent_rows(hero_id: int, as_percent: bool) -> list[dict]:
+# Talent display: all non-point attrs use raw/100 with two decimals.
+# Point attrs are show_type=1 (including 1018, 1093): no %, no plus, no thousands.
+# This rule is only for hero talents, not titles or 羈絆.
+TALENT_POINT_ATTRS = frozenset({1018, 1093})
+# Only 審判官 among currently built pages has his own panel confirming the %.
+TALENT_PANEL_HERO_IDS = frozenset({10031})
+
+
+def format_talent_number(attr_id: int, value, *, max_lv: int | None = None, is_max_col: bool = False) -> tuple[str, str]:
+    """Return (display, kind) where kind is percent or point.
+
+    Mid-level values use the same rule as the cap (e.g. attr 21 at 21／22).
+    """
+    if int(attr_id) in TALENT_POINT_ATTRS or A.is_point_attr(attr_id):
+        # Panel: no percent sign, no plus, no thousands separator.
+        text = str(int(float(str(value).strip().replace(",", ""))))
+        kind = "point"
+    else:
+        text = f"{int(float(str(value).strip().replace(',', ''))) / 100:.2f}%"
+        kind = "percent"
+    if is_max_col and max_lv and max_lv != 30:
+        text = f"{text}（{max_lv} 級）"
+    return text, kind
+
+
+def talent_slot_note(hero_id: int, *, aname: str, vmax_s: str, kind: str, max_lv: int, first_slot: str | None = None) -> str:
+    cap = ""
+    if max_lv != 30:
+        cap = f"此群組最高 {max_lv} 級，表上沒有 30 級。右欄是 {max_lv} 級的顯示值。"
+    if first_slot:
+        if kind == "percent":
+            if hero_id in TALENT_PANEL_HERO_IDS:
+                return f"與槽 {first_slot} 同名、同數值；已用面板確認"
+            return (
+                f"與槽 {first_slot} 同名、同數值；依已確認的前服天賦面板規則換算，"
+                "不是本英雄自己的面板確認"
+            )
+        if kind == "point":
+            return f"與槽 {first_slot} 同名、同點數；依已確認的前服天賦面板原文寫"
+        return f"與槽 {first_slot} 同名、同原值；未依已鎖定的百分比規則換算"
+    if kind == "percent":
+        shown = vmax_s.split("（")[0]
+        if hero_id in TALENT_PANEL_HERO_IDS:
+            return f"面板原文：自身{aname}提升{shown}；{max_lv} 級已用面板確認" + ("。" + cap if cap else "")
+        return (
+            f"自身{aname}提升{shown}；依已確認的前服天賦面板規則，把表上原值除以 100，寫成兩位小數。"
+            "這不是本英雄自己的面板確認。"
+            + cap
+        )
+    if kind == "point":
+        shown = vmax_s.split("（")[0]
+        return (
+            f"依已確認的前服天賦面板，這是點數：{aname}提升{shown}。"
+            "沒有百分號、沒有正號、也沒有千分位。不是百分比換算。"
+            + cap
+        )
+    return (
+        f"官方字串：自身{aname}提升{{1}}；表上原值，未依已鎖定的百分比規則換算。"
+        + cap
+    )
+
+
+def talent_rows(hero_id: int) -> list[dict]:
     talents = [r for r in catalog()["hero_talent"] if r["hero_id"] == hero_id]
     groups = defaultdict(list)
     for row in catalog()["hero_talent_group"]:
@@ -251,18 +368,14 @@ def talent_rows(hero_id: int, as_percent: bool) -> list[dict]:
     for tal in sorted(talents, key=lambda r: r["slot"]):
         g = sorted(groups[tal["talent_group"]], key=lambda r: r["level"])
         lv1 = next(x for x in g if x["level"] == 1)
-        lv30 = next(x for x in g if x["level"] == 30)
-        attr_id, v1 = lv1["heroAttrs"][0], lv1["heroAttrs"][1]
-        _, v30 = lv30["heroAttrs"][0], lv30["heroAttrs"][1]
+        max_lv = max(x["level"] for x in g)
+        lvmax = next(x for x in g if x["level"] == max_lv)
+        attr_id, v1 = talent_attr_pair(lv1)
+        _, vmax = talent_attr_pair(lvmax)
         aname = A.attr_name(attr_id)
-        if as_percent:
-            def pct(v):
-                return f"{int(v) / 100:.2f}%"
-            v1_s, v30_s = pct(v1), pct(v30)
-            note = f"面板原文：自身{aname}提升{v30_s}；30 級已用面板確認"
-        else:
-            v1_s, v30_s = A.format_int(v1), A.format_int(v30)
-            note = f"官方字串：自身{aname}提升{{1}}；表上原值，不曾用審判官面板的÷100 推算"
+        v1_s, kind = format_talent_number(attr_id, v1)
+        v30_s, _ = format_talent_number(attr_id, vmax, max_lv=max_lv, is_max_col=True)
+        note = talent_slot_note(hero_id, aname=aname, vmax_s=v30_s, kind=kind, max_lv=max_lv)
         rows.append({
             "slot": str(tal["slot"]),
             "name": t(tal.get("talent_name")) or "",
@@ -270,9 +383,11 @@ def talent_rows(hero_id: int, as_percent: bool) -> list[dict]:
             "lv1": v1_s,
             "lv30": v30_s,
             "note": note,
+            "kind": kind,
             "group": tal["talent_group"],
             "raw_lv1": v1,
-            "raw_lv30": v30,
+            "raw_lv30": vmax,
+            "max_level": max_lv,
             "attr_id": attr_id,
         })
     # Same-name later slots point back to the first; keep the first slot's own note.
@@ -282,10 +397,10 @@ def talent_rows(hero_id: int, as_percent: bool) -> list[dict]:
     for r in rows:
         slots = by_name[r["name"]]
         if slots and r["slot"] != slots[0]:
-            if as_percent:
-                r["note"] = f"與槽 {slots[0]} 同名、同數值；30 級已用面板確認"
-            else:
-                r["note"] = f"與槽 {slots[0]} 同名、同原值；不曾用審判官面板的÷100 推算"
+            r["note"] = talent_slot_note(
+                hero_id, aname=r["attr"], vmax_s=r["lv30"], kind=r["kind"],
+                max_lv=r["max_level"], first_slot=slots[0],
+            )
     extras = (HERO_OVERRIDES.get(hero_id) or {}).get("talent_note_extra") or {}
     for r in rows:
         extra = extras.get(int(r["slot"]))
@@ -439,6 +554,67 @@ def _break_auras(hero_id: int) -> list[tuple[int, str]]:
     return [(s, found[s]) for s in sorted(found)]
 
 
+
+def exclusive_name_key_hero(name_key) -> int | None:
+    m = re.fullmatch(r"hero_exclusive_name_(\d+)", str(name_key or ""))
+    return int(m.group(1)) if m else None
+
+
+def components_owned_by_other(hero_id: int) -> set[int]:
+    """Skills in this hero's component range that belong to another hero's exclusive / awaken package.
+
+    Examples: 諾亞金鈴 is named hero_exclusive_name_10029 but use_hero is 森之少女;
+    英雄絮語 is named hero_exclusive_name_10032 but use_hero is 15032.
+    """
+    owned: set[int] = set()
+    lo, hi = hero_id * 100, hero_id * 100 + 100
+    for row in catalog()["hero_exclusive"]:
+        key_hid = exclusive_name_key_hero(row.get("name"))
+        use = row.get("use_hero")
+        if key_hid != hero_id or use in (None, hero_id):
+            continue
+        for c in components_for(hero_id):
+            if as_int(c.get("show_type")) == 2:
+                owned.add(c["id"])
+        for aw in catalog()["hero_awaken"]:
+            if aw.get("hero_id") != use:
+                continue
+            link = aw.get("link_skill")
+            if isinstance(link, int) and lo <= link < hi:
+                owned.add(link)
+    return owned
+
+
+def break_auras_for(hero_id: int, exclusive_row: dict | None = None) -> list[tuple[int, str]]:
+    found = _break_auras(hero_id)
+    if found:
+        return found
+    if exclusive_row:
+        for cand in (exclusive_row.get("id"), exclusive_row.get("group")):
+            if cand in (None, "", -1):
+                continue
+            try:
+                found = _break_auras(int(cand))
+            except (TypeError, ValueError):
+                continue
+            if found:
+                return found
+    return []
+
+
+
+def awaken_upgrade_target_name(hero_id: int) -> str:
+    """Official 覺醒強化 short text uses 強化[技能名]; do not assume suffix 03."""
+    for r in catalog()["hero_awaken"]:
+        if r.get("hero_id") != hero_id or r.get("star_sub") != 0:
+            continue
+        dec = t(r.get("star_dec")) or ""
+        m = re.search(r"強化\[([^\]]+)\]", dec)
+        if m:
+            return m.group(1)
+    return ""
+
+
 def assemble(hero_id: int) -> HeroPage:
     hero = hero_row(hero_id)
     ov = HERO_OVERRIDES.get(hero_id, {})
@@ -449,6 +625,11 @@ def assemble(hero_id: int) -> HeroPage:
     second_names = list(ov.get("second_tags") or [])
     seconds = [second_tag_info(n) for n in second_names]
     tags = [first["name"]] + second_names if first["name"] else list(second_names)
+    owned_by_other = components_owned_by_other(hero_id)
+    has_awaken_rows = any(
+        r.get("hero_id") == hero_id and r.get("star_sub") == 0 and (r.get("star") or 0) >= 1
+        for r in catalog()["hero_awaken"]
+    )
 
     # open status: only say 已開放 when hide=-1, as on the published pages.
     # Do not independently mark anyone 未開放 (especially 老闆娘 10032).
@@ -471,11 +652,14 @@ def assemble(hero_id: int) -> HeroPage:
     awaken_passive_id = None
     exclusive_skill_id = None
     spirit_skill_id = None
+    variant_ids: list[int] = []
     prev_name = None
     prev_params = None
     prev_special = None
     skill_pack = {}
     for c in comps:
+        if c["id"] in owned_by_other:
+            continue
         cname = t(c.get("name"))
         inherit_p = prev_params if cname and cname == prev_name else None
         inherit_s = prev_special if cname and cname == prev_name else None
@@ -510,9 +694,13 @@ def assemble(hero_id: int) -> HeroPage:
         elif suffix == 14:
             exclusive_skill_id = c["id"]
         elif suffix == 13:
-            awaken_passive_id = c["id"]
+            if has_awaken_rows:
+                awaken_passive_id = c["id"]
         elif suffix == 4:
-            awaken_variant_id = c["id"]
+            if has_awaken_rows:
+                awaken_variant_id = c["id"]
+            else:
+                variant_ids.append(c["id"])
         prev_name = cname
         prev_params = merge_params(inherit_p, param_list(c, 1))
         prev_special = c.get("special_desc") or inherit_s
@@ -532,6 +720,20 @@ def assemble(hero_id: int) -> HeroPage:
             "suffix": comp["id"] % 100,
         }
 
+    # Exclusive skill may live in another hero's component range
+    # (e.g. 乾杯 1003214 for 15032「英雄絮語」).
+    if exclusive_row and not exclusive_skill_id:
+        key_hid = exclusive_name_key_hero(exclusive_row.get("name"))
+        if key_hid:
+            for c in components_for(key_hid):
+                if as_int(c.get("show_type")) != 2:
+                    continue
+                if c["id"] not in skill_pack:
+                    skill_pack[c["id"]] = pack_from_component(c)
+                exclusive_skill_id = c["id"]
+                comp_by_id[c["id"]] = c
+                break
+
     # Unlock skills listed in hero_star with 解鎖技能 (hero_star_desc_2).
     # Shared skills such as 守護使者／戰爭使者 live outside the hero id range;
     # some heroes instead unlock an in-range 上陣效果 (e.g. 閃爍懷錶) at 11 stars.
@@ -548,19 +750,22 @@ def assemble(hero_id: int) -> HeroPage:
                 continue
             dkey = desc_keys[i] if i < len(desc_keys) else ""
             is_unlock = dkey == "hero_star_desc_2"
-            if sid in reserved or sid in unlock_skill_ids:
-                continue
-            if not is_unlock and (sid in skill_pack or sid in star_skill_ids):
-                continue
             extra = component(sid) or comp_by_id.get(sid)
             if not extra:
                 continue
             if sid not in skill_pack:
                 skill_pack[sid] = pack_from_component(extra)
-            if sid in star_skill_ids:
-                star_skill_ids.remove(sid)
-            unlock_skill_ids.append(sid)
-            unlock_at_star[sid] = r["star"]
+            if is_unlock:
+                if sid in reserved or sid in unlock_skill_ids:
+                    continue
+                if sid in star_skill_ids:
+                    star_skill_ids.remove(sid)
+                unlock_skill_ids.append(sid)
+                unlock_at_star[sid] = r["star"]
+            elif sid not in star_skill_ids and sid not in reserved and sid not in unlock_skill_ids:
+                # Star-table skills that live outside this hero's component
+                # prefix (e.g. 15033 using 10033 numbers) still count as 英雄升星.
+                star_skill_ids.append(sid)
 
     def skill_source_label(sk: dict) -> str:
         if sk["id"] in unlock_skill_ids:
@@ -574,17 +779,18 @@ def assemble(hero_id: int) -> HeroPage:
             return f"專武「{exclusive_name}」專屬技能"
         if sk["id"] == spirit_skill_id and spirit_name:
             return f"英靈「{spirit_name}」專屬技能"
-        if sk["suffix"] == 13:
+        if sk["id"] == awaken_passive_id:
             return "覺醒被動技能"
-        if sk["suffix"] == 4:
-            # find the skill it upgrades: same hero, suffix 03 (必殺)
-            base = next((c for c in comps if c["id"] % 100 == 3), None)
-            base_name = t(base.get("name")) if base else ""
+        if sk["id"] == awaken_variant_id:
+            base_name = awaken_upgrade_target_name(hero_id)
             return f"覺醒強化技能（強化{base_name}）" if base_name else "覺醒強化技能"
+        if sk["id"] in variant_ids:
+            return "技能升級／變體"
         return sk["kind"]
 
     source_order = list(star_skill_ids)
     source_order.extend(unlock_skill_ids)
+    source_order.extend(variant_ids)
     if awaken_passive_id:
         source_order.append(awaken_passive_id)
     if awaken_variant_id:
@@ -647,6 +853,8 @@ def assemble(hero_id: int) -> HeroPage:
         star = unlock_at_star.get(sid)
         extra = f"{star} 星解鎖技能" if star else "解鎖技能"
         star_skills.append(pack_skill_block(sid, extra))
+    for sid in variant_ids:
+        star_skills.append(pack_skill_block(sid, "技能升級／變體"))
 
     # awaken stages (star 1-4, star_sub=0)
     awaken = [
@@ -657,14 +865,13 @@ def assemble(hero_id: int) -> HeroPage:
     awaken_rows = []
     for r in awaken:
         stage = r["star"]
-        sname = t(r.get("star_name")) or ""
-        sdec = t(r.get("star_dec")) or ""
+        sname = t(r.get("star_name")) or "無"
+        sdec = t(r.get("star_dec")) or "無"
         link = r.get("link_skill")
         if link and link not in (-1, None, 0):
             lname = t((comp_by_id.get(link) or component(link) or {}).get("name")) or str(link)
             if link == awaken_variant_id:
-                base = next((c for c in comps if c["id"] % 100 == 3), None)
-                base_name = t(base.get("name")) if base else ""
+                base_name = awaken_upgrade_target_name(hero_id)
                 related = f"{lname}（強化{base_name}）" if base_name else lname
             else:
                 related = lname
@@ -683,10 +890,27 @@ def assemble(hero_id: int) -> HeroPage:
     if awaken_passive_id:
         awaken_skills.append(pack_skill_block(awaken_passive_id, "覺醒被動技能"))
     if awaken_variant_id:
-        base = next((c for c in comps if c["id"] % 100 == 3), None)
-        base_name = t(base.get("name")) if base else ""
+        base_name = awaken_upgrade_target_name(hero_id)
         extra = f"覺醒強化{base_name}" if base_name else "覺醒強化技能"
         awaken_skills.append(pack_skill_block(awaken_variant_id, extra))
+    # Heroes with no component prefix of their own (e.g. 15033) still have
+    # hero_awaken link_skill values; show those as 覺醒表關聯, do not relabel
+    # an 上陣效果 as 覺醒被動.
+    if awaken and not awaken_skills:
+        seen_links = set()
+        for r in awaken:
+            link = r.get("link_skill")
+            if link in (-1, None, 0) or link in seen_links:
+                continue
+            seen_links.add(link)
+            extra_comp = component(link) or comp_by_id.get(link)
+            if not extra_comp:
+                continue
+            if link not in skill_pack:
+                skill_pack[link] = pack_from_component(extra_comp)
+            sk = skill_pack[link]
+            awaken_skills.append(pack_skill_block(link, f"覺醒表關聯技能；{sk['kind']}"))
+            skill_sources.append((sk["name"], f"覺醒表關聯技能（{sk['kind']}）"))
 
     # exclusive block
     exclusive = None
@@ -695,8 +919,8 @@ def assemble(hero_id: int) -> HeroPage:
         ranks = [f"1 階：{sk['desc']}"]
         for i, u in enumerate(sk["ups"], start=2):
             ranks.append(f"{i} 階：{u}")
-        self_attr = _exclusive_self_attr(comp_by_id.get(exclusive_skill_id) or {})
-        auras = _break_auras(hero_id)
+        self_attr = _exclusive_self_attr(comp_by_id.get(exclusive_skill_id) or component(exclusive_skill_id) or {})
+        auras = break_auras_for(hero_id, exclusive_row)
         exclusive = {
             "weapon": exclusive_name,
             "skill": sk["name"],
@@ -750,19 +974,36 @@ def assemble(hero_id: int) -> HeroPage:
     elif not spirit_row:
         spirit = None
 
-    talent_percent = bool(ov.get("talent_percent"))
-    talents = talent_rows(hero_id, talent_percent)
-    if talent_percent:
-        talent_intro = (
-            f"{name}有四個天賦槽。下表依現行客戶端天賦面板與舊天賦表寫，不是較新一張把槽 1／2／4 改掛為英雄攻擊／英雄生命的定義。"
-            "30 級百分比已用面板確認；1 級依同一規則（表上原值除100）換算。這種換算只用於本頁已確認的天賦，不推到羈絆或其他屬性。"
-            "格擋與套裝同層如何疊加尚未驗證。"
-        )
-    else:
-        talent_intro = (
-            f"{name}有四個天賦槽。下表依舊天賦表 hero_talent.json 寫，不是較新一張把槽 1／2／4 改掛為英雄攻擊／英雄生命的定義。"
-            "官方字串是「自身{0}提升{1}」，沒有單位；下表數值都是表上原值，不曾用審判官面板的÷100 推算。"
-        )
+    talents = talent_rows(hero_id)
+    talent_percent = any(r.get("kind") == "percent" for r in talents)
+    slot_words = {1: "一", 2: "兩", 3: "三", 4: "四"}
+    slot_bit = slot_words.get(len(talents), str(len(talents)))
+    talent_intro = (
+        f"{name}有{slot_bit}個天賦槽。下表依舊天賦定義與已確認的前服天賦面板規則寫，"
+        "不是較新一張把槽 1／2／4 改掛為英雄攻擊／英雄生命的定義。"
+        "這不是寫死所有伺服器、所有英雄都讀同一張表。"
+    )
+    has_percent = any(r.get("kind") == "percent" for r in talents)
+    has_point = any(r.get("kind") == "point" for r in talents)
+    if has_percent:
+        if hero_id in TALENT_PANEL_HERO_IDS:
+            talent_intro += (
+                "天賦屬性依面板把表上原值除以 100，寫成兩位小數；"
+                "審判官的數值已用他自己的面板確認。"
+                "這種換算只用於英雄天賦，不推到羈絆或稱號。"
+                "格擋與套裝同層如何疊加尚未驗證。"
+            )
+        else:
+            talent_intro += (
+                "天賦屬性依已確認的前服天賦面板規則，把表上原值除以 100，寫成兩位小數。"
+                "這不是本英雄自己的面板確認。"
+                "這種換算只用於英雄天賦，不推到羈絆或稱號。"
+            )
+    if has_point:
+        talent_intro += "點數屬性依面板原文寫，沒有百分號、沒有正號、也沒有千分位。"
+    odd_caps = sorted({r.get("max_level") for r in talents if r.get("max_level") and r["max_level"] != 30})
+    if odd_caps:
+        talent_intro += "部分槽位的天賦群組最高只有" + "／".join(str(x) + " 級" for x in odd_caps) + "，沒有 30 級，右欄改寫該群組最高級的顯示值。"
 
     # skins
     skin_rows = [s for s in catalog()["hero_skin"] if s["hero_id"] == hero_id]
@@ -778,11 +1019,24 @@ def assemble(hero_id: int) -> HeroPage:
         coins = fashion_coins(s)
         can_up = bool(s.get("CanUpStar"))
         star_max = s.get("star_max")
+        self_raw = s.get("attr1") or s.get("attr2")
+        team_scope = t("skin_title_1") or "全部"
+        self_txt = A.format_skin_pairs(self_raw, scope=name)
+        team_txt = A.format_skin_pairs(s.get("team_attr"), scope=team_scope)
         if can_up and star_max and int(star_max) > 0:
-            collect = f"可升至 {int(star_max)} 星，見下方星級表"
+            bits = []
+            if self_txt != "無":
+                bits.append(self_txt)
+            bits.append(f"可升至 {int(star_max)} 星，隊伍屬性見下方星級表")
+            collect = "；".join(bits)
         else:
-            collect = A.format_raw_pairs(s.get("team_attr"))
-        equip = A.format_raw_pairs(s.get("attr1"))
+            bits = []
+            if self_txt != "無":
+                bits.append(self_txt)
+            if team_txt != "無":
+                bits.append(team_txt)
+            collect = "；".join(bits) if bits else "無"
+        equip = A.format_skin_pairs(self_raw) if self_raw not in (None, "", -1, 0) else "無"
         skins.append({
             "id": sid,
             "name": sname,
@@ -801,7 +1055,7 @@ def assemble(hero_id: int) -> HeroPage:
             partner = next((x for x in catalog()["hero_skin"] if x["id"] == partner_id), None)
             if partner:
                 pname = t(partner.get("skin_name")) or t(f"skin_name_{partner_id}") or str(partner_id)
-                pattr = A.format_raw_pairs(s.get("suit_attr"))
+                pattr = A.format_skin_pairs(s.get("suit_attr"), joiner="、")
                 partner_hero = partner.get("hero_id")
                 href = hero_href(partner_hero)
                 partner_hero_name = hero_name(partner_hero)
@@ -817,55 +1071,40 @@ def assemble(hero_id: int) -> HeroPage:
         season_dec = t(s.get("season_dec")) if s.get("season_dec") else ""
         extra_eff = s.get("season_effect2") or s.get("season_effect")
         if season_dec or extra_eff:
-            extra_s = A.format_raw_pairs(extra_eff) if extra_eff else ""
             text = ""
             if season_dec:
-                text += f"此套另有賽季說明「{season_dec}」"
-            if extra_s and extra_s != "無":
-                text += ("，以及額外效果「" + extra_s.replace(" ", "」原值 ", 1)) if " " in extra_s else f"，以及額外效果{extra_s}"
-                # format: 「進行帕魯捕捉時，紅水晶採集速度提升」原值 1000
-                # format_raw_pairs gives "NAME VALUE". Rebuild more carefully:
+                text = f"此套另有賽季說明「{season_dec}」"
             if extra_eff:
-                pairs = A.parse_pairs(extra_eff)
                 extras = []
-                for aid, val in pairs:
-                    extras.append(f"「{A.attr_name(aid)}」原值 {A.comma_int(val)}")
-                text = ""
-                if season_dec:
-                    text = f"此套另有賽季說明「{season_dec}」"
+                for aid, val in A.parse_pairs(extra_eff):
+                    if aid is None:
+                        extras.append(str(val))
+                    else:
+                        extras.append(A.format_skin_attr(aid, val))
                 if extras:
-                    text += ("，以及額外效果" if text else "此套另有額外效果") + "、".join(extras)
+                    text += ("，以及賽季屬性" if text else "此套另有賽季屬性") + "、".join(extras)
             text += "。官方另有「賽季屬性只在對應賽季生效」「臨時擁有屬性，對應賽季持續期間，擁有造型即可生效」「臨時使用屬性，對應賽季持續期間，使用造型即可生效」，但本頁不自行把這一欄對成擁有或使用。賽季欄的數字不自行對成第幾賽季日曆。"
             parts.append(text)
         if can_up and star_max and int(star_max) > 0:
             names = "、".join(skin_star_names(s))
             star_tbl = star_team_rows(s)
-            leftover = A.format_raw_pairs(s.get("team_attr"))
-            leftover_note = ""
-            if leftover and leftover != "無":
-                match_label = None
-                parts_left = leftover.split("、")
-                for label, cell in star_tbl:
-                    if leftover == cell or all(part in cell for part in parts_left):
-                        match_label = label
-                        break
-                if match_label:
-                    leftover_note = (
-                        f"表上另有一欄隊伍屬性為{leftover}，與 {match_label}部分相同，不自行斷定它等於第幾星。"
-                    )
-                else:
-                    leftover_note = f"表上另有一欄隊伍屬性為{leftover}，不自行斷定它等於第幾星。"
             if names:
-                star_intro = f"此套可升星至 {int(star_max)}，星級名為{names}。收集屬性依各星隊伍屬性寫如下。"
+                star_intro = (
+                    f"此套可升星至 {int(star_max)}，星級名為{names}。"
+                    "隊伍屬性是基礎加上該星檔，滿星用最後一檔，寫在下表。"
+                )
             else:
-                star_intro = f"此套可升星至 {int(star_max)}。表上沒有另列星級名。收集屬性依各星隊伍屬性寫如下。"
+                star_intro = (
+                    f"此套可升星至 {int(star_max)}。表上沒有另列星級名。"
+                    "隊伍屬性是基礎加上該星檔，滿星用最後一檔，寫在下表。"
+                )
             parts.insert(0, star_intro)
             feature_sections.append({
                 "id": f"skin-{sid}",
                 "heading": sname,
                 "paragraphs": parts[:1],
                 "star_table": star_tbl,
-                "after": [leftover_note] + parts[1:] if leftover_note else parts[1:],
+                "after": parts[1:],
             })
         elif parts:
             feature_sections.append({
@@ -881,7 +1120,7 @@ def assemble(hero_id: int) -> HeroPage:
     suits.sort(key=lambda su: min(skin_order.get(sid, 999) for sid in su.get("skin_ids") or [999]))
 
     # intro
-    pronoun = ov.get("pronoun") or "他"
+    pronoun = ov.get("pronoun")
     role = ov.get("role_blurb") or "英雄"
     recs = rec_labels(hero_id)
     rec_join = "、".join(recs) if recs else "未出現"
@@ -907,7 +1146,10 @@ def assemble(hero_id: int) -> HeroPage:
         rec_intro = "官方「最佳聯盟」名單未列"
     # Only say 已開放 when hide=-1, as on the published 審判官／修女 pages.
     # hide=1 is not a 未開放 flag; do not invent either wording from that field.
-    open_bit = f"{pronoun}已開放，" if hero.get("hide") == -1 else ""
+    if hero.get("hide") == -1:
+        open_bit = f"{pronoun}已開放，" if pronoun else "已開放，"
+    else:
+        open_bit = ""
     intro = (
         f"{name}是{faction}的{role}。{open_bit}{rec_intro}。"
         f"英雄屬性是{tag_line}。"
@@ -937,6 +1179,7 @@ def assemble(hero_id: int) -> HeroPage:
         unlock_skill_ids=unlock_skill_ids,
         unlock_at_star=unlock_at_star,
         has_lead=False,
+        notes_extra=ov.get("notes_extra"),
     )
 
     terms = list(COMMON_TERMS)
@@ -988,7 +1231,8 @@ def assemble(hero_id: int) -> HeroPage:
 
 def _build_notes(*, hero, hero_id, name, first, seconds, honor_group, honor_attr,
                  exclusive, spirit, talents, talent_percent, awaken,
-                 unlock_skill_ids=None, unlock_at_star=None, has_lead=False) -> str:
+                 unlock_skill_ids=None, unlock_at_star=None, has_lead=False,
+                 notes_extra=None) -> str:
     attrs = catalog()["attribute_by_id"]
     honor_name = A.attr_name(honor_attr) if honor_attr else ""
     is_race = (attrs.get(honor_attr) or {}).get("is_race") if honor_attr else None
@@ -1052,16 +1296,50 @@ def _build_notes(*, hero, hero_id, name, first, seconds, honor_group, honor_attr
     # talent groups
     tal_bits = []
     for row in talents:
+        cap = f"{row['max_level']} 級 " if row.get("max_level") and row["max_level"] != 30 else ""
         tal_bits.append(
-            f"槽 {row['slot']} 群組 {row['group']}（{row['name']}，{row['attr']} {A.format_int(row['raw_lv1'])}／{A.format_int(row['raw_lv30'])}）"
+            f"槽 {row['slot']} 群組 {row['group']}（{row['name']}，{row['attr']} {A.format_int(row['raw_lv1'])}／{cap}{A.format_int(row['raw_lv30'])}）"
         )
-    if talent_percent:
-        bits.append("天賦依現行客戶端面板與舊表：" + "、".join(tal_bits) + "。")
-        bits.append("30 級百分比已用面板確認，等於原值除100；此換算不推到羈絆或其他屬性。")
-    else:
-        bits.append("天賦依舊表：" + "、".join(tal_bits) + "。")
-        bits.append("官方字串沒有單位，上表寫原值，不曾用審判官面板的÷100 推算；此處也不把那種換算推到羈絆或其他屬性。")
-    bits.append("較新一張天賦表把槽 1／2／4 改掛為英雄攻擊／英雄生命，與本伺服面板不符，本頁不採。" if talent_percent else "較新一張天賦表把槽 1／2／4 改掛為英雄攻擊／英雄生命，本頁不採。")
+    bits.append(
+        "天賦依舊表 hero_talent.json 寫（不讀 hero_talent_new.json）："
+        + "、".join(tal_bits)
+        + "。這不是寫死所有伺服器、所有英雄都讀舊表。"
+    )
+    pct_ids = sorted({int(row["attr_id"]) for row in talents if row.get("kind") == "percent"})
+    raw_ids = sorted({int(row["attr_id"]) for row in talents if row.get("kind") == "raw"})
+    point_ids = sorted({int(row["attr_id"]) for row in talents if row.get("kind") == "point"})
+    if pct_ids:
+        id_bit = "、".join(str(i) for i in pct_ids)
+        if hero_id in TALENT_PANEL_HERO_IDS:
+            bits.append(
+                f"屬性 {id_bit} 的百分比已用本英雄面板確認，等於原值除100；"
+                "此換算只用於英雄天賦，不推到羈絆或稱號。"
+            )
+        else:
+            bits.append(
+                f"屬性 {id_bit} 依已確認的前服天賦面板規則，把原值除100寫成兩位小數；"
+                "這不是本英雄自己的面板確認。此換算只用於英雄天賦，不推到羈絆或稱號。"
+            )
+    if raw_ids:
+        bits.append(
+            "屬性 "
+            + "、".join(str(i) for i in raw_ids)
+            + " 寫原值，未依那條百分比規則換算。"
+        )
+    if point_ids:
+        bits.append(
+            "屬性 "
+            + "、".join(str(i) for i in point_ids)
+            + " 依已確認面板為點數，沒有百分號、正號或千分位。"
+        )
+    bits.append("較新一張天賦表把槽 1／2／4 改掛為英雄攻擊／英雄生命，本頁不採。")
+    bits.append(
+        "造型的自身、隊伍、套裝、成對與賽季效果依屬性類型顯示："
+        "show_type=2 把原值除以 100，寫成加號、兩位小數、百分號；"
+        "show_type=1 寫成點數加號，沒有百分號，也沒有千分位。"
+        "可升星造型的隊伍顯示值是 team_attr 基礎加當前星檔，滿星用最後一檔；套裝只取當前檔、不加總。"
+        "這條只用於英雄造型，不套到稱號或羈絆。"
+    )
 
     # 修女 awaken key quirk
     odd_keys = []
@@ -1087,6 +1365,24 @@ def _build_notes(*, hero, hero_id, name, first, seconds, honor_group, honor_attr
             f"覺醒列另有 show_star={next(iter(ss)) if len(ss)==1 else ss}、link_star={next(iter(ls)) if len(ls)==1 else ls}"
             "（本英雄各列原值相同）；含義尚未在已發布圖鑑說明，此處不自行解釋。"
         )
+    missing_aw_keys = []
+    for r in awaken:
+        for key in (r.get("star_name"), r.get("star_dec")):
+            if key and str(key).startswith("hero_awaken_") and not t(key):
+                missing_aw_keys.append(str(key))
+    if missing_aw_keys:
+        # Keep unique order.
+        seen = []
+        for k in missing_aw_keys:
+            if k not in seen:
+                seen.append(k)
+        bits.append(
+            "覺醒階段名稱／短述的表鍵是"
+            + "／".join(seen)
+            + "，字串表沒有這些鍵，本頁不虛擬短述。"
+        )
+    if notes_extra:
+        bits.append(str(notes_extra).rstrip("。") + "。")
     bits.append("頭像位置已預留，以後再補；目前不放角色圖，也不使用解包立繪或 Fandom／社群立繪。")
     out = []
     for b in bits:
