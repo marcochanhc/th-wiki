@@ -110,7 +110,7 @@ ROSTER: list[tuple[str, str, list[tuple[int, str | None]]]] = [
     ),
 ]
 
-# Placeholder catalogue headings on the public index; no links yet.
+# Catalogue headings on the public index. 專武、英靈、造型 link to published pages; the rest are names only.
 CODEX_ITEMS = [
     "專武",
     "英靈",

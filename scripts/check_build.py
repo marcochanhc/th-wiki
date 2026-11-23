@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sanity-check the built index and published alliance, nature, and tribe hero pages against locked rules."""
+"""Sanity-check the built index, catalog tables, and published hero pages against locked rules."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ INVENTOR = DOCS / "heroes" / "10050.html"
 INDEX = DOCS / "index.html"
 EXCLUSIVE = DOCS / "exclusive.html"
 VALHALLA = DOCS / "valhalla.html"
+SKINS = DOCS / "skins.html"
 
 
 def text_of(html: str) -> str:
@@ -205,10 +206,13 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
             fail("index 圖鑑 專武 should link to exclusive.html", errors)
         if not re.search(r'<a href="valhalla.html">英靈</a>', codex):
             fail("index 圖鑑 英靈 should link to valhalla.html", errors)
+        if not re.search(r'<a href="skins.html">造型</a>', codex):
+            fail("index 圖鑑 造型 should link to skins.html", errors)
         other = re.sub(r'<a href="exclusive.html">專武</a>', "專武", codex)
         other = re.sub(r'<a href="valhalla.html">英靈</a>', "英靈", other)
+        other = re.sub(r'<a href="skins.html">造型</a>', "造型", other)
         if re.search(r"<a\b", other):
-            fail("index 圖鑑 should only link 專武 and 英靈 among the catalogue items", errors)
+            fail("index 圖鑑 should only link 專武, 英靈 and 造型 among the catalogue items", errors)
 
     for term in GAMEPLAY_TERMS:
         if term in it:
@@ -233,14 +237,20 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         fail("index 關於本站 should say this is not official", errors)
     if "目前聯盟、自然和部族的英雄條目都已公開。" not in it:
         fail("index lede should say alliance, nature and tribe pages are all published", errors)
-    if "專武總表和英靈總表也已公開" not in it:
-        fail("index lede should say the exclusive and valhalla tables are public", errors)
-    if "專武總表和英靈總表已公開，其餘分類稍後再補" not in it:
-        fail("index 圖鑑 should say 專武 and 英靈 catalogs are public and others will follow", errors)
+    if "專武總表、英靈總表和造型總表也已公開" not in it:
+        fail("index lede should say the exclusive, valhalla and skin tables are public", errors)
+    if "專武總表和英靈總表也已公開" in it:
+        fail("index lede still omits the skin catalog", errors)
+    if "專武總表、英靈總表和造型總表已公開，其餘分類稍後再補" not in it:
+        fail("index 圖鑑 should say 專武, 英靈 and 造型 catalogs are public and others will follow", errors)
+    if "專武總表和英靈總表已公開，其餘分類稍後再補" in it:
+        fail("index 圖鑑 still omits the skin catalog", errors)
     if 'href="exclusive.html"' not in index:
         fail("index should link to exclusive.html", errors)
     if 'href="valhalla.html"' not in index:
         fail("index should link to valhalla.html", errors)
+    if 'href="skins.html"' not in index:
+        fail("index should link to skins.html", errors)
     if "目前先公開薔薇公主、審判官、發明家和修女" in it:
         fail("index lede still only lists the first four published heroes", errors)
     if "條目會陸續補上" in it:
@@ -1183,9 +1193,200 @@ def check_hero_valhalla_attrs(errors: list[str]) -> None:
         fail("行者: 齊天鎮岳 rank 4 should still quote 全體部落", errors)
 
 
+
+def _cell_display(html_cell: str) -> str:
+    """Strip tags and the space .term padding inserts before + signs."""
+    t = re.sub(r"<[^>]+>", "", html_cell)
+    t = t.replace("&nbsp;", " ").replace("&amp;", "&")
+    t = re.sub(r"[ \t\r\n]+", " ", t).strip()
+    t = t.replace(" +", "+")
+    return t
+
+
+def _section_rows(html: str, section_id: str) -> list[list[str]]:
+    m = re.search(
+        rf'id="{re.escape(section_id)}".*?(?=<section id="t|<section id="notes"|</main>)',
+        html,
+        flags=re.S,
+    )
+    if not m:
+        return []
+    out = []
+    for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", m.group(0), flags=re.S):
+        raw = re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", tr, flags=re.S)
+        cells = [_cell_display(c) for c in raw]
+        if cells:
+            out.append(cells)
+    return out
+
+
+def check_skins_page(html: str, errors: list[str]) -> None:
+    if not html:
+        fail("skins: missing page", errors)
+        return
+    if 'lang="zh-Hant"' not in html:
+        fail("skins: missing lang=zh-Hant", errors)
+    if "<title>Top Heroes Wiki｜造型總表</title>" not in html:
+        fail("skins: unexpected title", errors)
+    if "本機預覽" in html or "尚未發佈" in html:
+        fail("skins: unpublished banner still present", errors)
+    for banner in ("未發佈", "不是線上目錄", "preview-banner", "只供預覽", "尚未列入公開"):
+        if banner in html:
+            fail(f"skins: unpublished banner still present: {banner}", errors)
+    if "本頁列出英雄造型圖鑑的可收集造型、成對造型、收集套裝、可升星效果與賽季限定效果，以及每位英雄可收集造型的屬性加總。" not in html:
+        fail("skins: missing public lede", errors)
+    if 'href="assets/css/site.css"' not in html:
+        fail("skins: should use site CSS at assets/css/site.css", errors)
+    if "../docs/" in html or "preview/" in html:
+        fail("skins: public page should not use preview-relative paths", errors)
+
+    nav_m = re.search(r'<nav class="site-nav"[^>]*>.*?</nav>', html, flags=re.S)
+    if not nav_m:
+        fail("skins: missing site-nav", errors)
+    else:
+        nav = nav_m.group(0)
+        if re.search(r"heroes/\d+\.html", nav):
+            fail("skins: site-nav should not link individual hero pages", errors)
+        for needle in ("index.html", "index.html#heroes", "index.html#codex", "index.html#about"):
+            if needle not in nav:
+                fail(f"skins: site-nav missing {needle}", errors)
+
+    it = text_of(html)
+    if "資料截至 2026-11-23" not in it:
+        fail("skins: data cutoff should be 2026-11-23", errors)
+    if "資料截至 2026-11-05" in it:
+        fail("skins: must not use the global 2026-11-05 cutoff on this page", errors)
+    if "app-1.129.12_table-1.0.43173" not in html:
+        fail("skins: missing LocalLow pack name", errors)
+    if html.count("<table>") != 13:
+        fail(f"skins: expected 13 tables (12 plus 表一附), got {html.count('<table>')}", errors)
+
+    for bad in ("契約之獅", "壁克", "由玩家確認", "豐收護衛"):
+        if bad in html or bad in it:
+            fail(f"skins: forbidden term {bad}", errors)
+    if re.search(r"(?<![全])部落", it) and "全體部落" not in it:
+        # 部落 only allowed if an official string uses it; skins catalog should not say 部落
+        if "部落" in it:
+            fail("skins: must not write 部落 (official term is 部族)", errors)
+    if "部落" in it:
+        fail("skins: must not write 部落 (official term is 部族)", errors)
+
+    # Table 1: 137 collectable skins
+    t1 = [r for r in _section_rows(html, "t1") if r and r[0] in ("聯盟", "自然", "部族")]
+    if len(t1) != 137:
+        fail(f"skins table 1 should have 137 collectable rows, got {len(t1)}", errors)
+    if "聖徒 技能增傷+8.00%" not in it or "全部 英雄攻擊+6.00%" not in it:
+        fail("skins: missing 聖徒·伊萊雯 max-star collect attributes", errors)
+    if "發明家 突破防禦+2000" not in it:
+        fail("skins: missing 發明家·大白鯊 突破防禦+2000", errors)
+    if "黑潮來襲時扣除氧氣值減少+10.00%" not in it:
+        fail("skins: missing 大白鯊 season effect", errors)
+    if "審判官·富饒領主" not in it or "豪士·武道宗師" not in it:
+        fail("skins: missing the 2026-11-22 pair skins", errors)
+    if "紅水晶採集速度+20.00%" not in it or "防禦+2000" not in it:
+        fail("skins: missing new pair attributes", errors)
+    if "審判·殘月騎士" not in it or "審判·狂熱之愛" not in it:
+        fail("skins: official 審判 skin names should be quoted as-is", errors)
+
+    # 表一附: 57 heroes, roster order, locked sums
+    sum_rows = [r for r in _section_rows(html, "t1-sum") if r and r[0] in ("聯盟", "自然", "部族")]
+    if len(sum_rows) != 57:
+        fail(f"skins 表一附 should have 57 hero rows, got {len(sum_rows)}", errors)
+    elif sum(int(r[2]) for r in sum_rows) != 137:
+        fail(f"skins 表一附 counts should sum to 137, got {sum(int(r[2]) for r in sum_rows)}", errors)
+    else:
+        names = [r[1] for r in sum_rows]
+        expected = LEAGUE_NAMES + NATURE_NAMES + TRIBE_NAMES
+        # display may include （未開放）
+        core = [re.sub(r"（未開放）\s*$", "", n).strip() for n in names]
+        if core != expected:
+            fail(f"skins 表一附 order mismatch: {core[:5]}... vs roster", errors)
+        if names[LEAGUE_NAMES.index("牧羊人")] != "牧羊人（未開放）" and "牧羊人（未開放）" not in names:
+            # after _cell_display, 牧羊人 （未開放） may have a space from .term
+            if not any(n.replace(" ", "") == "牧羊人（未開放）" for n in names):
+                fail(f"skins 表一附: 牧羊人 should be labelled 未開放, got {names}", errors)
+        boss = [n for n in names if "老闆娘" in n]
+        if any("未開放" in n for n in boss):
+            fail("skins 表一附: 老闆娘 must not be marked 未開放", errors)
+        saint = next((r for r in sum_rows if r[1].replace(" ", "") == "聖徒"), None)
+        inventor = next((r for r in sum_rows if r[1].replace(" ", "") == "發明家"), None)
+        if not saint or saint[2] != "6":
+            fail(f"skins 表一附: 聖徒 should have 6 collectable skins, got {saint}", errors)
+        expected_self = "聖徒 暴擊+3.00%；聖徒 對召喚物傷害+10.00%；聖徒 必殺技係數+20.00%；聖徒 技能增傷+8.00%"
+        expected_team = "全部 英雄攻擊+21.00%；全部 英雄生命+70.00%；全部 聯盟英雄減傷+2.00%"
+        if not saint or saint[3].replace("； ", "；") != expected_self and saint[3] != expected_self:
+            # normalize spaces around ； too
+            got = re.sub(r"\s*；\s*", "；", saint[3] if saint else "")
+            if got != expected_self:
+                fail(f"skins 表一附 聖徒自身 mismatch: {saint[3] if saint else None!r}", errors)
+        if saint:
+            got_team = re.sub(r"\s*；\s*", "；", saint[4])
+            if got_team != expected_team:
+                fail(f"skins 表一附 聖徒全部 mismatch: {saint[4]!r}", errors)
+            if saint[5] != "無":
+                fail(f"skins 表一附 聖徒成對 should be 無, got {saint[5]!r}", errors)
+            if "對碎石巨像、暮光渡鴉的傷害提升+15.00%" not in saint[6].replace(" ", ""):
+                if "對碎石巨像、暮光渡鴉的傷害提升+15.00%" not in saint[6] and "對碎石巨像、暮光渡鴉的傷害提升 +15.00%" not in saint[6]:
+                    fail(f"skins 表一附 聖徒賽季 missing 闇月 effect: {saint[6]!r}", errors)
+            if "對碎石巨像" in saint[3] + saint[4]:
+                fail("skins 表一附: 聖徒 season effect leaked into main sum", errors)
+        if inventor:
+            got_self = re.sub(r"\s*；\s*", "；", inventor[3])
+            got_team = re.sub(r"\s*；\s*", "；", inventor[4])
+            if got_self != "發明家 突破防禦+2000；發明家 技能增傷+8.00%":
+                fail(f"skins 表一附 發明家自身 mismatch: {inventor[3]!r}", errors)
+            if got_team != "全部 英雄攻擊+6.00%；全部 英雄生命+20.00%":
+                fail(f"skins 表一附 發明家全部 mismatch: {inventor[4]!r}", errors)
+            if "黑潮來襲時扣除氧氣值減少+10.00%" in inventor[3] + inventor[4]:
+                fail("skins 表一附: 大白鯊 season effect leaked into main sum", errors)
+            if "黑潮來襲時扣除氧氣值減少+10.00%" not in inventor[6] and "黑潮來襲時扣除氧氣值減少 +10.00%" not in inventor[6]:
+                fail(f"skins 表一附 發明家賽季 missing 大白鯊 effect: {inventor[6]!r}", errors)
+        for nid in ("15032", "15033", "15039"):
+            row = next((r for r in sum_rows if r[1].replace(" ", "") == nid), None)
+            if row is None:
+                fail(f"skins 表一附: missing id-only row {nid}", errors)
+
+    if "這不是遊戲面板上的單一數字" not in it:
+        fail("skins: 表一附 must say the sums are not a single in-game panel figure", errors)
+    if "百分比是數字相加" not in it:
+        fail("skins: 表一附 must say percentages are added, not multiplied", errors)
+    if "收集套裝要湊數件造型" not in it:
+        fail("skins: must note collection suits are not included in the per-hero sums", errors)
+    if "AttrListDic" not in html:
+        fail("skins: data notes should mention AttrListDic is not the display source", errors)
+    if "不改讀" not in it and "不改讀 AttrListDic" not in it:
+        if "不改讀" not in html:
+            fail("skins: must say display values are not read from AttrListDic", errors)
+
+    if "聖焰神衛" in it and "不收入名錄" not in it:
+        fail("skins: 聖焰神衛 must not be listed as a live suit without the unused-string note", errors)
+    # live suit table should not have 聖焰神衛 / 幽冥使者 as a suit name cell
+    suit_rows = _section_rows(html, "t3")
+    suit_names = [r[0] for r in suit_rows if r and r[0] not in ("套裝",)]
+    for forbidden in ("聖焰神衛", "幽冥使者", "豐收護衛"):
+        if any(forbidden == n or n.startswith(forbidden) for n in suit_names):
+            fail(f"skins: {forbidden} must not appear as a live suit", errors)
+    if len([n for n in suit_names if n != "套裝"]) not in (10, 11):
+        # header plus 10, or 10 if header filtered
+        live = [n for n in suit_names if n and n != "套裝"]
+        if len(live) != 10:
+            fail(f"skins table 3 should have 10 suits, got {len(live)}: {live}", errors)
+
+    if 'href="heroes/10031.html"' not in html or 'href="heroes/10033.html"' not in html:
+        fail("skins: missing relative hero links", errors)
+    if re.search(r'href="[^"]*skins/[^"]+"', html):
+        fail("skins: must not invent skin detail subpage links", errors)
+    if "雲海紀行是 S6" in it or "官方名稱是 S6" in it or "skin_season_6 是 S6" in it:
+        fail("skins: must not claim skin_season_6 is the official S6 name", errors)
+
+    footer = re.search(r'<footer class="site-footer">.*?</footer>', html, flags=re.S)
+    if not footer or "資料截至 2026-11-23" not in text_of(footer.group(0)):
+        fail("skins: footer cutoff should be 2026-11-23", errors)
+
+
 def main() -> int:
     errors = []
-    for p in (INDEX, EXCLUSIVE, VALHALLA, JUDGE, NUN, ROSE, INVENTOR):
+    for p in (INDEX, EXCLUSIVE, VALHALLA, SKINS, JUDGE, NUN, ROSE, INVENTOR):
         if not p.exists():
             fail(f"missing {p}", errors)
     if errors:
@@ -1215,10 +1416,12 @@ def main() -> int:
 
     exclusive_html = EXCLUSIVE.read_text(encoding="utf-8")
     valhalla_html = VALHALLA.read_text(encoding="utf-8")
+    skins_html = SKINS.read_text(encoding="utf-8")
     check_index(index, it, errors)
     check_exclusive_page(exclusive_html, errors)
     check_valhalla_page(valhalla_html, errors)
-    for html, label in ((exclusive_html, "專武總表"), (valhalla_html, "英靈總表")):
+    check_skins_page(skins_html, errors)
+    for html, label in ((exclusive_html, "專武總表"), (valhalla_html, "英靈總表"), (skins_html, "造型總表")):
         if 'lang="zh-Hant"' not in html:
             fail(f"{label}: missing lang=zh-Hant", errors)
 
@@ -1501,7 +1704,7 @@ def main() -> int:
         for msg in errors:
             print(" -", msg)
         return 1
-    print("ok: TOC + exclusive tables + valhalla tables + all published alliance, nature and tribe hero pages passed locked-rule checks")
+    print("ok: TOC + exclusive, valhalla and skin tables + all published alliance, nature and tribe hero pages passed locked-rule checks")
     return 0
 
 
