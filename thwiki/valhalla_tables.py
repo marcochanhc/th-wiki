@@ -596,6 +596,7 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
         t1_rows,
         row_ids=t1_ids,
         wrap_class="table-dense",
+        mobile="sticky",
     )
 
     sixth_headers = ["陣營", "英靈", "專屬屬性"] + [f"{lv} 級" for lv in SIXTH_BREAKS]
@@ -605,7 +606,7 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
             [H(s.faction, terms), H(s.spirit, terms), H(attr_header(s.sixth_id), terms)]
             + [e(format_attr(s.sixth_id, s.sixth_by_lv[lv])) for lv in SIXTH_BREAKS]
         )
-    t_sixth = table(sixth_headers, sixth_rows, wrap_class="table-dense")
+    t_sixth = table(sixth_headers, sixth_rows, wrap_class="table-dense", mobile="sticky2")
 
     t2_rows = []
     for s in data.spirits:
@@ -625,13 +626,15 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
     t2 = table(
         ["陣營", "英雄", "英靈", "官方說明", "滿級專屬屬性", "專屬技能全文與五階（對應 1／25／50／75／100 級）"],
         t2_rows,
+        mobile="cards",
+        card_title="英靈",
     )
 
     batch_rows = []
     for season, server, group, note in _batch_groups(data.spirits):
         names = "、".join(f"{s.spirit_short}（{s.hero_label}，{s.hero_id}）" for s in group)
         batch_rows.append([e(season), e(server), e(str(len(group))), H(names, terms), H(note, terms) if note else "—"])
-    t_batch = table(["unlock_season", "unlock_server", "隻數", "英靈", "備註"], batch_rows)
+    t_batch = table(["unlock_season", "unlock_server", "隻數", "英靈", "備註"], batch_rows, mobile="cards", card_title="英靈")
 
     t3_rows = []
     t3_ids = []
@@ -668,6 +671,7 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
         t3_rows,
         row_ids=t3_ids,
         wrap_class="table-dense",
+        mobile="sticky",
     )
 
     charts = charts_section_html(data) if include_charts else ""
@@ -757,6 +761,20 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
     html = html.replace(
         f"<p>資料截至 {DATA_CUTOFF}（香港時間）。這不是官方 wiki。</p>",
         f"<p>資料截至 {VALHALLA_DATA_CUTOFF}（香港時間）。這不是官方 wiki。</p>",
+    )
+    # Preview-tested: keep the second frozen column aligned to the real first-column width.
+    html = html.replace(
+        "</body>",
+        "<script>"
+        "function syncStickyOffsets(){"
+        "document.querySelectorAll('.table-wrap.table-sticky-col-2').forEach(function(wrap){"
+        "var th=wrap.querySelector('thead th:first-child');"
+        "if(th){wrap.style.setProperty('--sticky-col1',th.getBoundingClientRect().width+'px');}"
+        "});}"
+        "syncStickyOffsets();"
+        "addEventListener('resize',syncStickyOffsets);"
+        "</script>\n</body>",
+        1,
     )
     return html
 

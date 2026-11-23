@@ -470,12 +470,13 @@ def render_html(data: TablesData) -> str:
     t2 = table(
         ["步驟", "大星", "小星", "大星-小星", "本步隕星鐵芯", "累計隕星鐵芯", "解鎖／備註"],
         t2_rows,
+        mobile="sticky",
     )
     aura_rows = []
     for faction in ("聯盟", "部族", "自然"):
         for star, text in data.auras.get(faction, []):
             aura_rows.append([H(faction, terms), e(f"{star} 星"), H(text, terms)])
-    aura_table = table(["陣營", "解鎖星", "光環原文"], aura_rows)
+    aura_table = table(["陣營", "解鎖星", "光環原文"], aura_rows, mobile="cards")
 
     t3_rows = []
     for w in data.weapons:
@@ -497,6 +498,8 @@ def render_html(data: TablesData) -> str:
     t3 = table(
         ["陣營", "英雄", "專武", "官方說明", "專屬技能", "技能全文與五階（對應 1／5／10／15／20 級）", "附加自身屬性（原值）", "技能戰力"],
         t3_rows,
+        mobile="cards",
+        card_title="英雄",
     )
 
     t4u_rows = []
@@ -528,6 +531,7 @@ def render_html(data: TablesData) -> str:
             "技能解鎖",
         ],
         t4u_rows,
+        mobile="sticky",
     )
 
     t4b_rows = []
@@ -561,6 +565,7 @@ def render_html(data: TablesData) -> str:
             "解鎖／備註",
         ],
         t4b_rows,
+        mobile="sticky",
     )
 
     toc = toc_list([

@@ -1003,6 +1003,7 @@ def render_html(data: TablesData) -> str:
             [H(g.label, terms), e(str(g.count)), e(g.add_power), e(g.note)]
             for g in data.groups
         ],
+        mobile="cards",
     )
     t_unlock = table(
         ["鍵", "字串", "全表筆數", "可收集造型"],
@@ -1010,6 +1011,8 @@ def render_html(data: TablesData) -> str:
             [e(k), H(text, terms) if text != "—" else e(text), e(str(n_all)), e(str(n_col))]
             for k, text, n_all, n_col in data.unlock_counts
         ],
+        mobile="cards",
+        card_title="字串",
     )
     t_coin = table(
         ["品質", "可收集筆數", "有時裝幣價（單價）", "無時裝幣價"],
@@ -1047,6 +1050,7 @@ def render_html(data: TablesData) -> str:
         collect_rows,
         row_ids=collect_ids,
         wrap_class="table-dense",
+        mobile="cards",
     )
 
     star_rows = []
@@ -1062,6 +1066,7 @@ def render_html(data: TablesData) -> str:
     t_star = table(
         ["造型", "英雄", "star_max", "消耗個數", "道具 id", "滿星隊伍屬性（基礎＋最後一檔）"],
         star_rows,
+        mobile="cards",
     )
 
     suit_rows = []
@@ -1087,6 +1092,7 @@ def render_html(data: TablesData) -> str:
         ["套裝", "件數", "品質", "啟用條件", "成員（造型 id）", "各檔屬性（當前檔，不加總）", "reward 原值", "備註"],
         suit_rows,
         wrap_class="table-dense",
+        mobile="cards",
     )
 
     pair_rows = []
@@ -1102,6 +1108,7 @@ def render_html(data: TablesData) -> str:
     t_pair = table(
         ["造型 A", "英雄 A", "A 的 suit_attr", "造型 B", "英雄 B", "B 的 suit_attr"],
         pair_rows,
+        mobile="cards",
     )
 
     season_rows = []
@@ -1117,6 +1124,7 @@ def render_html(data: TablesData) -> str:
     t_season = table(
         ["造型", "英雄", "賽季說明", "season", "season_effect", "season_effect2"],
         season_rows,
+        mobile="cards",
     )
 
     awk_rows = []
@@ -1134,6 +1142,7 @@ def render_html(data: TablesData) -> str:
     t_awaken = table(
         ["陣營", "英雄", "造型", "編號", "skin_id", "品質", "解鎖說明", "語音"],
         awk_rows,
+        mobile="cards",
     )
 
     noskin_rows = []
@@ -1148,6 +1157,7 @@ def render_html(data: TablesData) -> str:
     t_noskin = table(
         ["英雄", "編號", "陣營", "陣營來源", "預設模型"],
         noskin_rows,
+        mobile="cards",
     )
 
     unnamed_rows = []
@@ -1168,6 +1178,7 @@ def render_html(data: TablesData) -> str:
         ["編號", "陣營", "造型名稱（照 skin_name 原樣）", "造型 id", "組別", "品質", "時裝幣", "解鎖說明", "收集屬性", "語音"],
         unnamed_rows,
         wrap_class="table-dense",
+        mobile="cards",
     )
 
     nameless_rows = []
@@ -1182,6 +1193,7 @@ def render_html(data: TablesData) -> str:
         ["hero_id", "筆數", "造型 id", "備註"],
         nameless_rows,
         wrap_class="table-dense",
+        mobile="cards",
     )
 
     sum_rows = []
@@ -1206,6 +1218,7 @@ def render_html(data: TablesData) -> str:
         sum_rows,
         row_ids=sum_ids,
         wrap_class="table-dense",
+        mobile="cards",
     )
 
     n_col, n_pair, n_suit = len(data.collectable), len(data.pairs), len(data.suits)

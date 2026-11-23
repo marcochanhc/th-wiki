@@ -893,7 +893,7 @@ def check_exclusive_page(html: str, errors: list[str]) -> None:
         fail("exclusive: missing lang=zh-Hant", errors)
     if "<title>Top Heroes Wiki｜專武總表</title>" not in html:
         fail("exclusive: unexpected title", errors)
-    for banner in ("未發佈", "只供預覽", "只供本機預覽", "尚未列入公開"):
+    for banner in ("未發佈", "本機預覽", "尚未發佈", "不是線上目錄", "preview-banner", "只供預覽", "只供本機預覽", "尚未列入公開"):
         if banner in html:
             fail(f"exclusive: unpublished banner still present: {banner}", errors)
     if "本頁列出 35 把專武" not in html:
@@ -1016,7 +1016,7 @@ def check_valhalla_page(html: str, errors: list[str]) -> None:
         fail("valhalla: missing lang=zh-Hant", errors)
     if "<title>Top Heroes Wiki｜英靈總表</title>" not in html:
         fail("valhalla: unexpected title", errors)
-    for banner in ("未發佈", "本機預覽", "不是線上目錄", "preview-banner"):
+    for banner in ("未發佈", "本機預覽", "尚未發佈", "不是線上目錄", "preview-banner"):
         if banner in html:
             fail(f"valhalla: unpublished banner still present: {banner}", errors)
     if "本頁列出 15 隻英靈的升級素材、共通屬性、各隻專屬屬性與專屬技能，以及素材消耗對能力提升的邊際效果。" not in html:
@@ -1218,6 +1218,76 @@ def _section_rows(html: str, section_id: str) -> list[list[str]]:
         if cells:
             out.append(cells)
     return out
+
+
+
+def _section_chunk(html: str, section_id: str) -> str:
+    m = re.search(
+        rf'<section[^>]*id="{re.escape(section_id)}"[^>]*>.*?(?=<section |</main>)',
+        html,
+        flags=re.S,
+    )
+    return m.group(0) if m else ""
+
+
+def check_mobile_catalog_markup(errors: list[str]) -> None:
+    """Narrow-screen card / sticky-col markup on catalog pages only."""
+    skins = SKINS.read_text(encoding="utf-8")
+    exclusive = EXCLUSIVE.read_text(encoding="utf-8")
+    valhalla = VALHALLA.read_text(encoding="utf-8")
+    static_css = (ROOT / "static" / "css" / "site.css").read_text(encoding="utf-8")
+    docs_css = (DOCS / "assets" / "css" / "site.css").read_text(encoding="utf-8")
+
+    if static_css != docs_css:
+        fail("static/css/site.css and docs/assets/css/site.css should be identical", errors)
+    for needle, label in (
+        ("@media (max-width: 44rem)", "44rem card breakpoint"),
+        (".table-wrap.table-cards", "table-cards rules"),
+        (".table-wrap.table-sticky-col", "sticky first-column rules"),
+        (".table-wrap.table-sticky-col-2", "two-column sticky rules"),
+    ):
+        if needle not in docs_css:
+            fail(f"site.css missing {label}", errors)
+    if "preview-banner" in docs_css or "尚未發佈" in docs_css:
+        fail("site.css should not include the unpublished preview banner", errors)
+
+    def expect(chunk: str, label: str, *needles: str) -> None:
+        if not chunk:
+            fail(f"{label}: missing section", errors)
+            return
+        for n in needles:
+            if n not in chunk:
+                fail(f"{label}: missing {n}", errors)
+
+    def forbid(chunk: str, label: str, *needles: str) -> None:
+        if not chunk:
+            fail(f"{label}: missing section", errors)
+            return
+        for n in needles:
+            if n in chunk:
+                fail(f"{label}: should not contain {n}", errors)
+
+    expect(_section_chunk(skins, "t1"), "skins 表一", "table-cards", 'data-label="造型"', "card-title")
+    expect(_section_chunk(skins, "t1-sum"), "skins 表一附", "table-cards", 'data-label="英雄"', "card-title")
+    forbid(_section_chunk(skins, "scope-coin"), "skins 時裝幣與品質", "table-cards", "data-label")
+    expect(_section_chunk(exclusive, "t3"), "exclusive 表三", "table-cards", 'data-label="英雄"', 'data-label="專武"', "card-title")
+    expect(_section_chunk(exclusive, "t2-aura"), "exclusive 突破光環", "table-cards")
+    expect(_section_chunk(exclusive, "t2"), "exclusive 表二", "table-sticky-col")
+    expect(_section_chunk(exclusive, "t4-up"), "exclusive 表四升級", "table-sticky-col")
+    expect(_section_chunk(exclusive, "t4-br"), "exclusive 表四突破", "table-sticky-col")
+    forbid(_section_chunk(exclusive, "t1"), "exclusive 表一", "table-cards", "table-sticky-col", "data-label")
+    expect(_section_chunk(valhalla, "t1"), "valhalla 表一", "table-sticky-col")
+    expect(_section_chunk(valhalla, "t3"), "valhalla 表三", "table-sticky-col")
+    expect(_section_chunk(valhalla, "t2-sixth"), "valhalla 專屬屬性成長", "table-sticky-col-2")
+    expect(_section_chunk(valhalla, "t2"), "valhalla 表二", "table-cards", 'data-label="英靈"', "card-title")
+    expect(_section_chunk(valhalla, "t1-batch"), "valhalla unlock 批次", "table-cards", 'data-label="英靈"')
+    forbid(_section_chunk(valhalla, "t1-seg"), "valhalla 消耗分段", "table-cards", "table-sticky-col", "data-label")
+
+    for path in sorted((DOCS / "heroes").glob("*.html")):
+        html = path.read_text(encoding="utf-8")
+        for needle in ("table-cards", "table-sticky-col", "data-label", "card-title", "尚未發佈", "preview-banner"):
+            if needle in html:
+                fail(f"{path.name}: hero page should not contain {needle}", errors)
 
 
 def check_skins_page(html: str, errors: list[str]) -> None:
@@ -1698,6 +1768,7 @@ def main() -> int:
     check_hero_valhalla_attrs(errors)
     check_new_league_pages(errors)
     check_nature_tribe_pages(errors)
+    check_mobile_catalog_markup(errors)
 
     if errors:
         print(f"{len(errors)} check(s) failed:")
