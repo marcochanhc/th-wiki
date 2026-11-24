@@ -200,11 +200,12 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
         (first["name"], H(first["dec"], terms)),
     ]
     for sg in page.second_tags:
-        props.append((sg["name"], H(f"{sg['dec']}（無百分比；玩家確認面板，非表上每人欄位）", terms)))
+        props.append((sg["name"], H(f"{sg['dec']}（官方說明沒有百分比，由玩家在面板確認）", terms)))
+    if page.status:
+        props.append(("狀態", e(page.status)))
     props += [
-        ("狀態", e(page.status)),
-        ("專武（資料表）", H(page.exclusive_name, terms) if page.exclusive_name else "無"),
-        ("英靈", H(page.spirit_name, terms) if page.spirit_name else "資料表沒有英靈列"),
+        ("專武", H(page.exclusive_name, terms) if page.exclusive_name else "無"),
+        ("英靈", H(page.spirit_name, terms) if page.spirit_name else "沒有英靈"),
         ("星級上限", star_max_block()),
     ]
     lead = f"""
@@ -240,11 +241,19 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
     elif skill_intro.endswith("，"):
         skill_intro = skill_intro[:-1] + "。"
     if not page.spirit:
-        skill_intro += "資料表沒有" + page.name + "的英靈列，因此沒有英靈專屬技能。"
+        skill_intro += page.name + "目前沒有英靈，因此沒有英靈專屬技能。"
 
     track_html = []
     for tr in page.star_tracks:
-        rows = [[star_row(tr["tint"], it["count"]), H(it["text"], terms)] for it in tr["items"]]
+        texts = [it.get("text") or "" for it in tr["items"]]
+        if texts and all(not str(x).strip() for x in texts):
+            empty_msg = "白色星沒有再提升技能。" if tr.get("tint") == "white" else "這一檔沒有再提升技能。"
+            track_html.append(f'<h4>{e(tr["heading"])}</h4><p>{H(empty_msg, terms)}</p>')
+            continue
+        rows = []
+        for it in tr["items"]:
+            cell = H(it["text"], terms) if str(it.get("text") or "").strip() else "沒有再提升技能"
+            rows.append([star_row(tr["tint"], it["count"]), cell])
         track_html.append(f'<h4>{e(tr["heading"])}</h4>' + table(["英雄星（介面）", "技能升級"], rows))
 
     aw_rows = []
@@ -283,7 +292,7 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
             + skill_blocks(page.awaken_skills, terms)
         )
     else:
-        awaken_inner = f'<p>{H("資料表沒有" + page.name + "的覺醒階段列，也沒有覺醒被動或覺醒強化技能。此處不虛擬覺醒內容。", terms)}</p>'
+        awaken_inner = f'<p>{H(page.name + "目前沒有覺醒階段，也沒有覺醒被動或覺醒強化技能。此處不虛擬覺醒內容。", terms)}</p>'
 
     skills = f"""
     <section id="skills">
@@ -292,7 +301,7 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
       {table(["技能", "從哪裡來"], src_rows)}
       <section id="star-skills">
         <h3>英雄升星與技能星</h3>
-        <p>{H("遊戲介面以金、紅、白三色各 1 至 5 顆星來顯示，對應英雄星 1–5、6–10、11–15。文案格式是「技能名提升至N星」，這裡的 N 是介面上的技能星（1／2／3），不是資料表裡的 skill_level 原值。對照畫面與 hero_star 表（star_sub=0）後，對應如下。", terms)}</p>
+        <p>{H("遊戲介面以金、紅、白三色各 1 至 5 顆星來顯示，對應英雄星 1–5、6–10、11–15。文案格式是「技能名提升至N星」，這裡的 N 是介面上的技能星（1／2／3）。對應如下。", terms)}</p>
         {''.join(track_html)}
         <p>{H(star_skill_count_line, terms)}</p>
         {skill_blocks(page.star_skills, terms)}
@@ -311,7 +320,7 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
         if ex["self_attr"]:
             self_line = (
                 f"升級專屬技能是{ex['skill']}，寫在下面的專武專屬技能，不當作一般升星或覺醒技能。"
-                f"附加自身屬性為{ex['self_attr']}；這是表上原值，不是英雄屬性，不換算成百分比。"
+                f"附加自身屬性為{ex['self_attr']}。這裡先照表上的點數寫，可能與面板上的百分比不同。"
             )
         else:
             self_line = (
@@ -357,10 +366,9 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
             self_line = sp["self_attr_text"] + "。"
         intro = (
             f"{sp['name']}是{page.name}的英靈。專屬技能是{sp['skill']}，寫在下面的英靈專屬技能，不當作一般升星或覺醒技能。"
-            f"技能戰力為 {ff_s}。滿級第 6 項專屬屬性是{sixth_header} {sixth_max}。"
-            "屬性顯示依 show_type：1（3、4、1098）寫點數，無百分號、無千位分符、不加加號；"
-            "2（103、104、第 6 項專屬屬性，以及專屬技能列 attribute_self）為原值÷100，兩位小數加百分號，不加加號。"
-            "1 級第 6 項為 0.00%。升級戰力照表上整數書寫（滿級 627500），不改成畫面的 628K。"
+            f"技能戰力為 {ff_s}。100 級時，第 6 項專屬屬性{sixth_header}是 {sixth_max}。"
+            "1 級時這項是 0.00%。"
+            "點數屬性用點數寫，百分比屬性用百分比寫；升級戰力照表上整數書寫，滿級是 627500，遊戲畫面會顯示成 628K。"
             "這套規則只用於英靈屬性，不套到專武、稱號或羈絆。"
             f"{self_line}關鍵等級（1／25／50／75／100）見下表。"
         )
@@ -377,7 +385,7 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
         </section>
         """
     else:
-        spirit_html = f"<p>{H('hero_valhalla.json 沒有' + page.name + '的英靈列，本頁不虛擬英靈或英靈專屬技能。', terms)}</p>"
+        spirit_html = f"<p>{H(page.name + '目前沒有英靈，本頁不虛擬英靈或英靈專屬技能。', terms)}</p>"
 
     tal_rows = []
     for r in page.talents:
@@ -438,15 +446,24 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
         "頭像位置已預留，稍後再補。本頁不推測目前面板顯示的是哪一套外觀。"
         "解鎖文案依官方字串。"
     )
+    if page.skins:
+        appear_body = (
+            f'<p>{H("可收集造型有收集屬性與裝備屬性。收集屬性裡，自身欄用該英雄名稱，隊伍欄用「全部」。百分比寫成加號與兩位小數，點數寫成加號、沒有百分號也沒有千分位。覺醒造型沒有這兩欄。升星、成對、賽季與收集套裝寫在下方分節。", terms)}</p>'
+            f'<p>{H(appear_noart, terms)}</p>'
+            + table(["名稱", "收集屬性", "裝備屬性"], attr_rows)
+            + table(["名稱", "編號", "解鎖來源", "時裝幣"], unlock_rows)
+            + ''.join(feat_html)
+            + suit_html
+        )
+    else:
+        appear_body = (
+            f'<p>{H("目前沒有可收集造型。", terms)}</p>'
+            f'<p>{H("頭像位置已預留，稍後再補。不配 2D 立繪，也不使用 Fandom／社群立繪。", terms)}</p>'
+        )
     appear_sec = f"""
     <section id="appearance">
       <h2>外觀</h2>
-      <p>{H("可收集造型有收集屬性與裝備屬性。收集屬性裡，自身欄用該英雄名稱，隊伍欄用「全部」。百分比寫成加號與兩位小數，點數寫成加號、沒有百分號也沒有千分位。覺醒造型沒有這兩欄。升星、成對、賽季與收集套裝寫在下方分節。", terms)}</p>
-      <p>{H(appear_noart, terms)}</p>
-      {table(["名稱", "收集屬性", "裝備屬性"], attr_rows)}
-      {table(["名稱", "編號", "解鎖來源", "時裝幣"], unlock_rows)}
-      {''.join(feat_html)}
-      {suit_html}
+      {appear_body}
     </section>
     """
 
@@ -456,18 +473,21 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
             f'<div class="gear-row"><h3>{e(k)}</h3><p>{H(v, terms)}</p></div>'
             for k, v in page.gear["rows"]
         )
-        extra = f"<p>{H(page.gear['extra'], terms)}</p>" if page.gear.get("extra") else ""
+        stale = "套裝效果詳見裝備圖鑑（本靜態站尚未搬入圖鑑分冊）。"
+        extra_text = (page.gear.get("extra") or "").replace(stale, "").strip()
+        extra = f"<p>{H(extra_text, terms)}</p>" if extra_text else ""
         guide = page.faction if page.faction in {"聯盟", "自然", "部族"} else "聯盟"
         gear_sec = f"""
         <section id="gear">
           <h2>建議裝備*</h2>
           <aside class="callout" aria-label="推算／非官方">
             <strong>推算／非官方</strong>
-            <p>建議裝備是依技能、專武、覺醒、英靈、天賦，再搭配英雄屬性做的整體推算，不是只看英雄屬性，也不是已鎖定的客戶端傷害模擬。下列主線與原因照錄已發布的{guide}圖鑑，不另行改主線。</p>
+            <p>建議裝備是依技能、專武、覺醒、英靈、天賦和英雄屬性做的整體推算，只是參考，不是官方指定。下列主線與原因照錄已發布的{guide}圖鑑，不另行改主線。</p>
           </aside>
           <div class="gear-list">{rows}</div>
           <p>{H(page.gear['why'], terms)}</p>
           {extra}
+          <p>套裝效果見<a href="../equipment.html">{H("裝備總表", terms)}</a>。</p>
           <p>{H("*建議裝備是推算，不是官方最佳裝備。主線與備選照錄已發布的" + guide + "圖鑑，不另行改寫。", terms)}</p>
         </section>
         """
@@ -491,9 +511,9 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
     missing = list(dict.fromkeys(missing))
     miss_p = ""
     if missing:
-        miss_p = f"<p>{H('、'.join(missing) + '尚無獨立條目，本靜態站目前只公開已生成的英雄頁。羈絆數值仍是表上的原始點數，不換算成百分比。', terms)}</p>"
+        miss_p = f"<p>{H('、'.join(missing) + '尚無獨立條目，本靜態站目前只公開已生成的英雄頁。羈絆效果這裡先寫表上的點數，可能與面板上的百分比不同。', terms)}</p>"
     else:
-        miss_p = f"<p>{H('羈絆數值仍是表上的原始點數，不換算成百分比。', terms)}</p>"
+        miss_p = f"<p>{H('羈絆效果這裡先寫表上的點數，可能與面板上的百分比不同。', terms)}</p>"
     rec_p = f"<p>{H(page.rec_text, terms)}</p>" if page.rec_text else ""
     # internal links only
     cards = ['<a class="card" href="../index.html"><strong>Top Heroes Wiki</strong><span>總目錄</span></a>']
@@ -606,6 +626,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
         <li>這是繁體中文的英雄 wiki，不是官方網站。</li>
         <li>英雄條目會介紹技能與覺醒、專武、英靈與天賦、外觀、建議裝備和羈絆。</li>
         <li>數值以遊戲裡看到的為準。建議裝備只是參考，不是官方指定。</li>
+        <li>名單裡的 15032、15033、15039 在遊戲中文名稱表沒有對應名稱，條目只能用編號，本站不另起中文名。</li>
       </ul>
     </section>
     """

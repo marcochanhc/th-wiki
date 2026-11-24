@@ -101,7 +101,7 @@ EMPTY = "—"
 DASH = "—"
 
 LEDE = (
-    "本頁主體是城堡造型（介面欄位「城堡造型」，City_Skin_1）。"
+    "本頁主體是城堡造型（介面欄位「城堡造型」）。"
     "同一套「城堡外觀」介面還有城堡效果、行軍造型、城堡護盾、城堡翅膀、遷城特效與光環造型；"
     "那些相鄰欄位另節登錄，不是城堡造型主體。"
     "正文只根據遊戲資料表、官方字串，以及已確認的前服面板與玩家說法。不評定造型強弱。"
@@ -1539,25 +1539,22 @@ def render_html(data: TablesData) -> str:
     add("<ul>")
     add(li_html(
         f"<strong>本頁主體是{H('城堡造型', terms)}</strong>"
-        f"（介面欄位「{official_term_html(o.city_skin[1])}」，<code>City_Skin_1</code>）。"
+        f"（介面欄位「{official_term_html(o.city_skin[1])}」）。"
         f"同一套「城堡外觀」介面還有{H('城堡效果', terms)}、{H('行軍造型', terms)}、"
         f"{H('城堡護盾', terms)}、{H('城堡翅膀', terms)}、{H('遷城特效', terms)}，以及另頁的{H('光環造型', terms)}；"
         "那些相鄰欄位在本頁有獨立節，但不是城堡造型主體。"
         f"城鎮裝飾與地脈建築造型、DIY 裝飾套裝見<a href=\"decorations.html\">{H('裝飾物總表', terms)}</a>，不列入本頁主體。"
     ))
     add(li_html(
-        f"<strong>城堡造型主表</strong>來源是 LocalLow 包 <code>{CASTLE_DATA_PACK}</code> 的 <code>world_skin.json</code>"
-        f"（{data.table_meta['skin_rows']} 列、{data.table_meta['skin_groups']} 組），"
-        "不是稍早同一日那份沒有此主表的 StreamingAssets 抽取。"
-        "<strong>不能把表的 <code>level</code> 當成面板星數。</strong>"
-        "表上也沒有標成「0 星／1 星」的欄。"
+        "<strong>查城堡造型時，請先看面板上的星數、擁有屬性與使用屬性。</strong>"
         f"<strong>玩家確認</strong>（2026-11-23）：面板 0 星＝表的 level 1。"
-        "這是玩家對面板與表的對應確認，不是表上的欄名；當初確認對象是蛋糕城、飛翔號，"
-        "這兩座的滿 1 星仍對表的 level 6（id 3012、3022），0 星對 level 1（id 301、302）。"
-        "美味史萊姆、夢幻摩天輪亦鎖定 0 星＝level 1：這兩座與蛋糕城、飛翔號一樣都是主表 level 1–6，"
-        "使用屬性整條曲線不變，滿 1 星已用面板對上 level 6（id 3172、3182），因此表上 level 1（id 317、318）就是 0 星檔。"
-        "這不是另一張 0 星面板截圖，也不是 68 組都已用面板核過 0 星。"
-        f"<code>world_skin_goods.json</code> 仍是 {data.table_meta['goods_rows']} 筆，是技能生成的採集物，不是升級材料表。"
+        "當初確認對象是蛋糕城、飛翔號。"
+        "這兩座的滿 1 星仍對表的 level 6，0 星對 level 1。"
+        "美味史萊姆、夢幻摩天輪亦鎖定 0 星＝level 1：滿 1 星已用面板對上 level 6，因此表上 level 1 就是 0 星檔。"
+        "這不是另一張 0 星面板截圖，也不是每一座都已用面板核過 0 星。"
+        "<strong>不能把表的 level 當成面板星數。</strong>"
+        "表上也沒有標成「0 星／1 星」的欄。"
+        "來源包名、列數與 id 對照見資料說明。"
     ))
     add(li_html(
         "介面實例已有多座 2026-11-22 前服面板＋玩家說明"
@@ -2870,8 +2867,18 @@ def render_html(data: TablesData) -> str:
     # ----- 資料說明 -----
     add('    <section id="notes">')
     add("      <h2>資料說明</h2>")
+    add("<p>以下是整理用註記，查星數與屬性可略過。</p>")
+    add("<p>介面欄位鍵是 <code>City_Skin_1</code>。</p>")
     add(p_html(_footer_text(data)))
     add("<ul>")
+    add(li_html(
+        f"<strong>城堡造型主表</strong>來源是 LocalLow 包 <code>{CASTLE_DATA_PACK}</code> 的 <code>world_skin.json</code>"
+        f"（{data.table_meta['skin_rows']} 列、{data.table_meta['skin_groups']} 組），"
+        "不是稍早同一日那份沒有此主表的 StreamingAssets 抽取。"
+        "蛋糕城、飛翔號滿 1 星仍對表的 level 6（id 3012、3022），0 星對 level 1（id 301、302）；"
+        "美味史萊姆、夢幻摩天輪滿 1 星對 level 6（id 3172、3182），0 星對 level 1（id 317、318）。"
+        f"<code>world_skin_goods.json</code> 仍是 {data.table_meta['goods_rows']} 筆，是技能生成的採集物，不是升級材料表。"
+    ))
     leftover_txt = "、".join(
         f"{sid} {official_term_html(name)}（<code>skin_name_{sid}</code>；{official_term_html(desc)}）"
         for sid, name, desc in data.leftover
@@ -2925,7 +2932,7 @@ def render_markdown(data: TablesData) -> str:
     add("")
     add("## 閱讀說明")
     add("")
-    add("- **本頁主體是城堡造型**（介面欄位「城堡造型」，`City_Skin_1`）。同一套「城堡外觀」介面還有城堡效果、行軍造型、城堡護盾、城堡翅膀、遷城特效與光環造型；那些相鄰欄位另節登錄，不是城堡造型主體。城鎮裝飾與地脈建築造型、DIY 裝飾套裝見[裝飾物總表](decorations.html)，不列入本頁主體。")
+    add("- **本頁主體是城堡造型**（介面欄位「城堡造型」）。同一套「城堡外觀」介面還有城堡效果、行軍造型、城堡護盾、城堡翅膀、遷城特效與光環造型；那些相鄰欄位另節登錄，不是城堡造型主體。城鎮裝飾與地脈建築造型、DIY 裝飾套裝見[裝飾物總表](decorations.html)，不列入本頁主體。介面欄位鍵 `City_Skin_1` 見資料說明。")
     add(f"- 城堡造型主表是 LocalLow 包 `{CASTLE_DATA_PACK}` 的 `world_skin.json`（{data.table_meta['skin_rows']} 列、{data.table_meta['skin_groups']} 組）。**不能把表的 `level` 當成面板星數。** **玩家確認**（2026-11-23）：面板 0 星＝表的 level 1；當初確認對象是蛋糕城、飛翔號。美味史萊姆、夢幻摩天輪亦鎖定 0 星＝level 1（依主表 level 1 加已對上的滿 1 星＝level 6，不是另一張 0 星面板截圖），不是 68 組通例。")
     add("- 介面實例已有熾火要塞、山岳之傲、創世紀、永恆紀、天空之城、水晶聖城。各座滿星不一定相同，不能把某一座的滿星推成通例。")
     add(f"- 不依 `unlocktime`／`unlock_season`／伺服器欄位標未開放。屬性名稱優先用 `attribute_name_{{id}}`。「{o.damage_name}」的字串鍵是 `attribute_name_damage`，不要逕指成數字 id（`attribute_name_3029` 是「{o.alliance_damage}」）。`show_type=2` 的表內數值只記原值；面板百分比照畫面記錄。主表曲線的百分比寫法跟已鎖定面板相同並並陳原值，不是改寫全書換算規則。左側心形數字是讚數，不是戰力。")

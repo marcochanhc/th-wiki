@@ -298,24 +298,27 @@ TRIBE_IDS = [
 PUBLISHED_IDS = LEAGUE_IDS + NATURE_IDS + TRIBE_IDS
 
 EXPECTED_TAGS = {
-    10033: ("傷害、爆發、群體", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "專注於造成群體傷害"], "後兩項沒有百分比"),
-    10046: ("傷害、爆發、控制", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "能夠對敵人造成控制"], "後兩項沒有百分比"),
-    10018: ("坦克、控制、增益", "受到傷害-5%", ["能夠對敵人造成控制", "能夠為隊友提供加強效果"], "後兩項沒有百分比"),
-    10025: ("傷害、爆發、群體", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "專注於造成群體傷害"], "後兩項沒有百分比"),
-    10030: ("輔助、增益、群體", "生命上限+5%", ["能夠為隊友提供加強效果", "專注於造成群體傷害"], "後兩項沒有百分比"),
-    10024: ("傷害、爆發、個體", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "專注於造成個體傷害"], "後兩項沒有百分比"),
-    10003: ("治療、增益", "治療效果+5%", ["能夠為隊友提供加強效果"], "後項沒有百分比"),
-    10004: ("坦克、控制", "受到傷害-5%", ["能夠對敵人造成控制"], "後項沒有百分比"),
-    10014: ("傷害、增益", "最終傷害+3%", ["能夠為隊友提供加強效果"], "後項沒有百分比"),
-    10032: ("坦克、控制、群體", "受到傷害-5%", ["能夠對敵人造成控制", "專注於造成群體傷害"], "後兩項沒有百分比"),
-    10053: ("輔助、控制、增益", "生命上限+5%", ["能夠對敵人造成控制", "能夠為隊友提供加強效果"], "後兩項沒有百分比"),
-    10001: ("傷害、持續", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰"], "後項沒有百分比"),
-    10006: ("傷害、群體", "最終傷害+3%", ["專注於造成群體傷害"], "後項沒有百分比"),
+    10033: ("傷害、爆發、群體", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "專注於造成群體傷害"], "後兩項的官方說明沒有百分比"),
+    10046: ("傷害、爆發、控制", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "能夠對敵人造成控制"], "後兩項的官方說明沒有百分比"),
+    10018: ("坦克、控制、增益", "受到傷害-5%", ["能夠對敵人造成控制", "能夠為隊友提供加強效果"], "後兩項的官方說明沒有百分比"),
+    10025: ("傷害、爆發、群體", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "專注於造成群體傷害"], "後兩項的官方說明沒有百分比"),
+    10030: ("輔助、增益、群體", "生命上限+5%", ["能夠為隊友提供加強效果", "專注於造成群體傷害"], "後兩項的官方說明沒有百分比"),
+    10024: ("傷害、爆發、個體", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "專注於造成個體傷害"], "後兩項的官方說明沒有百分比"),
+    10003: ("治療、增益", "治療效果+5%", ["能夠為隊友提供加強效果"], "後項的官方說明沒有百分比"),
+    10004: ("坦克、控制", "受到傷害-5%", ["能夠對敵人造成控制"], "後項的官方說明沒有百分比"),
+    10014: ("傷害、增益", "最終傷害+3%", ["能夠為隊友提供加強效果"], "後項的官方說明沒有百分比"),
+    10032: ("坦克、控制、群體", "受到傷害-5%", ["能夠對敵人造成控制", "專注於造成群體傷害"], "後兩項的官方說明沒有百分比"),
+    10053: ("輔助、控制、增益", "生命上限+5%", ["能夠對敵人造成控制", "能夠為隊友提供加強效果"], "後兩項的官方說明沒有百分比"),
+    10001: ("傷害、持續", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰"], "後項的官方說明沒有百分比"),
+    10006: ("傷害、群體", "最終傷害+3%", ["專注於造成群體傷害"], "後項的官方說明沒有百分比"),
 }
 
 NO_SECOND_IDS = {10029, 15032, 15033}
 
-OPEN_IDS = {10018, 10025, 10030, 10024, 10003, 10004, 10014, 10001, 10006}
+OPEN_IDS = {
+    10018, 10025, 10030, 10024, 10003, 10004, 10014, 10001, 10006,
+    10033, 10046, 10053,
+}
 
 GEAR_MAIN = {
     10033: ("太陽之怒", "扭曲印記", "賢者的敏銳", "泰坦之威"),
@@ -376,12 +379,36 @@ def check_new_league_pages(errors: list[str]) -> None:
         if hid in OPEN_IDS:
             if "已開放" not in vt:
                 fail(f"{label}: hide=-1 should say 已開放", errors)
+        elif hid == 10029:
+            # Index already confirms 未開放; the entry uses the same wording.
+            lead = section_html(html, "lead") or ""
+            if "未開放" not in text_of(lead):
+                fail("牧羊人: lead/status should say 未開放, matching the index", errors)
+            if re.search(r"已開放", lead):
+                fail("牧羊人: must not be announced as 已開放", errors)
+        elif hid in {15032, 15033}:
+            lead = section_html(html, "lead") or ""
+            leadt = text_of(lead)
+            if "沒有官方中文名稱" not in vt:
+                fail(f"{label}: 狀態欄 should say 沒有官方中文名稱", errors)
+            if re.search(r"已開放", lead) or "未開放" in leadt:
+                fail(f"{label}: must not invent 已開放／未開放", errors)
+        elif hid == 10032:
+            lead = section_html(html, "lead") or ""
+            leadt = text_of(lead)
+            if "本頁不另標上線狀態" in vt:
+                fail("老闆娘 狀態欄 must not say 本頁不另標上線狀態", errors)
+            if "見資料說明" in leadt:
+                fail("老闆娘 狀態欄 must not say 見資料說明", errors)
+            if re.search(r"已開放", lead):
+                fail("老闆娘 must not be marked 已開放", errors)
+            if re.search(r"<dt>狀態</dt>\s*<dd>\s*(?:已開放|未開放|本頁不另標上線狀態|見資料說明|[^<\s])", lead):
+                fail("老闆娘 狀態欄 should be omitted or empty", errors)
         else:
-            if "見資料說明" not in vt:
-                fail(f"{label}: hide=1 status should be 見資料說明", errors)
-            # 牧羊人 page status is not announced as 未開放 from hide; index label is separate.
-            if hid != 10029 and re.search(r"已開放", section_html(html, "lead") or ""):
-                fail(f"{label}: hide=1 must not be announced as 已開放", errors)
+            if "已開放" not in vt:
+                fail(f"{label}: 狀態欄 should say 已開放", errors)
+            if "本頁不另標上線狀態" in vt:
+                fail(f"{label}: 狀態欄 must not say 本頁不另標上線狀態", errors)
         if hid in EXPECTED_TAGS:
             tags, locked, decs, pct_note = EXPECTED_TAGS[hid]
             if tags not in vt:
@@ -391,7 +418,7 @@ def check_new_league_pages(errors: list[str]) -> None:
             for dec in decs:
                 if dec not in vt:
                     fail(f"{label} missing official description {dec}", errors)
-            if pct_note not in vt or "玩家確認面板" not in vt:
+            if pct_note not in vt or "由玩家在面板確認" not in vt:
                 fail(f"{label} should note second-group has no percentage and is panel-confirmed", errors)
         if hid in NO_SECOND_IDS:
             if "第二組標籤尚未經玩家面板確認，本頁不推算" not in vt:
@@ -533,8 +560,16 @@ def check_new_league_pages(errors: list[str]) -> None:
     lex = section_html(landlady_html, "exclusive") or ""
     if "英雄絮語" in text_of(lex) or "專武專屬技能：乾杯" in landlady_html:
         fail("老闆娘 must not list 英雄絮語／乾杯 as her exclusive", errors)
-    if "未開放" in (section_html(landlady_html, "lead") or "") :
+    landlady_lead = section_html(landlady_html, "lead") or ""
+    landlady_leadt = text_of(landlady_lead)
+    if "未開放" in landlady_lead:
         fail("老闆娘 must not be marked 未開放", errors)
+    if re.search(r"已開放", landlady_lead):
+        fail("老闆娘 must not be marked 已開放", errors)
+    if "本頁不另標上線狀態" in landlady or "見資料說明" in landlady_leadt:
+        fail("老闆娘 狀態欄 must not say 本頁不另標上線狀態 or 見資料說明", errors)
+    if re.search(r"<dt>狀態</dt>\s*<dd>\s*(?:已開放|未開放|本頁不另標上線狀態|見資料說明|[^<\s])", landlady_lead):
+        fail("老闆娘 狀態欄 should be omitted or empty", errors)
 
     x32 = texts.get(15032, "")
     if "英雄絮語" not in x32 or "乾杯" not in x32:
@@ -583,42 +618,42 @@ def check_new_league_pages(errors: list[str]) -> None:
 
 
 NATURE_TRIBE_TAGS = {
-    10042: ("坦克、持續、增益", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠為隊友提供加強效果"], "後兩項沒有百分比"),
-    10049: ("坦克、爆發、控制", "受到傷害-5%", ["偏向於使用技能在短時間內造成高額傷害", "能夠對敵人造成控制"], "後兩項沒有百分比"),
-    10051: ("輔助、控制、增益", "生命上限+5%", ["能夠對敵人造成控制", "能夠為隊友提供加強效果"], "後兩項沒有百分比"),
-    10036: ("輔助、控制、召喚", "生命上限+5%", ["能夠對敵人造成控制", "能夠召喚額外單位參與戰鬥"], "後兩項沒有百分比"),
-    10037: ("傷害、爆發、控制", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "能夠對敵人造成控制"], "後兩項沒有百分比"),
-    10044: ("傷害、控制、召喚", "最終傷害+3%", ["能夠對敵人造成控制", "能夠召喚額外單位參與戰鬥"], "後兩項沒有百分比"),
-    10019: ("坦克、持續、增益", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠為隊友提供加強效果"], "後兩項沒有百分比"),
-    10035: ("坦克、持續、減益", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠使敵人受到弱化效果"], "後兩項沒有百分比"),
-    10040: ("傷害、爆發、個體", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "專注於造成個體傷害"], "後兩項沒有百分比"),
-    10008: ("治療、增益、召喚", "治療效果+5%", ["能夠為隊友提供加強效果", "能夠召喚額外單位參與戰鬥"], "後兩項沒有百分比"),
-    10005: ("輔助、增益", "生命上限+5%", ["能夠為隊友提供加強效果"], "後項沒有百分比"),
-    10012: ("傷害、持續、群體", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項沒有百分比"),
-    10013: ("傷害、召喚", "最終傷害+3%", ["能夠召喚額外單位參與戰鬥"], "後項沒有百分比"),
-    10021: ("傷害、爆發、減益", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "能夠使敵人受到弱化效果"], "後兩項沒有百分比"),
-    10026: ("傷害、控制、群體", "最終傷害+3%", ["能夠對敵人造成控制", "專注於造成群體傷害"], "後兩項沒有百分比"),
-    10054: ("輔助、增益、減益", "生命上限+5%", ["能夠為隊友提供加強效果", "能夠使敵人受到弱化效果"], "後兩項沒有百分比"),
-    10002: ("傷害、群體", "最終傷害+3%", ["專注於造成群體傷害"], "後項沒有百分比"),
-    10007: ("治療、群體", "治療效果+5%", ["專注於造成群體傷害"], "後項沒有百分比"),
-    10039: ("坦克、持續、群體", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項沒有百分比"),
-    10048: ("坦克、控制、增益", "受到傷害-5%", ["能夠對敵人造成控制", "能夠為隊友提供加強效果"], "後兩項沒有百分比"),
-    10047: ("傷害、控制、召喚", "最終傷害+3%", ["能夠對敵人造成控制", "能夠召喚額外單位參與戰鬥"], "後兩項沒有百分比"),
-    10038: ("輔助、增益、群體", "生命上限+5%", ["能夠為隊友提供加強效果", "專注於造成群體傷害"], "後兩項沒有百分比"),
-    10045: ("治療、持續、控制", "治療效果+5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠對敵人造成控制"], "後兩項沒有百分比"),
-    10041: ("傷害、持續、群體", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項沒有百分比"),
-    10017: ("坦克、控制、減益", "受到傷害-5%", ["能夠對敵人造成控制", "能夠使敵人受到弱化效果"], "後兩項沒有百分比"),
-    10020: ("坦克、持續、群體", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項沒有百分比"),
-    10023: ("傷害、持續、增益", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠為隊友提供加強效果"], "後兩項沒有百分比"),
-    10028: ("輔助、增益、減益", "生命上限+5%", ["能夠為隊友提供加強效果", "能夠使敵人受到弱化效果"], "後兩項沒有百分比"),
-    10034: ("治療、持續、群體", "治療效果+5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項沒有百分比"),
-    10011: ("傷害、減益", "最終傷害+3%", ["能夠使敵人受到弱化效果"], "後項沒有百分比"),
-    10015: ("輔助、減益", "生命上限+5%", ["能夠使敵人受到弱化效果"], "後項沒有百分比"),
-    10016: ("傷害、持續", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰"], "後項沒有百分比"),
-    10022: ("傷害、爆發、控制", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "能夠對敵人造成控制"], "後兩項沒有百分比"),
-    10052: ("治療、持續、減益", "治療效果+5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠使敵人受到弱化效果"], "後兩項沒有百分比"),
-    10009: ("輔助、增益", "生命上限+5%", ["能夠為隊友提供加強效果"], "後項沒有百分比"),
-    10010: ("坦克、控制", "受到傷害-5%", ["能夠對敵人造成控制"], "後項沒有百分比"),
+    10042: ("坦克、持續、增益", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠為隊友提供加強效果"], "後兩項的官方說明沒有百分比"),
+    10049: ("坦克、爆發、控制", "受到傷害-5%", ["偏向於使用技能在短時間內造成高額傷害", "能夠對敵人造成控制"], "後兩項的官方說明沒有百分比"),
+    10051: ("輔助、控制、增益", "生命上限+5%", ["能夠對敵人造成控制", "能夠為隊友提供加強效果"], "後兩項的官方說明沒有百分比"),
+    10036: ("輔助、控制、召喚", "生命上限+5%", ["能夠對敵人造成控制", "能夠召喚額外單位參與戰鬥"], "後兩項的官方說明沒有百分比"),
+    10037: ("傷害、爆發、控制", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "能夠對敵人造成控制"], "後兩項的官方說明沒有百分比"),
+    10044: ("傷害、控制、召喚", "最終傷害+3%", ["能夠對敵人造成控制", "能夠召喚額外單位參與戰鬥"], "後兩項的官方說明沒有百分比"),
+    10019: ("坦克、持續、增益", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠為隊友提供加強效果"], "後兩項的官方說明沒有百分比"),
+    10035: ("坦克、持續、減益", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠使敵人受到弱化效果"], "後兩項的官方說明沒有百分比"),
+    10040: ("傷害、爆發、個體", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "專注於造成個體傷害"], "後兩項的官方說明沒有百分比"),
+    10008: ("治療、增益、召喚", "治療效果+5%", ["能夠為隊友提供加強效果", "能夠召喚額外單位參與戰鬥"], "後兩項的官方說明沒有百分比"),
+    10005: ("輔助、增益", "生命上限+5%", ["能夠為隊友提供加強效果"], "後項的官方說明沒有百分比"),
+    10012: ("傷害、持續、群體", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項的官方說明沒有百分比"),
+    10013: ("傷害、召喚", "最終傷害+3%", ["能夠召喚額外單位參與戰鬥"], "後項的官方說明沒有百分比"),
+    10021: ("傷害、爆發、減益", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "能夠使敵人受到弱化效果"], "後兩項的官方說明沒有百分比"),
+    10026: ("傷害、控制、群體", "最終傷害+3%", ["能夠對敵人造成控制", "專注於造成群體傷害"], "後兩項的官方說明沒有百分比"),
+    10054: ("輔助、增益、減益", "生命上限+5%", ["能夠為隊友提供加強效果", "能夠使敵人受到弱化效果"], "後兩項的官方說明沒有百分比"),
+    10002: ("傷害、群體", "最終傷害+3%", ["專注於造成群體傷害"], "後項的官方說明沒有百分比"),
+    10007: ("治療、群體", "治療效果+5%", ["專注於造成群體傷害"], "後項的官方說明沒有百分比"),
+    10039: ("坦克、持續、群體", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項的官方說明沒有百分比"),
+    10048: ("坦克、控制、增益", "受到傷害-5%", ["能夠對敵人造成控制", "能夠為隊友提供加強效果"], "後兩項的官方說明沒有百分比"),
+    10047: ("傷害、控制、召喚", "最終傷害+3%", ["能夠對敵人造成控制", "能夠召喚額外單位參與戰鬥"], "後兩項的官方說明沒有百分比"),
+    10038: ("輔助、增益、群體", "生命上限+5%", ["能夠為隊友提供加強效果", "專注於造成群體傷害"], "後兩項的官方說明沒有百分比"),
+    10045: ("治療、持續、控制", "治療效果+5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠對敵人造成控制"], "後兩項的官方說明沒有百分比"),
+    10041: ("傷害、持續、群體", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項的官方說明沒有百分比"),
+    10017: ("坦克、控制、減益", "受到傷害-5%", ["能夠對敵人造成控制", "能夠使敵人受到弱化效果"], "後兩項的官方說明沒有百分比"),
+    10020: ("坦克、持續、群體", "受到傷害-5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項的官方說明沒有百分比"),
+    10023: ("傷害、持續、增益", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠為隊友提供加強效果"], "後兩項的官方說明沒有百分比"),
+    10028: ("輔助、增益、減益", "生命上限+5%", ["能夠為隊友提供加強效果", "能夠使敵人受到弱化效果"], "後兩項的官方說明沒有百分比"),
+    10034: ("治療、持續、群體", "治療效果+5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "專注於造成群體傷害"], "後兩項的官方說明沒有百分比"),
+    10011: ("傷害、減益", "最終傷害+3%", ["能夠使敵人受到弱化效果"], "後項的官方說明沒有百分比"),
+    10015: ("輔助、減益", "生命上限+5%", ["能夠使敵人受到弱化效果"], "後項的官方說明沒有百分比"),
+    10016: ("傷害、持續", "最終傷害+3%", ["偏向於為攻擊附加特殊效果並進行持續作戰"], "後項的官方說明沒有百分比"),
+    10022: ("傷害、爆發、控制", "最終傷害+3%", ["偏向於使用技能在短時間內造成高額傷害", "能夠對敵人造成控制"], "後兩項的官方說明沒有百分比"),
+    10052: ("治療、持續、減益", "治療效果+5%", ["偏向於為攻擊附加特殊效果並進行持續作戰", "能夠使敵人受到弱化效果"], "後兩項的官方說明沒有百分比"),
+    10009: ("輔助、增益", "生命上限+5%", ["能夠為隊友提供加強效果"], "後項的官方說明沒有百分比"),
+    10010: ("坦克、控制", "受到傷害-5%", ["能夠對敵人造成控制"], "後項的官方說明沒有百分比"),
 }
 
 NATURE_TRIBE_GEAR = {
@@ -675,6 +710,8 @@ NATURE_TRIBE_NAMES = {
 NATURE_TRIBE_OPEN = {
     10036, 10019, 10035, 10040, 10008, 10005, 10013, 10002, 10007,
     10038, 10020, 10023, 10028, 10034, 10011, 10015, 10016, 10009, 10010,
+    10012, 10021, 10026, 10037, 10042, 10044, 10049, 10051, 10054,
+    10017, 10022, 10039, 10041, 10045, 10047, 10048, 10052,
 }
 TALENT_PANEL_CHECK_IDS = {10007, 10005, 10028, 10021, 10039}
 NOT_UNRELEASED = {10012, 10042, 10039, 10041, 15039}
@@ -713,11 +750,18 @@ def check_nature_tribe_pages(errors: list[str]) -> None:
         if hid in NATURE_TRIBE_OPEN:
             if "已開放" not in vt:
                 fail(f"{label}: hide=-1 should say 已開放", errors)
+        elif hid == 15039:
+            lead = section_html(html, "lead") or ""
+            leadt = text_of(lead)
+            if "沒有官方中文名稱" not in vt:
+                fail("15039: 狀態欄 should say 沒有官方中文名稱", errors)
+            if re.search(r"已開放", lead) or "未開放" in leadt:
+                fail("15039: must not invent 已開放／未開放", errors)
         else:
-            if "見資料說明" not in vt:
-                fail(f"{label}: hide=1 status should be 見資料說明", errors)
-            if re.search(r"已開放", section_html(html, "lead") or ""):
-                fail(f"{label}: hide=1 must not be announced as 已開放", errors)
+            if "已開放" not in vt:
+                fail(f"{label}: 狀態欄 should say 已開放", errors)
+            if "本頁不另標上線狀態" in vt:
+                fail(f"{label}: 狀態欄 must not say 本頁不另標上線狀態", errors)
         if hid in NOT_UNRELEASED:
             if "未開放" in (section_html(html, "lead") or "") or re.search(r"（未開放）", section_html(html, "lead") or ""):
                 fail(f"{label} must not be marked 未開放", errors)
@@ -730,7 +774,7 @@ def check_nature_tribe_pages(errors: list[str]) -> None:
             for dec in decs:
                 if dec not in vt:
                     fail(f"{label} missing official description {dec}", errors)
-            if pct_note not in vt or "玩家確認面板" not in vt:
+            if pct_note not in vt or "由玩家在面板確認" not in vt:
                 fail(f"{label} should note second-group has no percentage and is panel-confirmed", errors)
         if hid == 15039:
             if "第二組標籤尚未經玩家面板確認，本頁不推算" not in vt:
@@ -1072,14 +1116,16 @@ def check_valhalla_page(html: str, errors: list[str]) -> None:
         fail("valhalla: missing lv100 power 627500", errors)
     if "8,000" in html or "240,000" in html:
         fail("valhalla: show_type 1 values must not use thousands separators", errors)
-    if "英雄攻擊（3，點數）" not in html or "英雄攻擊（103）" not in html:
-        fail("valhalla: missing id-qualified 英雄攻擊 headers", errors)
-    if "英雄生命（4，點數）" not in html or "英雄生命（104）" not in html:
-        fail("valhalla: missing id-qualified 英雄生命 headers", errors)
-    if "英雄等級上限（1098）" not in html:
-        fail("valhalla: missing 英雄等級上限（1098） header", errors)
-    if "技能減傷（21）" not in it or "50.00%" not in html:
-        fail("valhalla: missing 技能減傷（21） 50.00%", errors)
+    if "英雄攻擊（點數）" not in html or "英雄攻擊（百分比）" not in html:
+        fail("valhalla: missing 點數／百分比 英雄攻擊 headers", errors)
+    if "英雄生命（點數）" not in html or "英雄生命（百分比）" not in html:
+        fail("valhalla: missing 點數／百分比 英雄生命 headers", errors)
+    if "英雄等級上限" not in html:
+        fail("valhalla: missing 英雄等級上限 header", errors)
+    if "技能減傷" not in it or "50.00%" not in html:
+        fail("valhalla: missing 技能減傷 50.00%", errors)
+    if "英雄攻擊（3" in html or "英雄攻擊（103）" in html or "技能減傷（21）" in it:
+        fail("valhalla: table headers should not keep attribute ids in parentheses", errors)
     if "3,163" not in it and "3163" not in html:
         fail("valhalla: missing shard total 3,163", errors)
     if "即可解鎖妖精英靈" not in it:
@@ -1123,21 +1169,21 @@ def check_valhalla_page(html: str, errors: list[str]) -> None:
 
 # 15 spirits on hero pages; sixth-attr display must follow the public 英靈總表 rules.
 SPIRIT_HERO_SIXTH = {
-    10043: ("薔薇公主", "技能減傷（21）", "50.00%"),
-    10031: ("審判官", "技能減傷（21）", "50.00%"),
-    10050: ("發明家", "技能減傷（21）", "50.00%"),
-    10033: ("聖徒", "技能增傷（20）", "50.00%"),
-    10046: ("主教", "增傷（18）", "50.00%"),
-    10042: ("豪士", "技能減傷（21）", "50.00%"),
-    10049: ("中壇元帥", "抗暴（9）", "30.00%"),
-    10051: ("花藝師", "技能減傷（21）", "50.00%"),
-    10037: ("妖精", "吸血（15）", "30.00%"),
-    10044: ("喚潮使", "吸血（15）", "20.00%"),
-    10039: ("沙漠王子", "抗暴（9）", "30.00%"),
-    10048: ("馴獸師", "格擋（16）", "30.00%"),
-    10047: ("行者", "增傷（18）", "50.00%"),
-    10045: ("女巫", "技能減傷（21）", "50.00%"),
-    10041: ("風暴聖女", "技能增傷（20）", "50.00%"),
+    10043: ("薔薇公主", "技能減傷", "50.00%"),
+    10031: ("審判官", "技能減傷", "50.00%"),
+    10050: ("發明家", "技能減傷", "50.00%"),
+    10033: ("聖徒", "技能增傷", "50.00%"),
+    10046: ("主教", "增傷", "50.00%"),
+    10042: ("豪士", "技能減傷", "50.00%"),
+    10049: ("中壇元帥", "抗暴", "30.00%"),
+    10051: ("花藝師", "技能減傷", "50.00%"),
+    10037: ("妖精", "吸血", "30.00%"),
+    10044: ("喚潮使", "吸血", "20.00%"),
+    10039: ("沙漠王子", "抗暴", "30.00%"),
+    10048: ("馴獸師", "格擋", "30.00%"),
+    10047: ("行者", "增傷", "50.00%"),
+    10045: ("女巫", "技能減傷", "50.00%"),
+    10041: ("風暴聖女", "技能增傷", "50.00%"),
 }
 # Key-level sixth values at 1／25／50／75／100, keyed by the max display.
 SIXTH_KEY_LEVELS = {
@@ -1146,8 +1192,8 @@ SIXTH_KEY_LEVELS = {
     "20.00%": ["0.00%", "4.00%", "10.00%", "14.00%", "20.00%"],
 }
 SPIRIT_SELF_ATTR = {
-    10044: "技能增傷（20）各階 0.00%／10.00%／10.00%／10.00%／10.00%",
-    10041: "技能暴擊傷害（87）各階 0.00%／15.00%／15.00%／15.00%／15.00%",
+    10044: "技能增傷各階 0.00%／10.00%／10.00%／10.00%／10.00%",
+    10041: "技能暴擊傷害各階 0.00%／15.00%／15.00%／15.00%／15.00%",
 }
 JUDGE_SIXTH_LEVELS = [
     ("1 級", "0.00%"),
@@ -1180,14 +1226,19 @@ def check_hero_valhalla_attrs(errors: list[str]) -> None:
             fail(f"{label}: 英靈 subsection still says attributes are raw / not converted", errors)
         if "關鍵等級原值" in body or "技能減傷（原值）" in body:
             fail(f"{label}: 英靈 subsection still labels sixth attr as 原值", errors)
-        if f"滿級第 6 項專屬屬性是{header} {max_v}" not in body:
-            fail(f"{label}: missing 滿級第 6 項 {header} {max_v}", errors)
+        if f"100 級時，第 6 項專屬屬性{header}是 {max_v}" not in body:
+            fail(f"{label}: missing 100 級 {header} {max_v}", errors)
         if header not in body:
             fail(f"{label}: missing sixth-attr header {header}", errors)
         if "這套規則只用於英靈屬性，不套到專武、稱號或羈絆" not in body:
-            fail(f"{label}: missing 英靈-only show_type disclaimer", errors)
-        if "1 級第 6 項為 0.00%" not in body:
+            fail(f"{label}: missing 英靈-only display-rule disclaimer", errors)
+        if "1 級時這項是 0.00%" not in body:
             fail(f"{label}: should say lv1 sixth attr is 0.00%", errors)
+        if f"{header}（" in body and "各階" not in header:
+            # headers in the spirit section should not keep attribute ids
+            import re as _re
+            if _re.search(rf"{_re.escape(header)}（\d+", body):
+                fail(f"{label}: sixth-attr header still has attribute id", errors)
         # Table values at 1／25／50／75／100.
         expected = SIXTH_KEY_LEVELS[max_v]
         cells = re.findall(r"<tr><td>([^<]+)</td><td>([^<]+)</td></tr>", block)
@@ -1207,8 +1258,8 @@ def check_hero_valhalla_attrs(errors: list[str]) -> None:
         if not re.search(rf"{re.escape(lv)}\s*{re.escape(val)}", jbody):
             fail(f"審判官: missing {lv} {val} in 英靈 table", errors)
     exclusive = section_html(judge, "exclusive") or ""
-    if "這是表上原值，不是英雄屬性，不換算成百分比" not in text_of(exclusive):
-        fail("審判官: 專武自身屬性 must still say 表上原值，不換算成百分比", errors)
+    if "這裡先照表上的點數寫，可能與面板上的百分比不同" not in text_of(exclusive):
+        fail("審判官: 專武自身屬性 must still say unconverted table points in plain language", errors)
     # 織夢花靈 rank 5 both placeholders stay 60; 行者 rank 4 keeps 全體部落.
     fairy = text_of((DOCS / "heroes" / "10037.html").read_text(encoding="utf-8"))
     if "60" not in fairy:
@@ -1572,7 +1623,7 @@ def check_troops_page(html: str, errors: list[str]) -> None:
     check_public_catalog_shell(html, "troops", "Top Heroes Wiki｜士兵總表", "2026-11-23", errors)
     if not html:
         return
-    if "本頁列出士兵兩條 id 線" not in html:
+    if "本頁列出士兵的名稱、單兵數值" not in html:
         fail("troops: missing public lede", errors)
     for href in ("equipment.html", "lord-equipment.html", "exclusive.html", "skins.html"):
         if f'href="{href}"' not in html:
@@ -1676,8 +1727,10 @@ def check_tech_page(html: str, errors: list[str]) -> None:
     check_public_catalog_shell(html, "tech", "Top Heroes Wiki｜科技總表", "2026-11-15", errors)
     if not html:
         return
-    if "本頁主體是玩家科技（attr_category 25，官方名稱「科技」" not in html:
+    if "本頁主體是玩家科技（官方名稱「科技」" not in html:
         fail("tech: missing public lede", errors)
+    if "attr_category</code> 25" not in html and "attr_category 25" not in html:
+        fail("tech: attr_category 25 should remain in 資料說明", errors)
     for href in (
         "exclusive.html", "valhalla.html", "skins.html",
         "equipment.html", "lord-equipment.html", "troops.html",
@@ -1724,8 +1777,10 @@ def check_castle_page(html: str, errors: list[str]) -> None:
     check_public_catalog_shell(html, "castle", "Top Heroes Wiki｜城堡外觀總表", "2026-11-23", errors)
     if not html:
         return
-    if "本頁主體是城堡造型（介面欄位「城堡造型」，City_Skin_1）" not in html:
+    if "本頁主體是城堡造型（介面欄位「城堡造型」）" not in html:
         fail("castle: missing public lede", errors)
+    if "City_Skin_1" not in html:
+        fail("castle: City_Skin_1 key should remain in 資料說明", errors)
     for href in (
         "exclusive.html", "valhalla.html", "skins.html",
         "equipment.html", "lord-equipment.html", "troops.html",
@@ -1862,7 +1917,7 @@ def main() -> int:
         fail("薔薇公主 should no longer say second-group tags are unconfirmed", errors)
     if "偏向於使用技能在短時間內造成高額傷害" not in rt or "能夠對敵人造成控制" not in rt:
         fail("薔薇公主 missing official 爆發／控制 descriptions", errors)
-    if "後兩項沒有百分比" not in rt or "玩家確認面板" not in rt:
+    if "後兩項的官方說明沒有百分比" not in rt or "由玩家在面板確認" not in rt:
         fail("薔薇公主 should note 爆發／控制 have no percentage and are panel-confirmed", errors)
     if "輔助、控制、增益" not in vt:
         fail("發明家 tags should be 輔助、控制、增益", errors)
@@ -1872,7 +1927,7 @@ def main() -> int:
         fail("發明家 missing official 輔助 description", errors)
     if "能夠對敵人造成控制" not in vt or "能夠為隊友提供加強效果" not in vt:
         fail("發明家 missing official 控制／增益 descriptions", errors)
-    if "後兩項沒有百分比" not in vt or "玩家確認面板" not in vt:
+    if "後兩項的官方說明沒有百分比" not in vt or "由玩家在面板確認" not in vt:
         fail("發明家 should note 控制／增益 have no percentage and are panel-confirmed", errors)
     if "坦克、持續" in vt or "治療、增益" in vt:
         fail("發明家 must not inherit 審判官 or 修女 tag sets", errors)
@@ -1969,6 +2024,10 @@ def main() -> int:
         fail("薔薇公主 collection suits missing", errors)
     if "凱旋之歌" not in rt or "雷霆庇護" not in rt or "大地的守護者" not in rt or "血之怒" not in rt:
         fail("薔薇公主 recommended gear mainline missing", errors)
+    if "已開放" not in rt:
+        fail("薔薇公主 狀態欄 should say 已開放", errors)
+    if "本頁不另標上線狀態" in rt:
+        fail("薔薇公主 狀態欄 must not say 本頁不另標上線狀態", errors)
     # Official links may point to published heroes only.
     allowed_hero_pages = {f"{hid}.html" for hid in PUBLISHED_IDS}
     for html, label in ((rose, "薔薇公主"), (judge, "審判官"), (nun, "修女"), (inventor, "發明家")):
@@ -2070,14 +2129,14 @@ def main() -> int:
         fail("發明家 should not invent a pairing", errors)
     if "聖光祝福" not in vt or "冠軍的英姿" not in vt or "騎士榮光" not in vt:
         fail("發明家 recommended gear mainline missing", errors)
-    if "見資料說明" not in vt:
-        fail("發明家 status should follow hide=1 wording 見資料說明", errors)
-    # hide=1 is not a 已開放 / 未開放 flag; 騎士榮光（未開放） is gear-only wording.
-    if "已開放" in vt:
-        fail("發明家 hide=1 must not be announced as 已開放", errors)
+    if "已開放" not in vt:
+        fail("發明家 狀態欄 should say 已開放", errors)
+    if "本頁不另標上線狀態" in vt:
+        fail("發明家 狀態欄 must not say 本頁不另標上線狀態", errors)
+    # 騎士榮光（未開放） is gear-only wording.
     head_t = text_of(inventor.split("建議裝備")[0])
     if "發明家（未開放）" in vt or "他未開放" in vt or re.search(r"(?<!騎士榮光（)未開放", head_t):
-        fail("發明家 hide=1 must not be announced as 未開放", errors)
+        fail("發明家 must not be announced as 未開放", errors)
     if "僅在潮汐之怒賽季中生效" not in vt:
         fail("發明家 大白鯊 should quote official 潮汐之怒 season text", errors)
     if "突破防禦+2000" not in vt:

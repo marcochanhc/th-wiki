@@ -9,6 +9,7 @@ from .overrides import (
     COMMON_TERMS,
     HERO_OVERRIDES,
     PAGE_IDS,
+    UNRELEASED_HERO_IDS,
     rec_cutoff_note,
     SEASON_LABEL,
 )
@@ -330,33 +331,19 @@ def talent_slot_note(hero_id: int, *, aname: str, vmax_s: str, kind: str, max_lv
         if kind == "percent":
             if hero_id in TALENT_PANEL_HERO_IDS:
                 return f"與槽 {first_slot} 同名、同數值；已用面板確認"
-            return (
-                f"與槽 {first_slot} 同名、同數值；依已確認的前服天賦面板規則換算，"
-                "不是本英雄自己的面板確認"
-            )
+            return f"與槽 {first_slot} 同名、同數值"
         if kind == "point":
-            return f"與槽 {first_slot} 同名、同點數；依已確認的前服天賦面板原文寫"
-        return f"與槽 {first_slot} 同名、同原值；未依已鎖定的百分比規則換算"
+            return f"與槽 {first_slot} 同名、同點數"
+        return f"與槽 {first_slot} 同名、同原值"
     if kind == "percent":
         shown = vmax_s.split("（")[0]
         if hero_id in TALENT_PANEL_HERO_IDS:
             return f"面板原文：自身{aname}提升{shown}；{max_lv} 級已用面板確認" + ("。" + cap if cap else "")
-        return (
-            f"自身{aname}提升{shown}；依已確認的前服天賦面板規則，把表上原值除以 100，寫成兩位小數。"
-            "這不是本英雄自己的面板確認。"
-            + cap
-        )
+        return f"自身{aname}提升{shown}。" + cap
     if kind == "point":
         shown = vmax_s.split("（")[0]
-        return (
-            f"依已確認的前服天賦面板，這是點數：{aname}提升{shown}。"
-            "沒有百分號、沒有正號、也沒有千分位。不是百分比換算。"
-            + cap
-        )
-    return (
-        f"官方字串：自身{aname}提升{{1}}；表上原值，未依已鎖定的百分比規則換算。"
-        + cap
-    )
+        return f"這是點數：{aname}提升{shown}。沒有百分號。" + cap
+    return f"官方字串：自身{aname}提升{{1}}；這裡先寫表上的原值。" + cap
 
 
 def talent_rows(hero_id: int) -> list[dict]:
@@ -409,6 +396,10 @@ def talent_rows(hero_id: int) -> list[dict]:
     return rows
 
 
+UNNAMED_HERO_IDS = frozenset({15032, 15033, 15039})
+LANDLADY_ID = 10032
+UNNAMED_RESEMBLES = {15032: "老闆娘", 15033: "聖徒", 15039: "沙漠王子"}
+
 # --- bonds / recs -----------------------------------------------------------
 
 def bonds_for(hero_id: int) -> list[dict]:
@@ -428,7 +419,12 @@ def bonds_for(hero_id: int) -> list[dict]:
         for hid in group:
             members.append({"id": hid, "name": hero_name(hid), "href": hero_href(hid)})
         num = link.get("hero_num")
-        num_note = f"，人數條件 {num}" if num not in (None, "", -1) else ""
+        if str(num) == "2|3":
+            num_note = "，兩人／三人時效果不同"
+        elif num not in (None, "", -1):
+            num_note = f"，人數條件 {num}"
+        else:
+            num_note = ""
         # 羈絆 stay raw points; use table names (增傷／減傷), not title-lock labels.
         attr_s = A.format_raw_pairs(link.get("attr"), joiner="／")
         out.append({
@@ -631,9 +627,16 @@ def assemble(hero_id: int) -> HeroPage:
         for r in catalog()["hero_awaken"]
     )
 
-    # open status: only say 已開放 when hide=-1, as on the published pages.
-    # Do not independently mark anyone 未開放 (especially 老闆娘 10032).
-    status = "已開放" if hero.get("hide") == -1 else "見資料說明"
+    # 狀態欄不以 hide 旗標決定。公開站鎖定只有牧羊人為未開放。
+    # 老闆娘不標已開放／未開放；15032／15033／15039 只寫沒有官方中文名稱。
+    if hero_id in UNRELEASED_HERO_IDS:
+        status = "未開放"
+    elif hero_id in UNNAMED_HERO_IDS:
+        status = "沒有官方中文名稱"
+    elif hero_id == LANDLADY_ID:
+        status = ""
+    else:
+        status = "已開放"
 
     # exclusive
     exclusive_row = next((r for r in catalog()["hero_exclusive"] if r.get("use_hero") == hero_id), None)
@@ -878,12 +881,9 @@ def assemble(hero_id: int) -> HeroPage:
         else:
             skin_id = r.get("skin")
             quality = r.get("quality")
-            extra = []
-            if skin_id not in (-1, None, 0):
-                extra.append(f"造型 {skin_id}")
-            if quality not in (-1, None, 0):
-                extra.append(f"品質 {quality}")
-            related = "無連結技能" + (f"（{'，'.join(extra)}）" if extra else "")
+            # Official short desc already says when an appearance unlocks.
+            # Keep skin id / quality in 資料說明, not in the main 關聯技能 column.
+            related = "無連結技能"
         awaken_rows.append({"stage": str(stage), "name": sname, "dec": sdec, "related": related, "row": r})
 
     awaken_skills = []
@@ -1005,30 +1005,18 @@ def assemble(hero_id: int) -> HeroPage:
     talent_percent = any(r.get("kind") == "percent" for r in talents)
     slot_words = {1: "一", 2: "兩", 3: "三", 4: "四"}
     slot_bit = slot_words.get(len(talents), str(len(talents)))
-    talent_intro = (
-        f"{name}有{slot_bit}個天賦槽。下表依舊天賦定義與已確認的前服天賦面板規則寫，"
-        "不是較新一張把槽 1／2／4 改掛為英雄攻擊／英雄生命的定義。"
-        "這不是寫死所有伺服器、所有英雄都讀同一張表。"
-    )
+    talent_intro = f"{name}有{slot_bit}個天賦槽。下表列出槽位、名稱，以及 1 級與滿級效果。"
     has_percent = any(r.get("kind") == "percent" for r in talents)
     has_point = any(r.get("kind") == "point" for r in talents)
     if has_percent:
         if hero_id in TALENT_PANEL_HERO_IDS:
-            talent_intro += (
-                "天賦屬性依面板把表上原值除以 100，寫成兩位小數；"
-                f"{name}的數值已用面板確認。"
-                "這種換算只用於英雄天賦，不推到羈絆或稱號。"
-            )
+            talent_intro += f"{name}的百分比已用面板確認。"
             if hero_id == 10031:
-                talent_intro += "格擋與套裝同層如何疊加尚未驗證。"
+                talent_intro += "格擋與套裝同層如何疊加尚未確認。"
         else:
-            talent_intro += (
-                "天賦屬性依已確認的前服天賦面板規則，把表上原值除以 100，寫成兩位小數。"
-                "這不是本英雄自己的面板確認。"
-                "這種換算只用於英雄天賦，不推到羈絆或稱號。"
-            )
+            talent_intro += "百分比依已確認的前服天賦規則換算，不是本英雄自己的面板確認。換算說明見資料說明。"
     if has_point:
-        talent_intro += "點數屬性依面板原文寫，沒有百分號、沒有正號、也沒有千分位。"
+        talent_intro += "點數依面板原文寫，沒有百分號。"
     odd_caps = sorted({r.get("max_level") for r in talents if r.get("max_level") and r["max_level"] != 30})
     if odd_caps:
         talent_intro += "部分槽位的天賦群組最高只有" + "／".join(str(x) + " 級" for x in odd_caps) + "，沒有 30 級，右欄改寫該群組最高級的顯示值。"
@@ -1161,10 +1149,10 @@ def assemble(hero_id: int) -> HeroPage:
     if len(seconds) == 2:
         second_prose = (
             f"{seconds[0]['name']}是「{seconds[0]['dec']}」，{seconds[1]['name']}是「{seconds[1]['dec']}」；"
-            "後兩項沒有百分比，屬玩家確認面板（非表上每人欄位）。"
+            "後兩項的官方說明沒有百分比，由玩家在面板確認。"
         )
     elif seconds:
-        second_prose = "；".join(second_bits) + "。後項沒有百分比，屬玩家確認面板（非表上每人欄位）。"
+        second_prose = "；".join(second_bits) + "。後項的官方說明沒有百分比，由玩家在面板確認。"
     else:
         second_prose = "第二組標籤尚未經玩家面板確認，本頁不推算。"
 
@@ -1175,7 +1163,10 @@ def assemble(hero_id: int) -> HeroPage:
         rec_intro = f"官方「{rec_title}」名單未列"
     # Only say 已開放 when hide=-1, as on the published 審判官／修女 pages.
     # hide=1 is not a 未開放 flag; do not invent either wording from that field.
-    if hero.get("hide") == -1:
+    # 牧羊人 is the exception: the index already confirms 未開放.
+    if hero_id in UNRELEASED_HERO_IDS:
+        open_bit = "目前未開放，一般招募還拿不到。"
+    elif hero.get("hide") == -1:
         open_bit = f"{pronoun}已開放，" if pronoun else "已開放，"
     else:
         open_bit = ""
@@ -1184,6 +1175,10 @@ def assemble(hero_id: int) -> HeroPage:
         f"英雄屬性是{tag_line}。"
         f"{first['name']}的官方說明是「{first_dec}」。{second_prose}"
     )
+    if hero_id in UNNAMED_HERO_IDS:
+        other = UNNAMED_RESEMBLES.get(hero_id)
+        resemble = f"技能或造型的官方字串可能與{other}相近，但本頁不當成同一人。" if other else ""
+        intro += f"遊戲中文名稱表沒有這個編號，所以本頁只用 {hero_id}，不另起中文名。{resemble}"
     if ov.get("intro"):
         intro = ov["intro"]
 
@@ -1274,7 +1269,8 @@ def _build_notes(*, hero, hero_id, name, first, seconds, honor_group, honor_attr
     frag = hero.get("fragment_id")
     frag_n = hero.get("fragment_num")
     bits = [
-        f"資料說明：編號 {hero_id}。表上記號 hide={hide}。openday_hide={openday}（第二欄數字可能與開服天數有關，尚未對到說明文字）。",
+        "以下是整理用註記，查技能與效果可略過。",
+        f"資料說明：編號 {hero_id}。表上記號 hide={hide}（狀態欄不以 hide 旗標決定，此欄只在本節照錄）。openday_hide={openday}（第二欄數字可能與開服天數有關，尚未對到說明文字）。",
         f"碎片 fragment_id={frag}，合成所需 {frag_n}。",
         f"榮譽加成 honor_group {honor_group} → {honor_name}（{honor_attr}，is_race={is_race}）。",
         f"英雄屬性的表鍵是 title_attr／{ta_disp}，依已鎖定百分比顯示為{first['name']}的{locked}"

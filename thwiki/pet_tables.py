@@ -88,8 +88,8 @@ EMPTY = "—"
 
 LEDE = (
     "本頁列出官方界面所稱的「寵物」：21 隻的名稱與型態、寵物樂園關鍵級、升級與突破曲線、"
-    "轉化率與全英雄加成、origin_break 與滿突破技能原文、圖鑑與榮譽牆，以及孵化與搜索規則。"
-    "英靈不是寵物；本頁只寫 pet_* 這套系統。"
+    "轉化率與全英雄加成、滿突破技能原文、圖鑑與榮譽牆，以及孵化與搜索規則。"
+    "英靈不是寵物，本頁不把它們寫在一起。"
 )
 
 USED_KEYS: set[str] = set()
@@ -1900,7 +1900,7 @@ def render_html(data: TablesData) -> str:
     title = "Top Heroes Wiki｜寵物總表"
     summary = (
         "官方界面所稱的寵物：21 隻名稱與型態、寵物樂園關鍵級、升級與突破、轉化率與全英雄加成、"
-        "origin_break 與滿突破技能原文、圖鑑與榮譽牆，以及孵化與搜索規則。"
+        "滿突破技能原文、圖鑑與榮譽牆，以及孵化與搜索規則。"
     )
     toc = toc_list([
         {"id": "lead", "label": "簡介與閱讀說明"},
@@ -1937,27 +1937,13 @@ def render_html(data: TablesData) -> str:
         f"已發佈的<a href=\"valhalla.html\">{H('英靈總表', terms)}</a>是綁在英雄身上的另一套養成，不是寵物。"
     ))
     add("<ul>")
-    add("<li><strong>本頁只寫 <code>pet_*</code> 這套寵物系統。</strong>"
-        "定義在 <code>pet_detail.json</code>（21 筆），升級在 <code>pet_level.json</code>（2,520 筆，每隻 1–120 級），"
-        "突破在 <code>pet_break.json</code>（396 筆），圖鑑在 <code>pet_guidebook.json</code>（58 級），"
-        "榮譽在 <code>pet_honor.json</code>（2 筆）與 <code>pet_honor_bonus.json</code>（100 筆），"
-        "孵化在 <code>pet_incubate.json</code>（5 筆），搜索蛋任務在 <code>pet_egg_task.json</code>（3 筆），"
-        "口糧轉換在 <code>pet_food_convert.json</code>（9 筆），成就在 <code>pet_achievement.json</code>（393 筆，本頁不逐條展開）。"
-        f"{H(o.park_name, terms)}升級在 <code>citybuilding_lvup.json</code>／<code>citybuilding_lvup_new.json</code>"
-        "（建築 <code>index</code> 160，0–40 級共 41 列）。技能定義在 <code>hero_component.json</code>，81 個技能 id 全部能對上。</li>")
-    add("<li><strong>寵物主表沒有名稱欄，也沒有穩定的 <code>pet_name_{id}</code>。</strong>"
-        "能對上的路徑是：突破表的 <code>pet_skin_id</code> → <code>skin.json</code>（頭像圖集為 "
-        "<code>Atlas/UI_Pet_Head</code>）的 <code>name</code> 欄 → <code>strings_zh</code>。"
-        "不能用皮膚 id 或寵物 id 直接推鍵名。這組 <code>hero_name_*</code> 不是 <code>hero_detail</code> 裡的英雄。"
-        "史萊姆最終型態皮膚 id 是 56004，鍵卻是 <code>hero_name_56003</code>。"
-        "寶箱俗稱若與皮膚顯示名不同，只並列，不以寶箱文案覆寫表上的鍵。</li>")
-    add("<li><strong>不要從 <code>unlocktime</code>、<code>season_limit</code>、<code>season_limit_new</code> "
-        "或孵化說明裡的賽季字樣自動標未開放。</strong>"
-        "<code>unlocktime</code> 只照錄。屬性名用 <code>attribute_name_{id}</code>。"
-        f"升級主屬性 30004「{H(o.attr_names[30004], terms)}」（<code>show_type=1</code>）；"
-        "突破 <code>attr_role</code> 的 103／104、3103／3104、4103／4104、5103／5104 都是 "
-        "<code>show_type=2</code>，只錄原值，不自行換算成百分比。"
-        f"{H(o.attr_percent, terms)}寫在突破表 <code>conversion_rate</code>，不是屬性 id。</li>")
+    add("<li><strong>本頁只寫遊戲裡稱作「寵物」的這套養成，共 21 隻。</strong>"
+        "下面會列出名稱與型態、寵物樂園關鍵級、升級與突破、轉化率與全英雄加成，以及圖鑑、榮譽牆、孵化與搜索規則。"
+        "資料表檔名與筆數見資料說明。</li>")
+    add("<li>名稱依遊戲裡看得到的顯示名書寫；對照路徑與例外見資料說明。</li>")
+    add("<li><strong>不要從時間或賽季欄位自動標未開放。</strong>相關欄位只照錄。"
+        "升級與突破屬性只錄表上的原值，不自行換成百分比。"
+        f"{H(o.attr_percent, terms)}寫在突破表的轉化率欄，對照見資料說明。</li>")
     add("<li>技能文案以 <code>hero_component</code> 的 <code>desc1</code>–<code>desc5</code> 填入對應參數後照錄。"
         "<code>desc1</code> 是基礎效果，其後各段是升階追加，不是另寫一條完整技能。"
         "若文案兩個位置都寫 <code>{1}</code>，兩處都代入同一參數。"
@@ -2240,6 +2226,24 @@ def render_html(data: TablesData) -> str:
     add('    <section id="notes">')
     add("      <h2>資料說明</h2>")
     add("<ul>")
+    add("<li>以下是整理用註記，查寵物名稱與效果可略過。</li>")
+    add("<li><strong>寵物主表沒有名稱欄，也沒有穩定的 <code>pet_name_{id}</code>。</strong>"
+        "能對上的路徑是：突破表的 <code>pet_skin_id</code> → <code>skin.json</code>（頭像圖集為 "
+        "<code>Atlas/UI_Pet_Head</code>）的 <code>name</code> 欄 → <code>strings_zh</code>。"
+        "不能用皮膚 id 或寵物 id 直接推鍵名。這組 <code>hero_name_*</code> 不是 <code>hero_detail</code> 裡的英雄。"
+        "史萊姆最終型態皮膚 id 是 56004，鍵卻是 <code>hero_name_56003</code>。"
+        "寶箱俗稱若與皮膚顯示名不同，只並列，不以寶箱文案覆寫表上的鍵。</li>"
+)
+    add("<li>本頁只寫 <code>pet_*</code> 這套系統。定義在 <code>pet_detail.json</code>（21 筆），升級在 <code>pet_level.json</code>（2,520 筆，每隻 1–120 級），"
+        "突破在 <code>pet_break.json</code>（396 筆），圖鑑在 <code>pet_guidebook.json</code>（58 級），"
+        "榮譽在 <code>pet_honor.json</code>（2 筆）與 <code>pet_honor_bonus.json</code>（100 筆），"
+        "孵化在 <code>pet_incubate.json</code>（5 筆），搜索蛋任務在 <code>pet_egg_task.json</code>（3 筆），"
+        "口糧轉換在 <code>pet_food_convert.json</code>（9 筆），成就在 <code>pet_achievement.json</code>（393 筆，本頁不逐條展開）。"
+        f"{H(o.park_name, terms)}升級在 <code>citybuilding_lvup.json</code>／<code>citybuilding_lvup_new.json</code>"
+        "（建築 <code>index</code> 160，0–40 級共 41 列）。技能定義在 <code>hero_component.json</code>，81 個技能 id 全部能對上。"
+        "不要從 <code>unlocktime</code>、<code>season_limit</code>、<code>season_limit_new</code> 或孵化說明裡的賽季字樣自動標未開放。"
+        "屬性名用 <code>attribute_name_{id}</code>。升級主屬性 30004 為 <code>show_type=1</code>；"
+        "突破 <code>attr_role</code> 的 103／104、3103／3104、4103／4104、5103／5104 都是 <code>show_type=2</code>，只錄原值。</li>")
     add(f"<li>{_data_notes(data)}</li>")
     add("<li>待補：名稱鍵為何不統一、客戶端中間型態實際顯示哪一個鍵；突破消耗欄各段含義；"
         "升級主欄數字對應哪種道具；830004／830005 與無名稱獎勵 id；鐵喙前三個技能在客戶端顯示什麼；"

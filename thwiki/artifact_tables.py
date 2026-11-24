@@ -1364,8 +1364,8 @@ def render_html(data: TablesData) -> str:
     add("      <h2>簡介與閱讀說明</h2>")
     add(p_html(
         "正文只根據遊戲資料表與官方字串，不評定秘寶強弱，也不排行。"
-        f"官方界面名稱是「{H(o.system_name, terms)}」（<code>artifact_system_name</code>）；"
-        "資料表檔名是 <code>artifact*</code>。分類目錄把這批表寫成「神器（Artifact）」，與界面用字不同；"
+        f"官方界面名稱是「{H(o.system_name, terms)}」。"
+        "分類目錄把這批內容寫成「神器（Artifact）」，與界面用字不同；"
         f"本頁跟界面，稱「{H(o.system_name, terms)}」。"
         f"英雄四件套裝備見<a href=\"equipment.html\">{H('裝備總表', terms)}</a>，"
         f"領主裝備見<a href=\"lord-equipment.html\">{H('領主裝備總表', terms)}</a>，"
@@ -1375,26 +1375,16 @@ def render_html(data: TablesData) -> str:
     ))
     add("<ul>")
     add("<li><strong>本頁只寫可佩戴到隊列上的秘寶系統。</strong>"
-        f"定義在 <code>artifact.json</code>（58 筆），升星在 <code>artifact_star_up.json</code>（5,858 筆，每件 0–100 星共 101 列），"
-        "套裝在 <code>artifact_suit.json</code>（6 筆），榮譽在 <code>artifact_honor.json</code>（3 筆）與 "
-        "<code>artifact_honor_bonus.json</code>（30 筆），技能屬性輔表在 <code>artifact_skill_attr.json</code>（120 筆）。"
-        f"{H('秘寶大廳', terms)}升級在 <code>citybuilding_lvup.json</code>／<code>citybuilding_lvup_new.json</code>"
-        "（建築 <code>index</code> 140，兩表此建築 0–2076 級數值相同）。</li>")
-    add("<li><strong>58 筆是 29 個中文名的兩套編號。</strong>"
-        "<code>version=-1</code> 用 3xxxx／4xxxx／5xxxx，<code>version=1</code> 用 13xxxx／14xxxx／15xxxx。"
-        "同一中文名的品質、類型、碎片 id、<code>SeasonParam</code>、技能解鎖星兩套相同；"
-        f"升星表裡{H(o.atk, terms)}／{H(o.hp, terms)}與附加的{H(o.dmg_up, terms)}、{H(o.dmg_cut, terms)}兩套也相同。"
+        f"下面會列出 29 個中文名、{H('秘寶大廳', terms)}關鍵級、升星與套裝、榮譽牆，以及 0 星／100 星技能原文。"
+        "資料表檔名與筆數見資料說明。</li>")
+    add("<li><strong>同一件秘寶有兩套編號。</strong>"
+        "同一中文名的品質、類型、技能解鎖星，以及升星表裡的"
+        f"{H(o.atk, terms)}／{H(o.hp, terms)}與附加的{H(o.dmg_up, terms)}、{H(o.dmg_cut, terms)}，兩套相同。"
         "戰力、部分升星消耗、以及少數技能文案／全英雄屬性並不完全相同，見「兩套編號」。"
-        "名錄與技能以 <code>version=1</code> 為準列出，並註明與 <code>version=-1</code> 的差別。"
-        "本頁不自行斷定客戶端目前讀哪一套。</li>")
-    add("<li><strong>不要從 <code>SeasonParam</code> 自動標未開放。</strong>欄位本身沒有「已推出」旗標，只照錄。</li>")
-    add("<li><strong>屬性名</strong>優先用 <code>attribute_name_{id}</code>。"
-        f"{H(o.atk, terms)}、{H(o.hp, terms)}（3／4）的 <code>show_type</code> 為 1；"
-        f"{H(o.hero_atk, terms)}、{H(o.hero_hp, terms)}（103／104）與{H(o.dmg_up, terms)}、{H(o.dmg_cut, terms)}（18／19）"
-        "的 <code>show_type</code> 為 2。本頁只錄原值，不自行換算成百分比。"
-        "升星表 <code>newFightAttrs</code>／大廳 <code>string_para1</code> 另用 id 20005／20006，"
-        f"其 <code>name</code> 欄指向 <code>attribute_name_20003</code>／<code>20004</code>（{H(o.art_atk, terms)}／{H(o.art_hp, terms)}），"
-        "字串表沒有 <code>attribute_name_20005</code>／<code>20006</code>。</li>")
+        "名錄與技能以目前這套為準列出，並註明另一套的差別。"
+        "本頁不自行斷定遊戲現在讀哪一套。</li>")
+    add("<li><strong>不要從季節或活動欄位自動標未開放。</strong>表上沒有「已推出」旗標，只照錄。</li>")
+    add("<li><strong>屬性只錄表上的原值</strong>，不自行換成百分比。點數與百分比兩類屬性的對照見資料說明。</li>")
     add("<li><strong>品質欄是表上的 2／3／4。</strong>"
         f"任務與道具字串有「{H('藍色品質秘寶', terms)}／{H('紫色品質秘寶', terms)}／{H('橙色品質秘寶', terms)}」；"
         f"{H(o.hammer, terms)}說明寫「{H('橙色秘寶', terms)}」，且只有 quality=4 的秘寶 <code>exchange_goods=514</code>。"
@@ -1719,6 +1709,27 @@ def render_html(data: TablesData) -> str:
     add('    <section id="notes">')
     add("      <h2>資料說明</h2>")
     add("<ul>")
+    add("<li>以下是整理用註記，查名錄與效果可略過。</li>")
+    add("<li><strong>定義表：</strong>"
+        "定義在 <code>artifact.json</code>（58 筆），升星在 <code>artifact_star_up.json</code>（5,858 筆，每件 0–100 星共 101 列），"
+        "套裝在 <code>artifact_suit.json</code>（6 筆），榮譽在 <code>artifact_honor.json</code>（3 筆）與 "
+        "<code>artifact_honor_bonus.json</code>（30 筆），技能屬性輔表在 <code>artifact_skill_attr.json</code>（120 筆）。"
+        f"{H('秘寶大廳', terms)}升級在 <code>citybuilding_lvup.json</code>／<code>citybuilding_lvup_new.json</code>"
+        "（建築 <code>index</code> 140，兩表此建築 0–2076 級數值相同）。"
+        "官方界面名稱鍵是 <code>artifact_system_name</code>。"
+        "</li>")
+    add("<li><strong>兩套編號：</strong>"
+        "58 筆是 29 個中文名的兩套編號。<code>version=-1</code> 用 3xxxx／4xxxx／5xxxx，"
+        "<code>version=1</code> 用 13xxxx／14xxxx／15xxxx。"
+        "名錄與技能以 <code>version=1</code> 為準列出，並註明與 <code>version=-1</code> 的差別。"
+        "不要從 <code>SeasonParam</code> 自動標未開放。</li>")
+    add("<li><strong>屬性顯示：</strong>屬性名優先用 <code>attribute_name_{id}</code>。"
+        f"{H(o.atk, terms)}、{H(o.hp, terms)}（3／4，點數）的 <code>show_type</code> 為 1；"
+        f"{H(o.hero_atk, terms)}、{H(o.hero_hp, terms)}（103／104，百分比類）與{H(o.dmg_up, terms)}、{H(o.dmg_cut, terms)}（18／19）"
+        "的 <code>show_type</code> 為 2。本頁只錄原值，不自行換算成百分比。"
+        "升星表 <code>newFightAttrs</code>／大廳 <code>string_para1</code> 另用 id 20005／20006，"
+        f"其 <code>name</code> 欄指向 <code>attribute_name_20003</code>／<code>20004</code>（{H(o.art_atk, terms)}／{H(o.art_hp, terms)}），"
+        "字串表沒有 <code>attribute_name_20005</code>／<code>20006</code>。</li>")
     add(f"<li>{_data_notes(data)}</li>")
     add("<li>待補：客戶端實際讀 <code>version=-1</code> 還是 <code>version=1</code>；"
         "大廳 para 欄與倍率／轉化率的對應，以及插槽解鎖字串與表不一致的原因；"

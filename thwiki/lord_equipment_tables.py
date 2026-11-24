@@ -249,8 +249,9 @@ def fmt_int(value) -> str:
     return f"{_int(value):,}"
 
 
-def attr_label(attr_id: int) -> str:
-    return f"{A.attr_name(attr_id)}（{attr_id}）"
+def attr_label(attr_id: int, *, with_id: bool = False) -> str:
+    name = A.attr_name(attr_id)
+    return f"{name}（{attr_id}）" if with_id else name
 
 
 def format_attrs(pairs, *, named: bool = True) -> str:
@@ -993,10 +994,10 @@ def _cost_headers() -> list[str]:
     return [
         "等級",
         "階段",
-        f"{goods_name(154)}（154）",
-        f"{goods_name(155)}（155）",
-        f"{goods_name(156)}（156）",
-        f"{goods_name(157)}（157）",
+        goods_name(154),
+        goods_name(155),
+        goods_name(156),
+        goods_name(157),
     ]
 
 
@@ -1160,16 +1161,11 @@ def render_html(data: TablesData) -> str:
     <section id="lead">
       <h2>簡介與閱讀說明</h2>
       <p>正文只根據遊戲資料表與官方字串，不評定裝備強弱，也不另外發明連結或名稱。英雄裝備（武器、衣服、鞋子、頭盔）見<a href="equipment.html">{H("裝備總表", terms)}</a>，不把那套表改寫進來。已發佈的<a href="exclusive.html">{H("專武總表", terms)}</a>也不在本頁重複。</p>
-      <p>本抽取對得上的是同一套「{H(o["system"], terms)}」系統（<code>attr_category</code> 49，名稱「{H(o["property_name"], terms)}」，提示「{H(o["property_dec"], terms)}」）。介面標題同樣是「{H(o["system"], terms)}」（<code>ui_lordequip_002</code>）。對應表為：</p>
-      <ul>
-        <li><code>lord_equipment.json</code>（{fmt_int(data.counts["lord_equipment"])} 筆）：七件裝備各等級的屬性、消耗與戰力</li>
-        <li><code>lord_equip_master.json</code>（{fmt_int(data.counts["master"])} 筆）：{H(o["three"], terms)}／{H(o["six"], terms)}（介面字串 <code>ui_lordequip_012</code>／<code>013</code>）</li>
-        <li><code>lord_equipment_enchantment.json</code>（{fmt_int(data.counts["enchantment"])} 筆）：{H("等級階段", terms)}（介面字串「{H("等級階段", terms)}」「{H("階段突破", terms)}」）</li>
-      </ul>
-      <p>字串表沒有「裝魂」「領主裝佩」這兩個名稱，也沒有把本系統叫做附魔。資料表檔名雖含 <code>enchantment</code>，官方介面用的是「{H(official_text("fmjd_1"), terms)}」至「{H(official_text("fmjd_6"), terms)}」（<code>fmjd_1</code>–<code>fmjd_6</code>）與「{H(o["lord_fm4"], terms)}」（<code>lord_fm4</code>）。本頁用官方中文名，不另譯檔名。</p>
+      <p>本頁寫的是同一套「{H(o["system"], terms)}」系統（官方名稱「{H(o["property_name"], terms)}」，提示「{H(o["property_dec"], terms)}」）。介面標題同樣是「{H(o["system"], terms)}」。下面列出七件裝備的寫入屬性、品質階段、消耗，以及{H(o["three"], terms)}／{H(o["six"], terms)}和{H("等級階段", terms)}。檔名與分類編號見資料說明。</p>
+      <p>字串表沒有「裝魂」「領主裝佩」這兩個名稱，也沒有把本系統叫做附魔。官方介面用的是「{H(official_text("fmjd_1"), terms)}」至「{H(official_text("fmjd_6"), terms)}」與「{H(o["lord_fm4"], terms)}」。本頁用官方中文名，不另譯檔名。檔名與鍵名見資料說明。</p>
       <ul>
         <li><strong>正文只根據遊戲資料表。</strong>不把玩家討論寫進正文。表上對不上唯一系統的，寫明範圍與待補，不推測。</li>
-        <li><strong>屬性名</strong>優先用 <code>attribute_name_{{id}}</code>。<code>show_type=2</code> 只記表內原值，不自行換算成百分比。本頁領主裝備與大師、階段加成寫入的英雄／士兵攻擊生命、陣營屬性、技能增傷減傷、必殺技冷卻等，除{H("突破防禦", terms)}（64）為 <code>type=1</code>、<code>show_type=1</code> 外，皆為 <code>type=2</code>、<code>show_type=2</code>。表頭帶屬性編號，數值保持原值（例如{H("英雄攻擊", terms)}（103）{fmt_int(150)}，不是 1.50%）。</li>
+        <li><strong>表頭只用官方屬性名，不再掛編號。</strong>本頁數值先照表上的原值寫，不是面板上的百分比（例如{H("英雄攻擊", terms)}寫 {fmt_int(150)}，不是 1.50%）。編號對照見資料說明。</li>
         <li><strong>不要從 <code>unlocktime</code>、<code>season</code> 自動標未開放。</strong>這三張表沒有這些欄，也沒有據此標{H(p7.name, terms)}或其他件是否已推出，本頁也不標。</li>
         <li>品質與階段名稱取自 <code>lord_equip_desc001</code>–<code>013</code> 的原文（去掉色碼與未填的 <code>{{0}}</code> 後綴後為良好、稀有、史詩、傳說T1–T4、神話、神話T1–T4）。表上的 <code>quality</code> 欄是 2–6，與這些稱呼不是一一對應（例如傳說T1 至傳說T4 的 <code>quality</code> 都是 5），兩欄都照錄，不另改稱。傳說T3、傳說T4 的名稱鍵是 <code>lord_equip_desc0061</code>、<code>lord_equip_desc0071</code>。</li>
         <li>消耗寫成 <code>2|物品id|數量</code>。物品 154 {H(g154["name"], terms)}、155 {H(g155["name"], terms)}、156 {H(g156["name"], terms)}、157 {H(g157["name"], terms)}，說明都寫「用於打造領主裝備」。類型 2 在本抽取裡對得上貨品；本頁不自行把開頭的 2 解釋成別的系統。這四個名稱取自官方字串 <code>goods_name_154</code>–<code>157</code>，不用骨架貨品表。</li>
@@ -1246,6 +1242,8 @@ def render_html(data: TablesData) -> str:
     <section id="notes">
       <h2>資料說明</h2>
       <ul>
+        <li>以下是整理用註記，查屬性與消耗可略過。</li>
+        <li>系統分類是 <code>attr_category</code> 49。介面標題鍵是 <code>ui_lordequip_002</code>。對應表為 <code>lord_equipment.json</code>（{fmt_int(data.counts["lord_equipment"])} 筆）、<code>lord_equip_master.json</code>（{fmt_int(data.counts["master"])} 筆，介面字串 <code>ui_lordequip_012</code>／<code>013</code>）、<code>lord_equipment_enchantment.json</code>（{fmt_int(data.counts["enchantment"])} 筆）。屬性名優先用 <code>attribute_name_{{id}}</code>。<code>show_type=2</code> 只記表內原值，不自行換算成百分比。除{H("突破防禦", terms)}（64）為 <code>type=1</code>、<code>show_type=1</code> 外，本頁其餘寫入屬性皆為 <code>type=2</code>、<code>show_type=2</code>。例如{H("英雄攻擊", terms)}（103）{fmt_int(150)}，不是 1.50%。消耗物品編號 154–157 只在資料說明保留，表頭改用官方物品名。資料表檔名含 <code>enchantment</code>；階段鍵是 <code>fmjd_1</code>–<code>fmjd_6</code>，說明鍵是 <code>lord_fm4</code>。</li>
         <li>資料出自遊戲資料表與官方字串（lord_equipment、lord_equip_master、lord_equipment_enchantment、attr_category、attribute、strings_zh.json），資料截至 {LORD_DATA_CUTOFF}（香港時間）。來源是 LocalLow 包 {e(LORD_DATA_PACK)}（759 張表），打包時戳 {LORD_DATA_PACKED}（香港時間）。這三張領主裝備表與第 25 章所用 2026-11-05 解壓檔、以及 2026-11-22 StreamingAssets／LocalLow 歸檔位元組相同；這不表示整個 LocalLow 包與 2026-11-05 解壓檔相同。本頁用到的領主裝備相關官方字串與這三份歸檔一致。顯示規則依攻略手冊「領主裝備圖鑑」第一版（2026-11-15，香港時間；該章標題仍寫來源解壓日期 2026-11-05）。這不是官方 wiki。</li>
         <li>屬性表 <code>attribute.json</code> 在後續包多了 <code>NameKey</code> 欄，與 2026-11-05 解壓檔不是整檔相同；本頁用到的屬性編號在 <code>type</code>、<code>show_type</code> 與名稱鍵上沒有差異，顯示名稱取自 <code>attribute_name_{{id}}</code>。</li>
       </ul>

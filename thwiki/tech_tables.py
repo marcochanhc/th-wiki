@@ -54,8 +54,9 @@ EMPTY = "（空）"
 DASH = "—"
 
 LEDE = (
-    "本頁主體是玩家科技（attr_category 25，官方名稱「科技」，提示「可在研究所內研究科技」）。"
-    "公會科技是另一個來源分類（attr_category 14，官方名稱「公會科技」），下文另節登錄，不要與玩家科技混成同一欄。"
+    "本頁主體是玩家科技（官方名稱「科技」，提示「可在研究所內研究科技」）。"
+    "公會科技是另一個來源分類（官方名稱「公會科技」），下文另節登錄，不要與玩家科技混成同一欄。"
+    "不同伺服器可能看到不同的一組頁面，本頁兩套都列出。"
     "正文只根據遊戲資料表，不評定科技強弱，也不做搭配模擬。"
 )
 
@@ -1402,24 +1403,20 @@ def render_html(data: TablesData) -> str:
     add("      <h2>簡介與閱讀說明</h2>")
     add(p_html(
         "本頁主體是玩家科技"
-        f"（<code>attr_category</code> 25，官方名稱「{H(o.tech_name, terms)}」，"
+        f"（官方名稱「{H(o.tech_name, terms)}」，"
         f"提示「{official_term_html(o.tech_dec)}」）。"
-        f"定義頁在 <code>technology_advanced_type.json</code>（{comma(35)} 筆），"
-        f"節點在 <code>technology_advanced_detail.json</code>"
-        f"（{comma(24104)} 筆、{comma(841)} 條樹）。"
-        "分類表 <code>technology_classfication.json</code> 只有兩類（檔名少一個 i）。"
+        "請先按遊戲研究所／研究院裡看得到的頁名查科技。"
+        "不同伺服器可能看到不同的一組頁面，本頁兩套都列出。頁面與節點的整理註記見資料說明。"
     ))
     add(p_html(
         "公會科技是另一個來源分類"
-        f"（<code>attr_category</code> 14，官方名稱「{H(o.guild_name, terms)}」，"
+        f"（官方名稱「{H(o.guild_name, terms)}」，"
         f"提示「{official_term_html(o.guild_dec)}」），"
-        "表在 <code>alliance_tech.json</code> 等，下文另節登錄，不要與玩家科技混成同一欄。"
+        "下文另節登錄，不要與玩家科技混成同一欄。"
     ))
     add(p_html(
-        f"{H(o.shine_building_name, terms)}（<code>attr_category</code> 32，"
-        f"提示「{official_term_html(o.shine_building_dec)}」）不是科技樹，也不在本頁正文展開。"
-        "本抽取另有光輝科技頁（類型 1001–1006，<code>IsShineTechnology=true</code>，"
-        f"前置建築 169「{H(o.building_169, terms)}」），與光輝建築不是同一分類，見下文。"
+        f"{H(o.shine_building_name, terms)}（提示「{official_term_html(o.shine_building_dec)}」）不是科技樹，也不在本頁正文展開。"
+        f"另有光輝科技頁（前置建築「{H(o.building_169, terms)}」），與光輝建築不是同一分類，見下文。分類編號與欄位見資料說明。"
     ))
     add(p_html(
         f"已發佈的<a href=\"exclusive.html\">{H('專武總表', terms)}</a>、<a href=\"valhalla.html\">{H('英靈總表', terms)}</a>、"
@@ -1627,6 +1624,16 @@ def render_html(data: TablesData) -> str:
     add('    <section id="notes">')
     add("      <h2>資料說明</h2>")
     add("<ul>")
+    add("<li>以下是整理用註記，查科技頁名與效果可略過。</li>")
+    add(
+        "<li>玩家科技 <code>attr_category</code> 25。"
+        f"定義頁在 <code>technology_advanced_type.json</code>（{comma(35)} 筆），"
+        f"節點在 <code>technology_advanced_detail.json</code>"
+        f"（{comma(24104)} 筆、{comma(841)} 條樹）。"
+        "分類表 <code>technology_classfication.json</code> 只有兩類（檔名少一個 i）。"
+        "公會科技 <code>attr_category</code> 14，表在 <code>alliance_tech.json</code> 等。"
+        "server_list 原值與檔名只記在資料說明，不用來自行標上線狀態。</li>"
+    )
     add(f"<li>{_data_notes(data)}</li>")
     add(
         "<li>版本：第 24 章第一版日期 2026-11-15（香港時間）。"

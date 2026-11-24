@@ -125,7 +125,7 @@ EMPTY = "—"
 DASH = "—"
 
 LEDE = (
-    "本頁分開列出兩套系統，不要混為一套：擺在自己主城的城鎮裝飾（資料表寫成 citybuilding DIY），"
+    "本頁分開列出兩套系統，不要混為一套：擺在自己主城的城鎮裝飾，"
     "以及擺在公會領地的公會裝飾物。正文只根據遊戲資料表，不評定裝飾物強弱，也不編造取得途徑或名稱。"
 )
 
@@ -1685,7 +1685,7 @@ def render_html(data: TablesData) -> str:
     add("      <h2>簡介與閱讀說明</h2>")
     add(p_html(
         "本頁分開列出兩套系統，不要混為一套："
-        "擺在自己主城的城鎮裝飾（資料表寫成 citybuilding DIY），"
+        "擺在自己主城的城鎮裝飾，"
         "以及擺在公會領地的公會裝飾物。"
         "英雄造型、領主裝扮、聊天與社交皮膚、行軍造型是另外的系統，這裡只一筆帶過，不展開。"
         f"城堡外觀見<a href=\"castle.html\">{H('城堡外觀總表', terms)}</a>，不在本頁展開。"
@@ -1697,26 +1697,12 @@ def render_html(data: TablesData) -> str:
         "表上沒有的標未驗證或待補，不編造公式或名稱。</li>"
     )
     add(
-        "<li><strong>名錄以 <code>citybuilding_DIY_property.json</code> 的 <code>group_id</code> 為準</strong>"
-        f"（{comma(data.table_meta['property_rows'])} 筆等級列，{comma(len(data.decorations))} 個裝飾物）。"
-        "沒有把後續包才出現的 <code>citybuilding_DIY.json</code> 當成名錄。</li>"
+        f"<li><strong>名錄先列有屬性的城鎮裝飾</strong>（目前 {comma(len(data.decorations))} 個）。"
+        "另有只有名稱、沒有屬性列的編號，見範圍一節。資料表檔名與筆數見資料說明。</li>"
     )
     add(
-        "<li>名稱優先取 <code>citybuilding_DIY_name_*</code>；若無此鍵，再取 <code>collection_name_*</code>。"
-        "另有只有名稱、沒有屬性列的編號，見範圍一節。</li>"
-    )
-    add(
-        "<li><strong>屬性名稱優先用 <code>attribute_name_{id}</code>。</strong>"
-        "少數屬性 id 沒有對應的 <code>attribute_name_{id}</code> 鍵，改用 <code>attribute.json</code> 的 <code>name</code> 欄"
-        f"（例如 21007／21008 的名稱鍵是 <code>attribute_name_20007</code>／<code>20008</code>；"
-        "1194 的名稱鍵是 <code>attribute_name_1046</code>）。"
-        "<code>show_type=2</code> 的數值只記表內原值，不自行換算成百分比。"
-        "技能說明若已寫成百分比，照錄官方文案，不是由 <code>show_type</code> 換算而來。</li>"
-    )
-    add(
-        "<li><strong>不要把 <code>type=1</code> 與 <code>type=2</code> 的同名屬性混成同一欄：</strong>"
-        f"「{H(o.alliance_name_3, terms)}／{H(o.alliance_name_4, terms)}」是 3／4，"
-        f"「{H(o.hero_atk, terms)}／{H(o.hero_hp, terms)}」是 103／104。</li>"
+        "<li><strong>屬性只錄表上的原值</strong>，不自行換成百分比。"
+        "技能說明若已寫成百分比，照錄官方文案。點數與百分比兩類同名屬性不要混成同一欄，對照見資料說明。</li>"
     )
     add(
         "<li><strong>不依 <code>unlocktime</code>、<code>unlock_season</code>、<code>unlock_days</code>、"
@@ -2124,8 +2110,21 @@ def render_html(data: TablesData) -> str:
 
     add('    <section id="notes">')
     add("      <h2>資料說明</h2>")
+    add("<p>以下是整理用註記，查名稱與效果可略過。</p>")
     add(p_html(_data_notes(data)))
     add("<ul>")
+    add(
+        "<li>名錄以 <code>citybuilding_DIY_property.json</code> 的 <code>group_id</code> 為準"
+        f"（{comma(data.table_meta['property_rows'])} 筆等級列，{comma(len(data.decorations))} 個裝飾物）。"
+        "沒有把後續包才出現的 <code>citybuilding_DIY.json</code> 當成名錄。"
+        "名稱優先取 <code>citybuilding_DIY_name_*</code>；若無此鍵，再取 <code>collection_name_*</code>。"
+        "屬性名稱優先用 <code>attribute_name_{id}</code>；少數 id 沒有對應鍵時改用 <code>attribute.json</code> 的 <code>name</code> 欄"
+        "（例如 21007／21008 的名稱鍵是 <code>attribute_name_20007</code>／<code>20008</code>；"
+        "1194 的名稱鍵是 <code>attribute_name_1046</code>）。"
+        "<code>show_type=2</code> 的數值只記表內原值。"
+        f"不要把 type=1 的「{H(o.alliance_name_3, terms)}／{H(o.alliance_name_4, terms)}」（3／4）"
+        f"與 type=2 的「{H(o.hero_atk, terms)}／{H(o.hero_hp, terms)}」（103／104）混成同一欄。</li>"
+    )
     for item in data.verifications.get("chapter_diffs") or []:
         add(f"<li>{H(item, terms)}</li>")
     if data.def_only:
@@ -2344,7 +2343,7 @@ def render_markdown(data: TablesData) -> str:
     add("## 簡介與閱讀說明")
     add("")
     add(
-        "本頁分開列出兩套系統，不要混為一套：擺在自己主城的城鎮裝飾（資料表寫成 citybuilding DIY），"
+        "本頁分開列出兩套系統，不要混為一套：擺在自己主城的城鎮裝飾，"
         "以及擺在公會領地的公會裝飾物。英雄造型、領主裝扮、聊天與社交皮膚、行軍造型是另外的系統，這裡只一筆帶過，不展開。"
         "城堡外觀見[城堡外觀總表](castle.html)，不在本頁展開。"
     )

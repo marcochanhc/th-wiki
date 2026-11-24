@@ -55,8 +55,8 @@ PACK_STRINGS = {
 EMPTY = "—"
 
 LEDE = (
-    "本頁分開列出兩套系統，不要混為一套：英雄天賦（attr_category 6，官方名稱「天賦」），"
-    "可在英雄介面消耗對應英雄碎片提升；以及領主天賦（attr_category 45，官方名稱「領主天賦」），"
+    "本頁分開列出兩套系統，不要混為一套：英雄天賦（官方名稱「天賦」），"
+    "可在英雄介面消耗對應英雄碎片提升；以及領主天賦（官方名稱「領主天賦」），"
     "在領主大廳中學習。正文只根據遊戲資料表與已確認的前服面板，不評定天賦強弱，也不做搭配模擬。"
 )
 
@@ -1410,26 +1410,17 @@ def render_html(data: TablesData) -> str:
     add("      <h2>簡介與閱讀說明</h2>")
     add(p_html(
         "本頁分兩大節，不要混為一套系統。"
-        f"英雄天賦（<code>attr_category</code> 6，官方名稱「{H(o.hero_talent_name, terms)}」，"
-        f"提示「{official_term_html(o.hero_talent_dec)}」）：定義同時見 <code>hero_talent.json</code>"
-        f"（208 筆，舊表）與 <code>hero_talent_new.json</code>（228 筆，後來的定義），"
-        "數值在 <code>hero_talent_group.json</code>。兩表並存；現行 759 張表與 2026-11-05 的 675 張表都沒有讀表開關，"
-        "其他表也不引用 <code>hero_talent_new</code>。"
-        "這次已確認的前服面板（品質 1 藥劑師、品質 2 舞孃、品質 3 審判官，以及術士、守望者、沙漠王子的槽 3）"
-        "顯示的都是舊表，不是新表；現役以哪張為準仍不能全庫寫死。"
-        f"領主天賦（<code>attr_category</code> 45，官方名稱「{H(o.lord_talent_name, terms)}」，"
-        f"提示「{official_term_html(o.lord_talent_dec)}」）：志向在 <code>player_talent_professional.json</code>，"
-        f"節點在 <code>player_talent_detail.json</code>。官方志向名稱是「{H(o.war_name, terms)}」「{H(o.abundance_name, terms)}」。"
+        f"英雄天賦（官方名稱「{H(o.hero_talent_name, terms)}」，"
+        f"提示「{official_term_html(o.hero_talent_dec)}」）可在英雄介面消耗對應英雄碎片提升。"
+        "目前前服面板對得上舊的那一套（進攻戰略、持久策略等），本頁以面板看得到的為準；"
+        "另一套定義表先不拿來改你在遊戲裡看到的名稱。完整對照見資料說明。"
+        f"領主天賦（官方名稱「{H(o.lord_talent_name, terms)}」，"
+        f"提示「{official_term_html(o.lord_talent_dec)}」）在領主大廳中學習。"
+        f"官方志向名稱是「{H(o.war_name, terms)}」「{H(o.abundance_name, terms)}」。"
     ))
     add(p_html(
-        f"另有一套領主職業（{H(o.knight_lord, terms)}、{H(o.farm_lord, terms)}、{H(o.scholar, terms)}，"
-        "<code>attr_category</code> 41–43），定義在 <code>professional.json</code> 與進階／紋章表。"
-        "表沒有寫職業與領主天賦如何疊加，也不標哪一套會取代另一套。本頁不把職業寫進領主天賦正文，見文末「本頁未列入」。"
-    ))
-    add(p_html(
-        f"屬性來源「{H(o.awaken_name, terms)}」（<code>attr_category</code> 4）的提示文案是「{official_term_html(o.awaken_dec)}」；"
-        f"「{H(o.break_name, terms)}」（<code>attr_category</code> 5）的提示文案是「{official_term_html(o.break_dec)}」。"
-        "兩條提示與分類名稱對調，本頁照錄，不改正文。這兩條不是本頁的天賦系統。"
+        f"另有一套領主職業（{H(o.knight_lord, terms)}、{H(o.farm_lord, terms)}、{H(o.scholar, terms)}）。"
+        "表沒有寫職業與領主天賦如何疊加，也不標哪一套會取代另一套。本頁不把職業寫進領主天賦正文，見文末「本頁未列入」。檔名與分類編號見資料說明。"
     ))
     add(p_html(
         f"已發佈的<a href=\"exclusive.html\">{H('專武總表', terms)}</a>、<a href=\"valhalla.html\">{H('英靈總表', terms)}</a>、"
@@ -1737,6 +1728,21 @@ def render_html(data: TablesData) -> str:
     add('    <section id="notes">')
     add("      <h2>資料說明</h2>")
     add("<ul>")
+    add("<li>以下是整理用註記，查天賦名稱與效果可略過。</li>")
+    add(
+        "<li>英雄天賦 <code>attr_category</code> 6，定義同時見 <code>hero_talent.json</code>"
+        "（208 筆，舊表）與 <code>hero_talent_new.json</code>（228 筆，後來的定義），"
+        "數值在 <code>hero_talent_group.json</code>。兩表並存；現行 759 張表與 2026-11-05 的 675 張表都沒有讀表開關，"
+        "其他表也不引用 <code>hero_talent_new</code>。"
+        "已確認的前服面板（品質 1 藥劑師、品質 2 舞孃、品質 3 審判官，以及術士、守望者、沙漠王子的槽 3）"
+        "顯示的都是舊表，不是新表；現役以哪張為準仍不能全庫寫死。"
+        "領主天賦 <code>attr_category</code> 45，志向在 <code>player_talent_professional.json</code>，"
+        "節點在 <code>player_talent_detail.json</code>。"
+        "領主職業（騎士／農場／學者）是 <code>attr_category</code> 41–43，定義在 <code>professional.json</code> 與進階／紋章表。"
+        f"屬性來源「{H(o.awaken_name, terms)}」（<code>attr_category</code> 4）的提示文案是「{official_term_html(o.awaken_dec)}」；"
+        f"「{H(o.break_name, terms)}」（<code>attr_category</code> 5）的提示文案是「{official_term_html(o.break_dec)}」。"
+        "兩條提示與分類名稱對調，本頁照錄，不改正文。這兩條不是本頁的天賦系統。</li>"
+    )
     add(f"<li>{_data_notes(data)}</li>")
     add(
         "<li>版本：第 23 章第一版日期 2026-11-15（香港時間），當時以新表為正文主線；"

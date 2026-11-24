@@ -105,7 +105,8 @@ CHAPTER_SHINE = {
 DIVINE_TRAIN_TIME = {1: 150, 2: 210, 3: 270, 4: 360, 5: 450}
 FRONT_DESC_RE = re.compile(r"\s*（用於士兵兵裝解鎖或突破[，,].*）\s*$")
 LEDE = (
-    "本頁列出士兵兩條 id 線、單兵數值、訓練與治療消耗、光輝建築，以及兵裝名錄與已鎖定的聯盟兵裝面板對照。"
+    "本頁列出士兵的名稱、單兵數值、訓練與治療消耗、光輝建築，以及兵裝名錄與已鎖定的聯盟兵裝面板對照。"
+    "同一種士兵有兩套編號，不要混用；差別見內文。"
     "行軍造型不是本頁主體。英雄裝備與領主裝備已有獨立總表，本頁只交叉引用。"
 )
 
@@ -1226,29 +1227,30 @@ def render_html(data: TablesData) -> str:
     )
     add("<ul>")
     add(
-        "<li><strong>士兵有兩條 id 線，不要混用。</strong>線 A：1001–1012、2001–2012、3001–3012（有 11、12 級："
-        f'{H("天御", terms)}、{H("天穹", terms)}）。線 B：1901–1910、2901–2910、3901–3910、4901–4910（只到 10 級'
-        f'{H("傳奇", terms)}；{H("神族", terms)}只在 B 線）。同一中文名會出現在兩條線（例如「{H("傳奇聯盟戰士", terms)}」既是 1010 也是 1910），戰力相同，攻擊／生命曲線不同。</li>'
+        "<li><strong>士兵有兩套資料，不要混用。</strong>"
+        f"一套是兵營那套，有 11、12 級（{H('天御', terms)}、{H('天穹', terms)}）。"
+        f"另一套只到 10 級{H('傳奇', terms)}，{H('神族', terms)}只在這套。"
+        f"同一中文名會出現在兩套（例如「{H('傳奇聯盟戰士', terms)}」），戰力相同，攻擊／生命曲線不同。編號對照見資料說明。</li>"
     )
     add(
-        "<li><strong>面板士兵階 XII／XI，以及戰報裡的單兵攻擊／生命基礎值，用的是線 A（兵營那套），不是 19xx。</strong>已鎖定："
-        f'{H("天穹聯盟戰士", terms)} 1012 的攻擊 50、生命 900；{H("傳奇聯盟戰士", terms)} 1910 的攻擊 113、生命 1500。'
-        "不要把 <code>fight_type.switch_troop_carry</code> 強行對成 B 線或「虛擬兵」。</li>"
+        "<li><strong>面板士兵階 XII／XI，以及戰報裡的單兵攻擊／生命基礎值，用的是兵營那套，不是另一套。</strong>已鎖定："
+        f'{H("天穹聯盟戰士", terms)} 攻擊 50、生命 900；另一套的{H("傳奇聯盟戰士", terms)} 攻擊 113、生命 1500。'
+        "不要把攜帶相關欄位強行對成另一套或「虛擬兵」。</li>"
     )
     add(
-        "<li><strong>官方屬性公式</strong>（<code>hero_detailed_stats_ui_formula_4</code>／<code>8</code>）照錄為："
+        "<li><strong>官方屬性公式</strong>照錄為："
         f"{H(o.formulas['atk'], terms)}；生命同構：{H(o.formulas['hp'], terms)}。"
         f"戰鬥公式裡的「{H('士兵數量', terms)}」因戰報 15.4M／600M 等顯示進位，推不出唯一整數，維持未驗證。</li>"
     )
-    add("<li>屬性名優先用 <code>attribute_name_{id}</code>。<code>show_type=2</code> 預設只記表內原值，不自行換算成百分比。若官方文案或已鎖定面板有對應，該條照記，仍不推廣到其他屬性。</li>")
-    add("<li>不要從 <code>unlocktime</code>、<code>season</code> 或 <code>season_get</code> 自動標未開放。<code>season_get</code> 只照錄欄位。</li>")
-    add("<li>不要編造士氣「x 倍士氣造成 y 倍傷害」的數列。也不要把關卡技能 <code>troop_morale_skill_01</code> 當成通用 PvP 士氣表。</li>")
+    add("<li>屬性只錄表上的原值，不自行換成百分比。若官方文案或已鎖定面板有對應，該條照記，仍不推廣到其他屬性。</li>")
+    add("<li>不要從時間或賽季欄位自動標未開放。相關欄位只照錄。</li>")
+    add("<li>不要編造士氣「x 倍士氣造成 y 倍傷害」的數列。也不要把關卡技能當成通用 PvP 士氣表。</li>")
     add(
-        f"<li>{H('行軍造型', terms)}不在本篇展開。屬性來源分類 50 的官方名稱是「{H(o.march_name, terms)}」。"
-        f"不要把聯盟士兵生命面板曾另標的 20% 強行對成{H(o.shield_name, terms)}或裝飾物 DIY 的 <code>13104|2000</code>。</li>"
+        f"<li>{H('行軍造型', terms)}不在本篇展開。屬性來源分類的官方名稱是「{H(o.march_name, terms)}」。"
+        f"不要把聯盟士兵生命面板曾另標的 20% 強行對成{H(o.shield_name, terms)}或裝飾物的一筆效果。</li>"
     )
     add(
-        f"<li>品質欄只錄表上的數字（2–5）。養成說明若有「{H('藍色、紫色兵裝', terms)}」與「其他兵裝」的裝載規則，那是官方文案，不是替品質 3／4／5 改名。</li>"
+                f"<li>品質欄只錄表上的數字（2–5）。養成說明若有「{H('藍色、紫色兵裝', terms)}」與「其他兵裝」的裝載規則，那是官方文案，不是替品質 3／4／5 改名。</li>"
     )
     add(
         f"<li>官方用語是「{H('部族', terms)}」不是「部落」。種族名稱取 <code>unit_race_1</code>–<code>4</code>：1＝{H('聯盟', terms)}、2＝{H('部族', terms)}、3＝{H('自然', terms)}、4＝{H('神族', terms)}。"
@@ -1511,6 +1513,21 @@ def render_html(data: TablesData) -> str:
     add('    <section id="notes">')
     add("      <h2>資料說明</h2>")
     add("<ul>")
+    add(
+        "<li>以下是整理用註記，查名稱與數值可略過。</li>"
+    )
+    add(
+        "<li>士兵有兩條 id 線，不要混用。線 A：1001–1012、2001–2012、3001–3012（有 11、12 級）。"
+        "線 B：1901–1910、2901–2910、3901–3910、4901–4910（只到 10 級；神族只在 B 線）。"
+        "例如「傳奇聯盟戰士」既是 1010 也是 1910。面板與戰報基礎值用的是線 A，不是 19xx。"
+        "已鎖定：天穹聯盟戰士 1012 的攻擊 50、生命 900；傳奇聯盟戰士 1910 的攻擊 113、生命 1500。"
+        "不要把 <code>fight_type.switch_troop_carry</code> 強行對成 B 線或「虛擬兵」。"
+        "官方公式鍵是 <code>hero_detailed_stats_ui_formula_4</code>／<code>8</code>。"
+        "屬性名優先用 <code>attribute_name_{id}</code>。<code>show_type=2</code> 預設只記表內原值。"
+        "不要從 <code>unlocktime</code>、<code>season</code> 或 <code>season_get</code> 自動標未開放。"
+        "也不要把關卡技能 <code>troop_morale_skill_01</code> 當成通用 PvP 士氣表。"
+        "行軍造型屬性來源分類 50。不要把聯盟士兵生命面板曾另標的 20% 強行對成裝飾物 DIY 的 <code>13104|2000</code>。</li>"
+    )
     add(
         "<li>資料出自遊戲資料表與官方字串（troop、shine_troop、troop_skin_level、troop_skin_break、troop_skin_honor_break、jump、troop_skin、fight_type、attribute、attr_category、top_resource、strings_zh.json），"
         f"資料截至 {TROOP_DATA_CUTOFF}（香港時間）。來源是 LocalLow 包 {e(TROOP_DATA_PACK)}（759 張表），打包時戳 {TROOP_DATA_PACKED}（香港時間）。"

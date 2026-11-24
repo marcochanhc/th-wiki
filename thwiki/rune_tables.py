@@ -46,9 +46,9 @@ PACK_STRINGS = {
 EMPTY = "—"
 
 LEDE = (
-    "本頁列出官方界面所稱的「符文」：介面標題「隊列符文」的 team_rune 與 team_rune_bond"
-    "（五種、三營、1–10 級與羈絆），以及只在 LocalLow 包出現的 player_rune 表"
-    "（六個 type、1–12 級，含精煉欄）。不評定強弱，也不做搭配模擬。"
+    "本頁列出官方界面所稱的「符文」：介面標題「隊列符文」這套"
+    "（五種、三營、1–10 級與羈絆），以及後續資料包才出現的另一套符文表"
+    "（六種、1–12 級，含精煉欄）。不評定強弱，也不做搭配模擬。"
 )
 
 # 隊列符文曲線（三營相同）。type 5 第 8 級是 1036，不是力量／生命第 8 級 2073 的一半。
@@ -1226,20 +1226,19 @@ def render_html(data: TablesData) -> str:
     tbl = _build_html_tables(data, terms)
     title = "Top Heroes Wiki｜符文總表"
     summary = (
-        "官方界面所稱的符文：隊列符文五種三營 1–10 級與羈絆，以及 LocalLow 才有的 player_rune"
-        "（六個 type、1–12 級，含精煉欄）。"
+        "官方界面所稱的符文：隊列符文五種三營 1–10 級與羈絆，以及後續資料包才出現的另一套符文"
+        "（六種、1–12 級，含精煉欄）。"
     )
     toc = toc_list([
+        {"id": "rules", "label": "官方規則"},
         {"id": "lead", "label": "簡介與閱讀說明"},
         {"id": "scope", "label": "範圍"},
-        {"id": "rules", "label": "官方規則"},
         {"id": "team-catalog", "label": "五種隊列符文"},
         {"id": "team-curves", "label": "隊列符文數值"},
         {"id": "bond", "label": "羈絆"},
-        {"id": "player-names", "label": "player_rune 官方名稱與說明"},
+        {"id": "player-names", "label": "後續資料包符文的官方名稱與說明"},
         {"id": "player-map", "label": "依寫入屬性對照"},
-        {"id": "player-curves", "label": "player_rune 數值與精煉"},
-        {"id": "attrs", "label": "屬性編號"},
+        {"id": "player-curves", "label": "後續資料包符文的數值與精煉"},
         {"id": "out-of-scope", "label": "本頁未列入"},
         {"id": "notes", "label": "資料說明"},
     ])
@@ -1247,55 +1246,6 @@ def render_html(data: TablesData) -> str:
     add = parts.append
     add(f'      <p class="lede">{LEDE}</p>')
     add(f"    {toc}")
-
-    add('    <section id="lead">')
-    add("      <h2>簡介與閱讀說明</h2>")
-    add(p_html(
-        "正文只根據遊戲資料表與官方字串，不評定符文強弱，也不做搭配模擬。"
-        f"官方系統名是「{H(o.system_name, terms)}」（鍵 <code>team_rune_bagname</code>），"
-        f"提示「{H(o.system_dec, terms)}」。"
-        f"介面標題是「{H(o.title, terms)}」（<code>team_rune_title</code>）。"
-        f"{H(o.statue_name, terms)}說明：「{H(o.statue_des, terms)}」。"
-        f"英雄四件套裝備見<a href=\"equipment.html\">{H('裝備總表', terms)}</a>，"
-        f"領主裝備見<a href=\"lord-equipment.html\">{H('領主裝備總表', terms)}</a>，"
-        f"士兵見<a href=\"troops.html\">{H('士兵總表', terms)}</a>，"
-        f"秘寶見<a href=\"artifacts.html\">{H('秘寶總表', terms)}</a>，"
-        f"寵物見<a href=\"pets.html\">{H('寵物總表', terms)}</a>。"
-        f"已發佈的<a href=\"exclusive.html\">{H('專武總表', terms)}</a>是英雄專武；"
-        f"已發佈的<a href=\"valhalla.html\">{H('英靈總表', terms)}</a>是綁在英雄身上的另一套養成；"
-        f"已發佈的<a href=\"skins.html\">{H('造型總表', terms)}</a>是英雄造型。"
-        "帕魯、守護魔獸、精靈、魚缸、蝴蝶、乙太牧場、科技、裝飾物，以及 <code>kvk_totem</code>，不在本頁展開。"
-    ))
-    add("<ul>")
-    add("<li><strong>屬性名優先用 <code>attribute_name_{id}</code></strong>，不要盲目跟 <code>attribute.json</code> 的 <code>name</code> 欄。"
-        f"id 3 的 name 欄指向 <code>attribute_name_103</code>，本頁用 <code>attribute_name_3</code>「{H('攻擊', terms)}」（type=1、show_type=1）；"
-        f"id 4 用 <code>attribute_name_4</code>「{H('生命值', terms)}」，不寫成「{H('英雄攻擊', terms)}／{H('英雄生命', terms)}」。"
-        f"id 103／104 才是 show_type=2 的「{H('英雄攻擊', terms)}／{H('英雄生命', terms)}」。"
-        "id 20006 必須先查 <code>attribute_name_20006</code>：四份字串包都沒有此鍵；name 欄指向 <code>attribute_name_20004</code>，本頁不把它當作正式名稱。</li>")
-    add("<li><strong>show_type=2 只記表內原值，不自行換算成百分比。</strong>"
-        f"隊列符文的分營隊列攻擊／生命（3062 等）是 type=2、show_type=2；"
-        f"{H('防禦', terms)} 22、{H('突破防禦', terms)} 64、{H('出征上限', terms)} 1019，"
-        "以及 player_rune 裡 show_type=1 的 3／4／22／64／10003／10004／20006，也都只記原值。"
-        "不把 3062 等與不分營的 62／63 寫成同一條公式，也不推入戰鬥結算。</li>")
-    add("<li>正式用語是「部族」不是「部落」。種族 1／2／3 與聯盟／部族／自然的對應，依分營屬性編號 3xxx／4xxx／5xxx。不要從 <code>unlocktime</code>、<code>season</code> 自動標未開放（這幾張符文表沒有這類欄位）。</li>")
-    add("<li>隊列符文的 type 1–5，只使用 <code>team_rune_name_1</code>–<code>5</code> 與 <code>team_rune_desc_1</code>–<code>5</code>。"
-        "絕不用 <code>team_rune_name_001</code>–<code>006</code> 或 <code>UI_player_rune_01</code>–<code>06</code> 來標 <code>team_rune</code> 的 type。</li>")
-    add("<li>官方字串同時有「精煉」與「精鍊」，照原文引，不統一改字。"
-        f"例如 <code>UI_player_rune_refine</code> 是「{H(o.refine, terms)}」，"
-        f"<code>UI_player_rune_can_refine</code> 是「{H(o.can_refine, terms)}」。</li>")
-    add("</ul>")
-    add("    </section>")
-
-    add('    <section id="scope">')
-    add("      <h2>範圍</h2>")
-    add(p_html(
-        "本頁只寫符文這套："
-        "<code>team_rune.json</code>（150 筆：type 1–5 × race 1–3 × lev 1–10）與 "
-        "<code>team_rune_bond.json</code>（36 筆：queue 2／3／4／5 × rune_lev 1–9），"
-        "以及只在 LocalLow 包出現的 <code>player_rune.json</code>（72 筆：6 個 type × 12 級，含精煉欄）。"
-        "player_rune 表沒有名稱欄，也沒有 power 欄，只有 base_power；本頁不編造 power，也不把 type N 寫成 <code>team_rune_name_00N</code>。"
-    ))
-    add("    </section>")
 
     add('    <section id="rules">')
     add("      <h2>官方規則</h2>")
@@ -1319,6 +1269,44 @@ def render_html(data: TablesData) -> str:
         f"<code>team_rune_info_desc</code> 寫「五個插槽」。另有郵件標題「{H(o.mail_title, terms)}」（<code>mail_rune_title</code>），正文如下。兩者都照官方字串記下，不自行裁斷插槽數，也不把它們寫成同一套規則。"
     ))
     add(f"<p>{official_term_html(o.mail_desc)}</p>")
+    add("    </section>")
+
+    add('    <section id="lead">')
+    add("      <h2>簡介與閱讀說明</h2>")
+    add(p_html(
+        "正文只根據遊戲資料表與官方字串，不評定符文強弱，也不做搭配模擬。"
+        f"官方系統名是「{H(o.system_name, terms)}」，"
+        f"提示「{H(o.system_dec, terms)}」。"
+        f"介面標題是「{H(o.title, terms)}」。"
+        f"{H(o.statue_name, terms)}說明：「{H(o.statue_des, terms)}」。"
+        f"英雄四件套裝備見<a href=\"equipment.html\">{H('裝備總表', terms)}</a>，"
+        f"領主裝備見<a href=\"lord-equipment.html\">{H('領主裝備總表', terms)}</a>，"
+        f"士兵見<a href=\"troops.html\">{H('士兵總表', terms)}</a>，"
+        f"秘寶見<a href=\"artifacts.html\">{H('秘寶總表', terms)}</a>，"
+        f"寵物見<a href=\"pets.html\">{H('寵物總表', terms)}</a>。"
+        f"已發佈的<a href=\"exclusive.html\">{H('專武總表', terms)}</a>是英雄專武；"
+        f"已發佈的<a href=\"valhalla.html\">{H('英靈總表', terms)}</a>是綁在英雄身上的另一套養成；"
+        f"已發佈的<a href=\"skins.html\">{H('造型總表', terms)}</a>是英雄造型。"
+        "帕魯、守護魔獸、精靈、魚缸、蝴蝶、乙太牧場、科技、裝飾物不在本頁展開。"
+    ))
+    add("<ul>")
+    add("<li><strong>屬性只錄表上的原值</strong>，不自行換成百分比。"
+        f"「{H('攻擊', terms)}／{H('生命值', terms)}」與「{H('英雄攻擊', terms)}／{H('英雄生命', terms)}」不要混成同一欄。"
+        "有一個編號在四份字串包都沒有對應名稱鍵，本頁不把它的備用名稱當成正式名稱。對照見資料說明。</li>")
+    add("<li>正式用語是「部族」不是「部落」。不要從時間或賽季欄位自動標未開放（這幾張符文表沒有這類欄位）。</li>")
+    add("<li>隊列符文五種只使用對應的官方名稱與說明，不用另一套符文表的編號名稱來標這五種。</li>")
+    add("<li>官方字串同時有「精煉」與「精鍊」，照原文引，不統一改字。"
+        f"例如介面寫「{H(o.refine, terms)}」，也寫「{H(o.can_refine, terms)}」。</li>")
+    add("</ul>")
+    add("    </section>")
+
+    add('    <section id="scope">')
+    add("      <h2>範圍</h2>")
+    add(p_html(
+        "本頁寫兩套符文：介面標題「隊列符文」這套（五種、三營、1–10 級與羈絆），"
+        "以及後續資料包才出現的另一套（六種、1–12 級，含精煉欄）。"
+        "後一套沒有獨立的戰力欄，本頁不編造戰力，也不用它的編號名稱來標隊列符文的五種。檔名與筆數見資料說明。"
+    ))
     add("    </section>")
 
     add('    <section id="team-catalog">')
@@ -1358,7 +1346,7 @@ def render_html(data: TablesData) -> str:
     add("    </section>")
 
     add('    <section id="player-names">')
-    add("      <h2>player_rune 官方名稱與說明</h2>")
+    add("      <h2>後續資料包符文的官方名稱與說明</h2>")
     add(p_html(
         "<code>player_rune</code> 表沒有名稱欄。下列是字串表裡的 <code>team_rune_name_001</code>–<code>006</code>、"
         "<code>team_rune_desc_001</code>–<code>006</code>，以及 <code>UI_player_rune_01</code>–<code>06</code>。"
@@ -1384,7 +1372,7 @@ def render_html(data: TablesData) -> str:
     add("    </section>")
 
     add('    <section id="player-curves">')
-    add("      <h2>player_rune 數值與精煉</h2>")
+    add("      <h2>後續資料包符文的數值與精煉</h2>")
     add(p_html(
         "6 個 type × 12 級 = 72 筆。品質 rare：1–3 級為 3，4–6 級為 4，7–9 級為 5，10–12 級為 6。"
         "level_up_num：1–11 級為 3，第 12 級為 -1。沒有 power 欄，只有 base_power；六個 type 各級的 base_power、refine_exp、refine_need、refine_power、refine_percent 與 refine_percent_power 完全相同，故先列共用表。"
@@ -1404,19 +1392,10 @@ def render_html(data: TablesData) -> str:
     add(tbl["player_shared"])
     for typ in range(1, 7):
         meta = PLAYER_TYPE_META[typ]
-        add(f"<h3>type {typ} 屬性曲線（編號前綴 {meta['prefix']}；依寫入屬性對照，不是表內名稱欄）</h3>")
+        add(f"<h3>第 {typ} 種屬性曲線（依寫入屬性對照，不是表內名稱欄）</h3>")
         add(tbl[f"player_curve_{typ}"])
-        add(f"<h3>type {typ} 精煉屬性（僅 7–11 級）</h3>")
+        add(f"<h3>第 {typ} 種精煉屬性（僅 7–11 級）</h3>")
         add(tbl[f"player_refine_{typ}"])
-    add("    </section>")
-
-    add('    <section id="attrs">')
-    add("      <h2>屬性編號</h2>")
-    add(p_html(
-        "下表列出本頁用到的屬性 id。官方名稱取 <code>attribute_name_{id}</code>。"
-        "show_type=2 只記原值，不換算成百分比。"
-    ))
-    add(tbl["attr_ref"])
     add("    </section>")
 
     add('    <section id="out-of-scope">')
@@ -1434,7 +1413,32 @@ def render_html(data: TablesData) -> str:
 
     add('    <section id="notes">')
     add("      <h2>資料說明</h2>")
+    add("<p>以下是整理用註記，查名稱與效果可略過。</p>")
+    add("<h3>屬性對照</h3>")
+    add(p_html(
+        "下表列出本頁用到的屬性編號。官方名稱取 <code>attribute_name_{id}</code>。"
+        "show_type=2 只記原值，不換算成百分比。"
+    ))
+    add(tbl["attr_ref"])
     add("<ul>")
+    add("<li>以下是整理用註記，查名稱與效果可略過。</li>")
+    add("<li>隊列符文對應 <code>team_rune.json</code>（150 筆）與 <code>team_rune_bond.json</code>（36 筆）；"
+        "另一套是只在 LocalLow 包出現的 <code>player_rune.json</code>（72 筆：6 個 type × 12 級，含精煉欄）。"
+        "player_rune 表沒有名稱欄，也沒有 power 欄，只有 base_power；本頁不編造 power，也不把 type N 寫成 <code>team_rune_name_00N</code>。</li>")
+    add("<li>隊列符文對應 <code>team_rune.json</code> 與 <code>team_rune_bond.json</code>；另一套是只在 LocalLow 包出現的 <code>player_rune.json</code>。"
+        "官方系統名鍵是 <code>team_rune_bagname</code>，標題鍵是 <code>team_rune_title</code>。"
+        "屬性名優先用 <code>attribute_name_{id}</code>，不要盲目跟 <code>attribute.json</code> 的 <code>name</code> 欄。"
+        f"id 3 的 name 欄指向 <code>attribute_name_103</code>，本頁用 <code>attribute_name_3</code>「{H('攻擊', terms)}」（type=1、show_type=1）；"
+        f"id 4 用 <code>attribute_name_4</code>「{H('生命值', terms)}」，不寫成「{H('英雄攻擊', terms)}／{H('英雄生命', terms)}」。"
+        f"id 103／104 才是 show_type=2 的「{H('英雄攻擊', terms)}／{H('英雄生命', terms)}」。"
+        "id 20006 必須先查 <code>attribute_name_20006</code>：四份字串包都沒有此鍵；name 欄指向 <code>attribute_name_20004</code>，本頁不把它當作正式名稱。"
+        f"隊列符文的分營隊列攻擊／生命（3062 等）是 type=2、show_type=2；"
+        f"{H('防禦', terms)} 22、{H('突破防禦', terms)} 64、{H('出征上限', terms)} 1019，"
+        "以及 player_rune 裡 show_type=1 的 3／4／22／64／10003／10004／20006，也都只記原值。"
+        "不把 3062 等與不分營的 62／63 寫成同一條公式。"
+        "隊列符文的 type 1–5，只使用 <code>team_rune_name_1</code>–<code>5</code> 與 <code>team_rune_desc_1</code>–<code>5</code>。"
+        "絕不用 <code>team_rune_name_001</code>–<code>006</code> 或 <code>UI_player_rune_01</code>–<code>06</code> 來標 <code>team_rune</code> 的 type。"
+        "<code>kvk_totem</code> 不在本頁展開。</li>")
     add(f"<li>{_data_notes(data)}</li>")
     add("<li>待補：attribute_name_20006 缺失時客戶端實際顯示什麼；"
         "精煉經驗與材料的對應；羈絆 queue 欄的含義；"

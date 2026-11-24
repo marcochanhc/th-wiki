@@ -1265,10 +1265,10 @@ def render_html(data: TablesData) -> str:
     {toc}
     <section id="lead">
       <h2>簡介</h2>
-      <p>介面字串寫：{H(data.button_dec, terms)}。圖鑑與造型套裝是分開的頁籤（{H(data.tab_book, terms)}、{H(data.tab_suit, terms)}）。本頁只收 {e("hero_skin")}／{e("hero_skin_suit")}／{e("hero_skin_voice")}，不收入部隊皮膚、城堡／世界皮膚、領主裝扮、聊天與社交皮膚。</p>
-      <p>{e("hero_skin.json")} 共 {e(str(sum(g.count for g in data.groups)))} 筆，依戰力欄 {e("add_power")} 分成可收集造型 {e(str(n_col))} 筆、覺醒造型 {e(str(len(data.awaken)))} 筆、300xx 列 {e(str(sum(n.count for n in data.nameless)))} 筆。可收集造型另有 {e(str(n_pair))} 組成對、{e(str(n_suit))} 套收集套裝、{e(str(len(data.star_skins)))} 把可升星、{e(str(len(data.season_skins)))} 把寫了賽季說明。</p>
-      <p>造型的自身、隊伍、套裝、成對與賽季效果依屬性類型顯示：{e("show_type")}=2 把原值÷100，寫成「屬性名+x.xx%」；{e("show_type")}=1 寫成點數加號，沒有百分號，也沒有千位分符（例如突破防禦+2000、出征上限+8、英雄等級上限+1）。可升星造型的隊伍顯示值＝{e("team_attr")} 基礎＋當前星檔（滿星用最後一檔）。套裝只取當前檔，不加總各檔。收集屬性彈窗上，自身欄用該英雄名稱、隊伍欄用「{H(TEAM_SCOPE, terms)}」；套裝範圍用語是「{H(SUIT_SCOPE_HERO, terms)}」與「{H(SUIT_SCOPE_ALL, terms)}」。這套規則只用於英雄造型，不套到專武、稱號、羈絆、英靈或天賦。</p>
-      <p>排列依本站英雄目錄：聯盟 → 自然 → 部族（與首頁／手冊名單總覽相同）。{H("牧羊人", terms)}（10029）標為未開放；{H("老闆娘", terms)}不標未開放。不把 {e("unlock_season")}、{e("unlock_server")} 或 {e("unlocktime")} 自行標成未開放。15032、15033、15039 只顯示編號，不編造中文名，也不與{H("老闆娘", terms)}、{H("聖徒", terms)}、{H("沙漠王子", terms)}合成同一人。官方連結只指向已公開的英雄條目，沒有另做造型詳情子頁。</p>
+      <p>介面字串寫：{H(data.button_dec, terms)}。圖鑑與造型套裝是分開的頁籤（{H(data.tab_book, terms)}、{H(data.tab_suit, terms)}）。本頁只收英雄造型圖鑑、造型套裝與語音，不收入部隊皮膚、城堡／世界皮膚、領主裝扮、聊天與社交皮膚。</p>
+      <p>造型資料共 {e(str(sum(g.count for g in data.groups)))} 筆，分成可收集造型 {e(str(n_col))} 筆、覺醒造型 {e(str(len(data.awaken)))} 筆，以及尚無正式名稱的編號列 {e(str(sum(n.count for n in data.nameless)))} 筆。可收集造型另有 {e(str(n_pair))} 組成對、{e(str(n_suit))} 套收集套裝、{e(str(len(data.star_skins)))} 把可升星、{e(str(len(data.season_skins)))} 把寫了賽季說明。檔名與分欄見資料說明。</p>
+      <p>造型的自身、隊伍、套裝、成對與賽季效果依類型顯示：百分比類寫成「屬性名+x.xx%」；點數類寫成加號，沒有百分號，也沒有千位分符（例如突破防禦+2000、出征上限+8、英雄等級上限+1）。可升星造型的隊伍顯示值＝基礎＋當前星檔（滿星用最後一檔）。套裝只取當前檔，不加總各檔。收集屬性彈窗上，自身欄用該英雄名稱、隊伍欄用「{H(TEAM_SCOPE, terms)}」；套裝範圍用語是「{H(SUIT_SCOPE_HERO, terms)}」與「{H(SUIT_SCOPE_ALL, terms)}」。這套規則只用於英雄造型，不套到專武、稱號、羈絆、英靈或天賦。換算方式見資料說明。</p>
+      <p>排列依本站英雄目錄：聯盟 → 自然 → 部族（與首頁／手冊名單總覽相同）。{H("牧羊人", terms)}（10029）標為未開放；{H("老闆娘", terms)}不標未開放。不把時間或賽季欄位自行標成未開放。15032、15033、15039 只顯示編號，不編造中文名，也不與{H("老闆娘", terms)}、{H("聖徒", terms)}、{H("沙漠王子", terms)}合成同一人。官方連結只指向已公開的英雄條目，沒有另做造型詳情子頁。</p>
     </section>
     <section id="scope">
       <h2>範圍、解鎖與時裝幣</h2>
@@ -1354,6 +1354,8 @@ def render_html(data: TablesData) -> str:
     <section id="notes">
       <h2>資料說明</h2>
       <ul>
+        <li>以下是整理用註記，查造型名稱與效果可略過。</li>
+        <li>本頁只收 {e("hero_skin")}／{e("hero_skin_suit")}／{e("hero_skin_voice")}。分組依戰力欄 {e("add_power")}。百分比類是 {e("show_type")}=2（原值÷100）；點數類是 {e("show_type")}=1。可升星造型的隊伍顯示值＝{e("team_attr")} 基礎＋當前星檔。不把 {e("unlock_season")}、{e("unlock_server")} 或 {e("unlocktime")} 自行標成未開放。</li>
         <li>資料出自遊戲資料表與官方字串（{e("hero_skin")}、{e("hero_skin_suit")}、{e("hero_skin_voice")}、{e("skin")}、{e("hero_detail")}、{e("attribute")}、{e("strings_zh.json")}），資料截至 {SKIN_DATA_CUTOFF}（香港時間）。來源是 LocalLow 包 {e(SKIN_DATA_PACK)}（759 張表），打包時戳 {SKIN_DATA_PACKED}（香港時間）。顯示規則仍依攻略手冊「英雄造型圖鑑」第三版，但這包不是第 15 章第三版所用的同一日較早 StreamingAssets 解壓檔。這不是官方 wiki。</li>
         <li>名稱、解鎖說明、賽季說明與介面標籤都照官方字串原樣引，包括「{H("占星學士·黑珍珠", terms)}」（英雄是{H("觀星學士", terms)}）、「{H("通靈者·威爾", terms)}」（英雄是{H("通靈師", terms)}）、「{H("喚潮使・海洋公主", terms)}」、「{H("主教‧八岐", terms)}」、「{H("樹人·聖誕", terms)}」等中點與用字。15033／15039 覺醒列名稱為「{H("沙漠王子·覺醒", terms)}」，照錄。</li>
         <li>屬性 3、4 的 {e("name")} 欄指向 {e("attribute_name_103")}／{e("attribute_name_104")}，但 {e("attribute_name_3")} 是「攻擊」、{e("attribute_name_4")} 是「生命值」，{e("show_type")} 為 1。本表實際用到的隊伍屬性是 103／104（英雄攻擊／英雄生命）。</li>

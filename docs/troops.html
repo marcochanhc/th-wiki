@@ -16,19 +16,19 @@
     </div>
   </header>
   <main id="main" class="page">
-      <p class="lede">本頁列出士兵兩條 id 線、單兵數值、訓練與治療消耗、光輝建築，以及兵裝名錄與已鎖定的聯盟兵裝面板對照。行軍造型不是本頁主體。英雄裝備與領主裝備已有獨立總表，本頁只交叉引用。</p>
+      <p class="lede">本頁列出士兵的名稱、單兵數值、訓練與治療消耗、光輝建築，以及兵裝名錄與已鎖定的聯盟兵裝面板對照。同一種士兵有兩套編號，不要混用；差別見內文。行軍造型不是本頁主體。英雄裝備與領主裝備已有獨立總表，本頁只交叉引用。</p>
     <nav class="toc" aria-label="本頁章節"><h2>本頁章節</h2><ol><li class="d0"><a href="#lead">簡介與閱讀說明</a></li><li class="d0"><a href="#lines">士兵兩條線</a></li><li class="d1"><a href="#diff">兩條線的差別</a></li><li class="d1"><a href="#stats">單兵數值</a></li><li class="d1"><a href="#costs">訓練與治療消耗</a></li><li class="d1"><a href="#fight">戰鬥類型開關</a></li><li class="d1"><a href="#divine">神族（只在 B 線）</a></li><li class="d0"><a href="#formulas">官方公式與面板、戰報核對</a></li><li class="d0"><a href="#shine">光輝建築</a></li><li class="d0"><a href="#skins">兵裝</a></li><li class="d1"><a href="#catalog">名錄</a></li><li class="d1"><a href="#upgrade">升級</a></li><li class="d1"><a href="#break">突破</a></li><li class="d1"><a href="#honor">榮譽突破</a></li><li class="d1"><a href="#locked">已鎖定的聯盟兵裝面板對照</a></li><li class="d1"><a href="#march">行軍造型</a></li><li class="d0"><a href="#morale">士氣</a></li><li class="d0"><a href="#models">部隊外觀編號</a></li><li class="d0"><a href="#out-of-scope">本頁未列入</a></li><li class="d0"><a href="#notes">資料說明</a></li></ol></nav>
     <section id="lead">
       <h2>簡介與閱讀說明</h2>
 <p>正文只根據遊戲資料表與官方字串，不評定兵種或兵裝強弱，也不另外發明名稱。社群說法若出現會標成社群備註；本頁沒有這類條目。英雄裝備見<a href="equipment.html"><span class="term">裝備總表</span></a>，領主裝備見<a href="lord-equipment.html"><span class="term">領主裝備總表</span></a>。已發佈的<a href="exclusive.html"><span class="term">專武總表</span></a>與<a href="skins.html"><span class="term">造型總表</span></a>是英雄專武與英雄造型，不是本頁的士兵或兵裝。</p>
 <ul>
-<li><strong>士兵有兩條 id 線，不要混用。</strong>線 A：1001–1012、2001–2012、3001–3012（有 11、12 級：<span class="term">天御</span>、<span class="term">天穹</span>）。線 B：1901–1910、2901–2910、3901–3910、4901–4910（只到 10 級<span class="term">傳奇</span>；<span class="term">神族</span>只在 B 線）。同一中文名會出現在兩條線（例如「<span class="term">傳奇聯盟戰士</span>」既是 1010 也是 1910），戰力相同，攻擊／生命曲線不同。</li>
-<li><strong>面板士兵階 XII／XI，以及戰報裡的單兵攻擊／生命基礎值，用的是線 A（兵營那套），不是 19xx。</strong>已鎖定：<span class="term">天穹聯盟戰士</span> 1012 的攻擊 50、生命 900；<span class="term">傳奇聯盟戰士</span> 1910 的攻擊 113、生命 1500。不要把 <code>fight_type.switch_troop_carry</code> 強行對成 B 線或「虛擬兵」。</li>
-<li><strong>官方屬性公式</strong>（<code>hero_detailed_stats_ui_formula_4</code>／<code>8</code>）照錄為：<span class="term">士兵攻擊=單個士兵攻擊基礎值*士兵數量*(1+士兵攻擊百分比)+士兵攻擊額外值</span>；生命同構：<span class="term">士兵生命=單個士兵生命基礎值*士兵數量*(1+士兵生命百分比)+士兵生命額外值</span>。戰鬥公式裡的「<span class="term">士兵數量</span>」因戰報 15.4M／600M 等顯示進位，推不出唯一整數，維持未驗證。</li>
-<li>屬性名優先用 <code>attribute_name_{id}</code>。<code>show_type=2</code> 預設只記表內原值，不自行換算成百分比。若官方文案或已鎖定面板有對應，該條照記，仍不推廣到其他屬性。</li>
-<li>不要從 <code>unlocktime</code>、<code>season</code> 或 <code>season_get</code> 自動標未開放。<code>season_get</code> 只照錄欄位。</li>
-<li>不要編造士氣「x 倍士氣造成 y 倍傷害」的數列。也不要把關卡技能 <code>troop_morale_skill_01</code> 當成通用 PvP 士氣表。</li>
-<li><span class="term">行軍造型</span>不在本篇展開。屬性來源分類 50 的官方名稱是「<span class="term">行軍造型</span>」。不要把聯盟士兵生命面板曾另標的 20% 強行對成<span class="term">王國之盾</span>或裝飾物 DIY 的 <code>13104|2000</code>。</li>
+<li><strong>士兵有兩套資料，不要混用。</strong>一套是兵營那套，有 11、12 級（<span class="term">天御</span>、<span class="term">天穹</span>）。另一套只到 10 級<span class="term">傳奇</span>，<span class="term">神族</span>只在這套。同一中文名會出現在兩套（例如「<span class="term">傳奇聯盟戰士</span>」），戰力相同，攻擊／生命曲線不同。編號對照見資料說明。</li>
+<li><strong>面板士兵階 XII／XI，以及戰報裡的單兵攻擊／生命基礎值，用的是兵營那套，不是另一套。</strong>已鎖定：<span class="term">天穹聯盟戰士</span> 攻擊 50、生命 900；另一套的<span class="term">傳奇聯盟戰士</span> 攻擊 113、生命 1500。不要把攜帶相關欄位強行對成另一套或「虛擬兵」。</li>
+<li><strong>官方屬性公式</strong>照錄為：<span class="term">士兵攻擊=單個士兵攻擊基礎值*士兵數量*(1+士兵攻擊百分比)+士兵攻擊額外值</span>；生命同構：<span class="term">士兵生命=單個士兵生命基礎值*士兵數量*(1+士兵生命百分比)+士兵生命額外值</span>。戰鬥公式裡的「<span class="term">士兵數量</span>」因戰報 15.4M／600M 等顯示進位，推不出唯一整數，維持未驗證。</li>
+<li>屬性只錄表上的原值，不自行換成百分比。若官方文案或已鎖定面板有對應，該條照記，仍不推廣到其他屬性。</li>
+<li>不要從時間或賽季欄位自動標未開放。相關欄位只照錄。</li>
+<li>不要編造士氣「x 倍士氣造成 y 倍傷害」的數列。也不要把關卡技能當成通用 PvP 士氣表。</li>
+<li><span class="term">行軍造型</span>不在本篇展開。屬性來源分類的官方名稱是「<span class="term">行軍造型</span>」。不要把聯盟士兵生命面板曾另標的 20% 強行對成<span class="term">王國之盾</span>或裝飾物的一筆效果。</li>
 <li>品質欄只錄表上的數字（2–5）。養成說明若有「<span class="term">藍色、紫色兵裝</span>」與「其他兵裝」的裝載規則，那是官方文案，不是替品質 3／4／5 改名。</li>
 <li>官方用語是「<span class="term">部族</span>」不是「部落」。種族名稱取 <code>unit_race_1</code>–<code>4</code>：1＝<span class="term">聯盟</span>、2＝<span class="term">部族</span>、3＝<span class="term">自然</span>、4＝<span class="term">神族</span>。影響力目錄把三營士兵寫成「<span class="term">聯盟士兵</span>／<span class="term">部落士兵</span>／<span class="term">自然士兵</span>」（此處原文是「部落」不是「部族」），照錄並標明。</li>
 </ul>
@@ -193,6 +193,8 @@
     <section id="notes">
       <h2>資料說明</h2>
 <ul>
+<li>以下是整理用註記，查名稱與數值可略過。</li>
+<li>士兵有兩條 id 線，不要混用。線 A：1001–1012、2001–2012、3001–3012（有 11、12 級）。線 B：1901–1910、2901–2910、3901–3910、4901–4910（只到 10 級；神族只在 B 線）。例如「傳奇聯盟戰士」既是 1010 也是 1910。面板與戰報基礎值用的是線 A，不是 19xx。已鎖定：天穹聯盟戰士 1012 的攻擊 50、生命 900；傳奇聯盟戰士 1910 的攻擊 113、生命 1500。不要把 <code>fight_type.switch_troop_carry</code> 強行對成 B 線或「虛擬兵」。官方公式鍵是 <code>hero_detailed_stats_ui_formula_4</code>／<code>8</code>。屬性名優先用 <code>attribute_name_{id}</code>。<code>show_type=2</code> 預設只記表內原值。不要從 <code>unlocktime</code>、<code>season</code> 或 <code>season_get</code> 自動標未開放。也不要把關卡技能 <code>troop_morale_skill_01</code> 當成通用 PvP 士氣表。行軍造型屬性來源分類 50。不要把聯盟士兵生命面板曾另標的 20% 強行對成裝飾物 DIY 的 <code>13104|2000</code>。</li>
 <li>資料出自遊戲資料表與官方字串（troop、shine_troop、troop_skin_level、troop_skin_break、troop_skin_honor_break、jump、troop_skin、fight_type、attribute、attr_category、top_resource、strings_zh.json），資料截至 2026-11-23（香港時間）。來源是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），打包時戳 2026-11-22 23:33（香港時間）。士兵主表、光輝表與兵裝三表與第 19 章所用 2026-11-05 解壓檔、以及 2026-11-22 StreamingAssets／LocalLow 歸檔位元組相同；這不表示整個 LocalLow 包與 2026-11-05 解壓檔相同。<code>jump.json</code> 現行包與 2026-11-22 兩份歸檔相同（969 筆），2026-11-05 解壓檔少 3 筆（966），但本頁用到的 14 組兵裝跳轉列與 2026-11-05 位元組相同。<code>strings_zh.json</code> 現行檔與 2026-11-22 LocalLow 歸檔相同（40,581 鍵）；2026-11-05 與 2026-11-22 StreamingAssets 整體不同，本頁用到的鍵值與這三份歸檔一致。<code>attribute.json</code> 列數同為 764，2026-11-05 與現行包位元組不同，差在後來多了 <code>NameKey</code> 等欄；本頁用到的 <code>type</code>／<code>show_type</code>／<code>name</code>／<code>max</code>／<code>is_max_show</code>／<code>attribute_Id</code> 與 2026-11-05 相同。顯示規則依攻略手冊「士兵圖鑑」第一版（2026-11-15，香港時間；該章標題仍寫來源解壓日期 2026-11-05）。這不是官方 wiki。</li>
 </ul>
     </section>
