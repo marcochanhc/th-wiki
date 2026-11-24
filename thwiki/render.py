@@ -575,6 +575,10 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
             "秘寶": "artifacts.html",
             "寵物": "pets.html",
             "符文": "runes.html",
+            "天賦": "talents.html",
+            "科技": "tech.html",
+            "裝飾物": "decorations.html",
+            "城堡外觀": "castle.html",
         }
         href = hrefs.get(item)
         if href:
@@ -585,7 +589,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
     body = f"""
     <header class="entry-head">
       <h1>Top Heroes Wiki</h1>
-      <p class="lede">Top Heroes 英雄 wiki。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表和符文總表也已公開。</p>
+      <p class="lede">Top Heroes 英雄 wiki。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表和城堡外觀總表也已公開。</p>
     </header>
     <section id="heroes">
       <h2>英雄</h2>
@@ -593,7 +597,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
     </section>
     <section id="codex">
       <h2>圖鑑</h2>
-      <p>專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表和符文總表已公開，其餘分類稍後再補。</p>
+      <p>專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表和城堡外觀總表已公開。</p>
       <ul class="codex-index">{codex}</ul>
     </section>
     <section id="about">
@@ -605,4 +609,4 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
       </ul>
     </section>
     """
-    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表和符文總表也已公開。", body, depth=0, nav_current="index")
+    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表和城堡外觀總表也已公開。", body, depth=0, nav_current="index")

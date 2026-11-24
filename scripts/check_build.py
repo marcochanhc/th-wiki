@@ -24,6 +24,10 @@ TROOPS = DOCS / "troops.html"
 ARTIFACTS = DOCS / "artifacts.html"
 PETS = DOCS / "pets.html"
 RUNES = DOCS / "runes.html"
+TALENTS = DOCS / "talents.html"
+TECH = DOCS / "tech.html"
+DECORATIONS = DOCS / "decorations.html"
+CASTLE = DOCS / "castle.html"
 
 
 def text_of(html: str) -> str:
@@ -218,6 +222,10 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
             ("artifacts.html", "秘寶"),
             ("pets.html", "寵物"),
             ("runes.html", "符文"),
+            ("talents.html", "天賦"),
+            ("tech.html", "科技"),
+            ("decorations.html", "裝飾物"),
+            ("castle.html", "城堡外觀"),
         )
         other = codex
         for href, label in published_codex:
@@ -225,10 +233,7 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
                 fail(f"index 圖鑑 {label} should link to {href}", errors)
             other = re.sub(rf'<a href="{re.escape(href)}">{label}</a>', label, other)
         if re.search(r"<a\b", other):
-            fail("index 圖鑑 should only link the nine published catalogue items", errors)
-        for unpublished in ("天賦", "科技", "裝飾物", "城堡外觀"):
-            if re.search(rf"<a\b[^>]*>{unpublished}</a>", codex):
-                fail(f"index 圖鑑 {unpublished} must remain plain text, not a link", errors)
+            fail("index 圖鑑 should only link the published catalogue items", errors)
 
     for term in GAMEPLAY_TERMS:
         if term in it:
@@ -253,18 +258,21 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         fail("index 關於本站 should say this is not official", errors)
     if "目前聯盟、自然和部族的英雄條目都已公開。" not in it:
         fail("index lede should say alliance, nature and tribe pages are all published", errors)
-    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表和符文總表也已公開" not in it:
-        fail("index lede should say exclusive, valhalla, skin and the six new catalogs are public", errors)
+    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表和城堡外觀總表也已公開" not in it:
+        fail("index lede should name all published catalogs, including talent, tech, decoration and castle", errors)
     if "專武總表、英靈總表和造型總表也已公開" in it:
         fail("index lede still only lists exclusive, valhalla and skin catalogs", errors)
-    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表和符文總表已公開，其餘分類稍後再補" not in it:
-        fail("index 圖鑑 should say the nine published catalogs are public and others will follow", errors)
+    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表和城堡外觀總表已公開" not in it:
+        fail("index 圖鑑 should name all published catalogs, including talent, tech, decoration and castle", errors)
+    if "其餘分類稍後再補" in it:
+        fail("index 圖鑑 should not still say remaining categories will follow", errors)
     if "專武總表、英靈總表和造型總表已公開，其餘分類稍後再補" in it:
-        fail("index 圖鑑 still omits the six new catalogs", errors)
+        fail("index 圖鑑 still omits later catalogs", errors)
     for href in (
         "exclusive.html", "valhalla.html", "skins.html",
         "equipment.html", "lord-equipment.html", "troops.html",
         "artifacts.html", "pets.html", "runes.html",
+        "talents.html", "tech.html", "decorations.html", "castle.html",
     ):
         if f'href="{href}"' not in index:
             fail(f"index should link to {href}", errors)
@@ -1476,6 +1484,7 @@ PUBLISHED_CATALOG_HREFS = (
     "exclusive.html", "valhalla.html", "skins.html",
     "equipment.html", "lord-equipment.html", "troops.html",
     "artifacts.html", "pets.html", "runes.html",
+    "talents.html", "tech.html", "decorations.html", "castle.html",
 )
 UNPUBLISHED_BANNER = (
     "本機預覽", "尚未發佈", "不是線上目錄", "preview-banner",
@@ -1636,6 +1645,109 @@ def check_runes_page(html: str, errors: list[str]) -> None:
             fail("runes: must not name a player_rune type as team_rune_name_00N", errors)
 
 
+def check_talents_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "talents", "Top Heroes Wiki｜天賦總表", "2026-11-21", errors)
+    if not html:
+        return
+    if "本頁分開列出兩套系統，不要混為一套：英雄天賦" not in html:
+        fail("talents: missing public lede", errors)
+    if "領主大廳" not in html:
+        fail("talents: missing official 領主大廳", errors)
+    for href in (
+        "exclusive.html", "valhalla.html", "skins.html",
+        "equipment.html", "lord-equipment.html", "troops.html",
+        "artifacts.html", "pets.html", "runes.html",
+        "tech.html", "decorations.html", "castle.html",
+    ):
+        if f'href="{href}"' not in html:
+            fail(f"talents: should link to {href}", errors)
+    t = text_of(html)
+    if "英雄天賦" not in t or "領主天賦" not in t:
+        fail("talents: must keep the two official talent systems", errors)
+    if "藥劑師" not in t or "舞孃" not in t or "審判官" not in t:
+        fail("talents: missing locked confirmed-panel heroes", errors)
+    if "90.00%" not in t:
+        fail("talents: missing locked 審判官 panel percentage 90.00%", errors)
+    if "不在本頁展開" not in t:
+        fail("talents: other catalogs should remain out of scope for this page", errors)
+
+
+def check_tech_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "tech", "Top Heroes Wiki｜科技總表", "2026-11-15", errors)
+    if not html:
+        return
+    if "本頁主體是玩家科技（attr_category 25，官方名稱「科技」" not in html:
+        fail("tech: missing public lede", errors)
+    for href in (
+        "exclusive.html", "valhalla.html", "skins.html",
+        "equipment.html", "lord-equipment.html", "troops.html",
+        "artifacts.html", "pets.html", "runes.html",
+        "talents.html", "decorations.html", "castle.html",
+    ):
+        if f'href="{href}"' not in html:
+            fail(f"tech: should link to {href}", errors)
+    t = text_of(html)
+    if "公會科技" not in t:
+        fail("tech: missing official 公會科技", errors)
+    if "不在本頁展開" not in t:
+        fail("tech: other catalogs should remain out of scope for this page", errors)
+
+
+def check_decorations_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "decorations", "Top Heroes Wiki｜裝飾物總表", "2026-11-22", errors)
+    if not html:
+        return
+    if "本頁分開列出兩套系統，不要混為一套：擺在自己主城的城鎮裝飾" not in html:
+        fail("decorations: missing public lede", errors)
+    for href in (
+        "exclusive.html", "valhalla.html", "skins.html",
+        "equipment.html", "lord-equipment.html", "troops.html",
+        "artifacts.html", "pets.html", "runes.html",
+        "talents.html", "tech.html", "castle.html",
+    ):
+        if f'href="{href}"' not in html:
+            fail(f"decorations: should link to {href}", errors)
+    t = text_of(html)
+    if "城鎮裝飾" not in t or "公會裝飾物" not in t:
+        fail("decorations: must keep the two official decoration systems", errors)
+    if "雲海紀行" not in t:
+        fail("decorations: missing official suit name 雲海紀行", errors)
+    if "當成已核對的官方賽季名" not in t:
+        fail("decorations: 雲海紀行 must not be treated as a confirmed official season name", errors)
+    if "統禦" not in t:
+        fail("decorations: official 統禦 must be kept", errors)
+    if "不在本頁展開" not in t:
+        fail("decorations: castle appearance should remain out of scope for this page", errors)
+
+
+def check_castle_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "castle", "Top Heroes Wiki｜城堡外觀總表", "2026-11-23", errors)
+    if not html:
+        return
+    if "本頁主體是城堡造型（介面欄位「城堡造型」，City_Skin_1）" not in html:
+        fail("castle: missing public lede", errors)
+    for href in (
+        "exclusive.html", "valhalla.html", "skins.html",
+        "equipment.html", "lord-equipment.html", "troops.html",
+        "artifacts.html", "pets.html", "runes.html",
+        "talents.html", "tech.html", "decorations.html",
+    ):
+        if f'href="{href}"' not in html:
+            fail(f"castle: should link to {href}", errors)
+    t = text_of(html)
+    for name in ("蛋糕城", "飛翔號", "美味史萊姆", "夢幻摩天輪"):
+        if name not in t:
+            fail(f"castle: missing locked skin {name}", errors)
+    if "0 星＝level 1" not in t and "0 星＝表的 level 1" not in t:
+        fail("castle: missing locked 0-star = level 1 wording", errors)
+    if "不是 68 組通例" not in t and "不是 68 組都已用面板核過 0 星" not in t:
+        fail("castle: 0-star/1-star lock must not be generalized to all 68 groups", errors)
+    if "火砲要塞" not in t:
+        fail("castle: goods_desc_314 list should include 火砲要塞", errors)
+    if "不列入本頁主體" not in t:
+        fail("castle: decorations should remain out of scope for the main catalog body", errors)
+
+
 def check_index_published_catalogs(index: str, errors: list[str]) -> None:
     check_adjacent_term_spans(index, "index", errors)
     t = text_of(index)
@@ -1651,6 +1763,7 @@ def main() -> int:
     for p in (
         INDEX, EXCLUSIVE, VALHALLA, SKINS,
         EQUIPMENT, LORD_EQUIPMENT, TROOPS, ARTIFACTS, PETS, RUNES,
+        TALENTS, TECH, DECORATIONS, CASTLE,
         JUDGE, NUN, ROSE, INVENTOR,
     ):
         if not p.exists():
@@ -1689,6 +1802,10 @@ def main() -> int:
     artifacts_html = ARTIFACTS.read_text(encoding="utf-8")
     pets_html = PETS.read_text(encoding="utf-8")
     runes_html = RUNES.read_text(encoding="utf-8")
+    talents_html = TALENTS.read_text(encoding="utf-8")
+    tech_html = TECH.read_text(encoding="utf-8")
+    decorations_html = DECORATIONS.read_text(encoding="utf-8")
+    castle_html = CASTLE.read_text(encoding="utf-8")
     check_index(index, it, errors)
     check_index_published_catalogs(index, errors)
     check_exclusive_page(exclusive_html, errors)
@@ -1700,6 +1817,10 @@ def main() -> int:
     check_artifacts_page(artifacts_html, errors)
     check_pets_page(pets_html, errors)
     check_runes_page(runes_html, errors)
+    check_talents_page(talents_html, errors)
+    check_tech_page(tech_html, errors)
+    check_decorations_page(decorations_html, errors)
+    check_castle_page(castle_html, errors)
     for html, label in (
         (exclusive_html, "專武總表"),
         (valhalla_html, "英靈總表"),
@@ -1710,6 +1831,10 @@ def main() -> int:
         (artifacts_html, "秘寶總表"),
         (pets_html, "寵物總表"),
         (runes_html, "符文總表"),
+        (talents_html, "天賦總表"),
+        (tech_html, "科技總表"),
+        (decorations_html, "裝飾物總表"),
+        (castle_html, "城堡外觀總表"),
     ):
         if 'lang="zh-Hant"' not in html:
             fail(f"{label}: missing lang=zh-Hant", errors)

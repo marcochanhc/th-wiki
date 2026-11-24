@@ -22,6 +22,10 @@ from thwiki.troop_tables import render_troop_page
 from thwiki.artifact_tables import render_artifact_page
 from thwiki.pet_tables import render_pet_page
 from thwiki.rune_tables import render_rune_page
+from thwiki.talent_tables import render_talent_page
+from thwiki.tech_tables import render_tech_page
+from thwiki.decoration_tables import render_decoration_page
+from thwiki.castle_tables import render_castle_page
 from thwiki.render import render_hero, render_home
 
 
@@ -68,6 +72,10 @@ def main() -> int:
         ("artifacts.html", render_artifact_page),
         ("pets.html", render_pet_page),
         ("runes.html", render_rune_page),
+        ("talents.html", render_talent_page),
+        ("tech.html", render_tech_page),
+        ("decorations.html", render_decoration_page),
+        ("castle.html", render_castle_page),
     )
     for name, renderer in catalogs:
         out = DOCS_DIR / name
