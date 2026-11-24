@@ -110,7 +110,7 @@ ROSTER: list[tuple[str, str, list[tuple[int, str | None]]]] = [
     ),
 ]
 
-# Catalogue headings on the public index. 專武、英靈、造型 link to published pages; the rest are names only.
+# Catalogue headings on the public index. The first nine items (專武 through 符文) link to published pages; 天賦、科技、裝飾物 and 城堡外觀 remain names only.
 CODEX_ITEMS = [
     "專武",
     "英靈",

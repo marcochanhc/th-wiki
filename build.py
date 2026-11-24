@@ -16,6 +16,12 @@ from thwiki.paths import DOCS_DIR, PROJECT_ROOT, STATIC_DIR
 from thwiki.exclusive_tables import render_exclusive_page
 from thwiki.valhalla_tables import render_valhalla_page
 from thwiki.skin_tables import render_skin_page
+from thwiki.equipment_tables import render_equipment_page
+from thwiki.lord_equipment_tables import render_lord_equipment_page
+from thwiki.troop_tables import render_troop_page
+from thwiki.artifact_tables import render_artifact_page
+from thwiki.pet_tables import render_pet_page
+from thwiki.rune_tables import render_rune_page
 from thwiki.render import render_hero, render_home
 
 
@@ -54,6 +60,19 @@ def main() -> int:
     skins = DOCS_DIR / "skins.html"
     skins.write_text(render_skin_page(), encoding="utf-8")
     print(f"wrote {skins.relative_to(PROJECT_ROOT)}")
+
+    catalogs = (
+        ("equipment.html", render_equipment_page),
+        ("lord-equipment.html", render_lord_equipment_page),
+        ("troops.html", render_troop_page),
+        ("artifacts.html", render_artifact_page),
+        ("pets.html", render_pet_page),
+        ("runes.html", render_rune_page),
+    )
+    for name, renderer in catalogs:
+        out = DOCS_DIR / name
+        out.write_text(renderer(), encoding="utf-8")
+        print(f"wrote {out.relative_to(PROJECT_ROOT)}")
 
     index = DOCS_DIR / "index.html"
     index.write_text(render_home(pages), encoding="utf-8")

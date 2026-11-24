@@ -18,6 +18,12 @@ INDEX = DOCS / "index.html"
 EXCLUSIVE = DOCS / "exclusive.html"
 VALHALLA = DOCS / "valhalla.html"
 SKINS = DOCS / "skins.html"
+EQUIPMENT = DOCS / "equipment.html"
+LORD_EQUIPMENT = DOCS / "lord-equipment.html"
+TROOPS = DOCS / "troops.html"
+ARTIFACTS = DOCS / "artifacts.html"
+PETS = DOCS / "pets.html"
+RUNES = DOCS / "runes.html"
 
 
 def text_of(html: str) -> str:
@@ -202,17 +208,27 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         items = li_texts(codex)
         if items != CODEX_ITEMS:
             fail(f"index 圖鑑 items mismatch {items!r}", errors)
-        if not re.search(r'<a href="exclusive.html">專武</a>', codex):
-            fail("index 圖鑑 專武 should link to exclusive.html", errors)
-        if not re.search(r'<a href="valhalla.html">英靈</a>', codex):
-            fail("index 圖鑑 英靈 should link to valhalla.html", errors)
-        if not re.search(r'<a href="skins.html">造型</a>', codex):
-            fail("index 圖鑑 造型 should link to skins.html", errors)
-        other = re.sub(r'<a href="exclusive.html">專武</a>', "專武", codex)
-        other = re.sub(r'<a href="valhalla.html">英靈</a>', "英靈", other)
-        other = re.sub(r'<a href="skins.html">造型</a>', "造型", other)
+        published_codex = (
+            ("exclusive.html", "專武"),
+            ("valhalla.html", "英靈"),
+            ("skins.html", "造型"),
+            ("equipment.html", "裝備"),
+            ("lord-equipment.html", "領主裝備"),
+            ("troops.html", "士兵"),
+            ("artifacts.html", "秘寶"),
+            ("pets.html", "寵物"),
+            ("runes.html", "符文"),
+        )
+        other = codex
+        for href, label in published_codex:
+            if not re.search(rf'<a href="{re.escape(href)}">{label}</a>', codex):
+                fail(f"index 圖鑑 {label} should link to {href}", errors)
+            other = re.sub(rf'<a href="{re.escape(href)}">{label}</a>', label, other)
         if re.search(r"<a\b", other):
-            fail("index 圖鑑 should only link 專武, 英靈 and 造型 among the catalogue items", errors)
+            fail("index 圖鑑 should only link the nine published catalogue items", errors)
+        for unpublished in ("天賦", "科技", "裝飾物", "城堡外觀"):
+            if re.search(rf"<a\b[^>]*>{unpublished}</a>", codex):
+                fail(f"index 圖鑑 {unpublished} must remain plain text, not a link", errors)
 
     for term in GAMEPLAY_TERMS:
         if term in it:
@@ -237,20 +253,21 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         fail("index 關於本站 should say this is not official", errors)
     if "目前聯盟、自然和部族的英雄條目都已公開。" not in it:
         fail("index lede should say alliance, nature and tribe pages are all published", errors)
-    if "專武總表、英靈總表和造型總表也已公開" not in it:
-        fail("index lede should say the exclusive, valhalla and skin tables are public", errors)
-    if "專武總表和英靈總表也已公開" in it:
-        fail("index lede still omits the skin catalog", errors)
-    if "專武總表、英靈總表和造型總表已公開，其餘分類稍後再補" not in it:
-        fail("index 圖鑑 should say 專武, 英靈 and 造型 catalogs are public and others will follow", errors)
-    if "專武總表和英靈總表已公開，其餘分類稍後再補" in it:
-        fail("index 圖鑑 still omits the skin catalog", errors)
-    if 'href="exclusive.html"' not in index:
-        fail("index should link to exclusive.html", errors)
-    if 'href="valhalla.html"' not in index:
-        fail("index should link to valhalla.html", errors)
-    if 'href="skins.html"' not in index:
-        fail("index should link to skins.html", errors)
+    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表和符文總表也已公開" not in it:
+        fail("index lede should say exclusive, valhalla, skin and the six new catalogs are public", errors)
+    if "專武總表、英靈總表和造型總表也已公開" in it:
+        fail("index lede still only lists exclusive, valhalla and skin catalogs", errors)
+    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表和符文總表已公開，其餘分類稍後再補" not in it:
+        fail("index 圖鑑 should say the nine published catalogs are public and others will follow", errors)
+    if "專武總表、英靈總表和造型總表已公開，其餘分類稍後再補" in it:
+        fail("index 圖鑑 still omits the six new catalogs", errors)
+    for href in (
+        "exclusive.html", "valhalla.html", "skins.html",
+        "equipment.html", "lord-equipment.html", "troops.html",
+        "artifacts.html", "pets.html", "runes.html",
+    ):
+        if f'href="{href}"' not in index:
+            fail(f"index should link to {href}", errors)
     if "目前先公開薔薇公主、審判官、發明家和修女" in it:
         fail("index lede still only lists the first four published heroes", errors)
     if "條目會陸續補上" in it:
@@ -1454,9 +1471,188 @@ def check_skins_page(html: str, errors: list[str]) -> None:
         fail("skins: footer cutoff should be 2026-11-23", errors)
 
 
+
+PUBLISHED_CATALOG_HREFS = (
+    "exclusive.html", "valhalla.html", "skins.html",
+    "equipment.html", "lord-equipment.html", "troops.html",
+    "artifacts.html", "pets.html", "runes.html",
+)
+UNPUBLISHED_BANNER = (
+    "本機預覽", "尚未發佈", "不是線上目錄", "preview-banner",
+    "只供預覽", "只供本機預覽", "尚未列入公開", "不會寫進公開站",
+    "沒有接入網站組建腳本", "（本機預覽）",
+)
+PREVIEW_PATHS = (
+    "equipment-tables.html", "lord-equipment-tables.html", "troop-tables.html",
+    "artifact-tables.html", "pet-tables.html", "rune-tables.html",
+    "preview/", "../docs/",
+)
+
+
+def check_adjacent_term_spans(html: str, label: str, errors: list[str]) -> None:
+    if re.search(r'</span>\s*<span class="term">', html):
+        fail(f"{label}: long official phrases must not be split into adjacent .term spans", errors)
+
+
+def check_public_catalog_shell(html: str, label: str, title: str, cutoff: str, errors: list[str]) -> None:
+    if not html:
+        fail(f"{label}: missing page", errors)
+        return
+    if 'lang="zh-Hant"' not in html:
+        fail(f"{label}: missing lang=zh-Hant", errors)
+    if f"<title>{title}</title>" not in html:
+        fail(f"{label}: unexpected title", errors)
+    if "（本機預覽）" in html:
+        fail(f"{label}: title or body still has （本機預覽）", errors)
+    for banner in UNPUBLISHED_BANNER:
+        if banner in html:
+            fail(f"{label}: unpublished banner still present: {banner}", errors)
+    if 'href="assets/css/site.css"' not in html:
+        fail(f"{label}: should use site CSS at assets/css/site.css", errors)
+    for needle in PREVIEW_PATHS:
+        if needle in html:
+            fail(f"{label}: leftover preview path {needle}", errors)
+    nav_m = re.search(r'<nav class="site-nav"[^>]*>.*?</nav>', html, flags=re.S)
+    if not nav_m:
+        fail(f"{label}: missing site-nav", errors)
+    else:
+        nav = nav_m.group(0)
+        if re.search(r"heroes/\d+\.html", nav):
+            fail(f"{label}: site-nav should not link individual hero pages", errors)
+        for needle in ("index.html", "index.html#heroes", "index.html#codex", "index.html#about"):
+            if needle not in nav:
+                fail(f"{label}: site-nav missing {needle}", errors)
+    footer = re.search(r'<footer class="site-footer">.*?</footer>', html, flags=re.S)
+    if not footer or f"資料截至 {cutoff}" not in text_of(footer.group(0)):
+        fail(f"{label}: footer cutoff should be {cutoff}", errors)
+    check_adjacent_term_spans(html, label, errors)
+    t = text_of(html)
+    if "尚未發佈" in t or "本機預覽" in t:
+        fail(f"{label}: stripped text still mentions unpublished preview status", errors)
+    for bad in ("繁絆", "精録", "魚缺", "魚缽", "鐵喉", "部落的伝護", "部族的庇護"):
+        if bad in html or bad in t:
+            fail(f"{label}: forbidden typo or rewritten official term {bad}", errors)
+
+
+def check_equipment_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "equipment", "Top Heroes Wiki｜裝備總表", "2026-11-23", errors)
+    if not html:
+        return
+    if "本頁列出四件套裝備的 12 個實際使用套裝" not in html:
+        fail("equipment: missing public lede", errors)
+    if 'href="exclusive.html"' not in html:
+        fail("equipment: should link to exclusive.html", errors)
+    t = text_of(html)
+    if "部落護甲" not in t or "部落戰靴" not in t:
+        fail("equipment: official 部落護甲／部落戰靴 must be kept", errors)
+
+
+def check_lord_equipment_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "lord-equipment", "Top Heroes Wiki｜領主裝備總表", "2026-11-23", errors)
+    if not html:
+        return
+    if "本頁列出七件領主裝備的寫入屬性" not in html:
+        fail("lord-equipment: missing public lede", errors)
+    if 'href="equipment.html"' not in html:
+        fail("lord-equipment: should link to equipment.html", errors)
+    if 'href="exclusive.html"' not in html:
+        fail("lord-equipment: should link to exclusive.html", errors)
+
+
+def check_troops_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "troops", "Top Heroes Wiki｜士兵總表", "2026-11-23", errors)
+    if not html:
+        return
+    if "本頁列出士兵兩條 id 線" not in html:
+        fail("troops: missing public lede", errors)
+    for href in ("equipment.html", "lord-equipment.html", "exclusive.html", "skins.html"):
+        if f'href="{href}"' not in html:
+            fail(f"troops: should link to {href}", errors)
+    t = text_of(html)
+    if "天穹聯盟戰士" not in t or "攻擊 50" not in t or "生命 900" not in t:
+        fail("troops: missing locked 天穹聯盟戰士 1012 攻擊 50、生命 900", errors)
+
+
+def check_artifacts_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "artifacts", "Top Heroes Wiki｜秘寶總表", "2026-11-23", errors)
+    if not html:
+        return
+    if "本頁列出可佩戴到隊列上的秘寶" not in html:
+        fail("artifacts: missing public lede", errors)
+    for href in ("equipment.html", "lord-equipment.html", "troops.html", "exclusive.html"):
+        if f'href="{href}"' not in html:
+            fail(f"artifacts: should link to {href}", errors)
+    t = text_of(html)
+    if "2780／19100" not in t:
+        fail("artifacts: quality 4 0-star attack/HP 2780／19100 missing", errors)
+    if re.search(r"<td>4</td><td>3530／23600</td>", html):
+        fail("artifacts: quality 4 0-star row must not use 3530／23600", errors)
+    if "3530／23600" in t and "該數字未出現在升星表" not in t:
+        fail("artifacts: 3530／23600 may only appear as the rejected chapter-20 figure", errors)
+
+
+def check_pets_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "pets", "Top Heroes Wiki｜寵物總表", "2026-11-24", errors)
+    if not html:
+        return
+    if "本頁列出官方界面所稱的「寵物」" not in html:
+        fail("pets: missing public lede", errors)
+    for href in ("equipment.html", "lord-equipment.html", "troops.html", "artifacts.html", "exclusive.html", "valhalla.html"):
+        if f'href="{href}"' not in html:
+            fail(f"pets: should link to {href}", errors)
+    t = text_of(html)
+    if "鐵喙" not in t:
+        fail("pets: missing official name 鐵喙", errors)
+    if "部落的庇護" not in t:
+        fail("pets: official skill name 部落的庇護 must be kept", errors)
+    if "魚缸" not in t:
+        fail("pets: 魚缸 must be kept", errors)
+
+
+def check_runes_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "runes", "Top Heroes Wiki｜符文總表", "2026-11-24", errors)
+    if not html:
+        return
+    if "本頁列出官方界面所稱的「符文」" not in html:
+        fail("runes: missing public lede", errors)
+    for href in (
+        "equipment.html", "lord-equipment.html", "troops.html", "artifacts.html",
+        "pets.html", "exclusive.html", "valhalla.html", "skins.html",
+    ):
+        if f'href="{href}"' not in html:
+            fail(f"runes: should link to {href}", errors)
+    t = text_of(html)
+    if "1036" not in t:
+        fail("runes: missing locked 絕對強擊 level-8 value 1036", errors)
+    if "精煉" not in t:
+        fail("runes: missing 精煉", errors)
+    if "20006" in t and "秘寶生命" in t:
+        # official note may mention that name_20004 is 秘寶生命 and must not be used as the official name for 20006
+        if "不把它當作正式名稱" not in t and "不把它當作正式名" not in t:
+            fail("runes: 20006 must not be presented as official 秘寶生命", errors)
+    if "team_rune_name_00" in html and "player_rune" in t:
+        # type numbers must not be written as team_rune_name_00N
+        if re.search(r"player_rune[^.]{0,80}type\s*[1-9][^.]{0,80}team_rune_name_00", t):
+            fail("runes: must not name a player_rune type as team_rune_name_00N", errors)
+
+
+def check_index_published_catalogs(index: str, errors: list[str]) -> None:
+    check_adjacent_term_spans(index, "index", errors)
+    t = text_of(index)
+    if "尚未發佈" in t or "本機預覽" in t:
+        fail("index: stripped text still mentions unpublished preview status", errors)
+    footer = re.search(r'<footer class="site-footer">.*?</footer>', index, flags=re.S)
+    if not footer or "資料截至 2026-11-05" not in text_of(footer.group(0)):
+        fail("index: footer cutoff should remain 2026-11-05", errors)
+
+
 def main() -> int:
     errors = []
-    for p in (INDEX, EXCLUSIVE, VALHALLA, SKINS, JUDGE, NUN, ROSE, INVENTOR):
+    for p in (
+        INDEX, EXCLUSIVE, VALHALLA, SKINS,
+        EQUIPMENT, LORD_EQUIPMENT, TROOPS, ARTIFACTS, PETS, RUNES,
+        JUDGE, NUN, ROSE, INVENTOR,
+    ):
         if not p.exists():
             fail(f"missing {p}", errors)
     if errors:
@@ -1487,11 +1683,34 @@ def main() -> int:
     exclusive_html = EXCLUSIVE.read_text(encoding="utf-8")
     valhalla_html = VALHALLA.read_text(encoding="utf-8")
     skins_html = SKINS.read_text(encoding="utf-8")
+    equipment_html = EQUIPMENT.read_text(encoding="utf-8")
+    lord_html = LORD_EQUIPMENT.read_text(encoding="utf-8")
+    troops_html = TROOPS.read_text(encoding="utf-8")
+    artifacts_html = ARTIFACTS.read_text(encoding="utf-8")
+    pets_html = PETS.read_text(encoding="utf-8")
+    runes_html = RUNES.read_text(encoding="utf-8")
     check_index(index, it, errors)
+    check_index_published_catalogs(index, errors)
     check_exclusive_page(exclusive_html, errors)
     check_valhalla_page(valhalla_html, errors)
     check_skins_page(skins_html, errors)
-    for html, label in ((exclusive_html, "專武總表"), (valhalla_html, "英靈總表"), (skins_html, "造型總表")):
+    check_equipment_page(equipment_html, errors)
+    check_lord_equipment_page(lord_html, errors)
+    check_troops_page(troops_html, errors)
+    check_artifacts_page(artifacts_html, errors)
+    check_pets_page(pets_html, errors)
+    check_runes_page(runes_html, errors)
+    for html, label in (
+        (exclusive_html, "專武總表"),
+        (valhalla_html, "英靈總表"),
+        (skins_html, "造型總表"),
+        (equipment_html, "裝備總表"),
+        (lord_html, "領主裝備總表"),
+        (troops_html, "士兵總表"),
+        (artifacts_html, "秘寶總表"),
+        (pets_html, "寵物總表"),
+        (runes_html, "符文總表"),
+    ):
         if 'lang="zh-Hant"' not in html:
             fail(f"{label}: missing lang=zh-Hant", errors)
 
@@ -1775,7 +1994,7 @@ def main() -> int:
         for msg in errors:
             print(" -", msg)
         return 1
-    print("ok: TOC + exclusive, valhalla and skin tables + all published alliance, nature and tribe hero pages passed locked-rule checks")
+    print("ok: TOC + exclusive, valhalla, skin and six new catalog tables + all published alliance, nature and tribe hero pages passed locked-rule checks")
     return 0
 
 

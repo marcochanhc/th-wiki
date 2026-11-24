@@ -565,19 +565,27 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
             "</section>"
         )
     def render_codex_item(item: str) -> str:
-        if item == "專武":
-            return f'<li><a href="exclusive.html">{e(item)}</a></li>'
-        if item == "英靈":
-            return f'<li><a href="valhalla.html">{e(item)}</a></li>'
-        if item == "造型":
-            return f'<li><a href="skins.html">{e(item)}</a></li>'
+        hrefs = {
+            "專武": "exclusive.html",
+            "英靈": "valhalla.html",
+            "造型": "skins.html",
+            "裝備": "equipment.html",
+            "領主裝備": "lord-equipment.html",
+            "士兵": "troops.html",
+            "秘寶": "artifacts.html",
+            "寵物": "pets.html",
+            "符文": "runes.html",
+        }
+        href = hrefs.get(item)
+        if href:
+            return f'<li><a href="{href}">{e(item)}</a></li>'
         return f"<li>{e(item)}</li>"
 
     codex = "".join(render_codex_item(item) for item in CODEX_ITEMS)
     body = f"""
     <header class="entry-head">
       <h1>Top Heroes Wiki</h1>
-      <p class="lede">Top Heroes 英雄 wiki。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表和造型總表也已公開。</p>
+      <p class="lede">Top Heroes 英雄 wiki。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表和符文總表也已公開。</p>
     </header>
     <section id="heroes">
       <h2>英雄</h2>
@@ -585,7 +593,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
     </section>
     <section id="codex">
       <h2>圖鑑</h2>
-      <p>專武總表、英靈總表和造型總表已公開，其餘分類稍後再補。</p>
+      <p>專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表和符文總表已公開，其餘分類稍後再補。</p>
       <ul class="codex-index">{codex}</ul>
     </section>
     <section id="about">
@@ -597,4 +605,4 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
       </ul>
     </section>
     """
-    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表和造型總表也已公開。", body, depth=0, nav_current="index")
+    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表和符文總表也已公開。", body, depth=0, nav_current="index")
