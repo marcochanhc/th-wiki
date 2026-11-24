@@ -200,7 +200,7 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
         (first["name"], H(first["dec"], terms)),
     ]
     for sg in page.second_tags:
-        props.append((sg["name"], H(f"{sg['dec']}（官方說明沒有百分比，由玩家在面板確認）", terms)))
+        props.append((sg["name"], H(f"{sg['dec']}（官方說明沒有百分比）", terms)))
     if page.status:
         props.append(("狀態", e(page.status)))
     props += [

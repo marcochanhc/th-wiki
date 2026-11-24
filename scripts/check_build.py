@@ -39,6 +39,15 @@ def text_of(html: str) -> str:
     return t
 
 
+
+def visible_before_notes(html: str) -> str:
+    """Plain text of a public page before the last 資料說明 heading."""
+    matches = list(re.finditer(r"<h2\b[^>]*>\s*資料說明\s*</h2>", html))
+    if not matches:
+        return text_of(html)
+    return text_of(html[: matches[-1].start()])
+
+
 def fail(msg, errors):
     errors.append(msg)
 
@@ -1803,6 +1812,88 @@ def check_castle_page(html: str, errors: list[str]) -> None:
         fail("castle: decorations should remain out of scope for the main catalog body", errors)
 
 
+
+FORBIDDEN_VISIBLE_ATTRIBUTION = (
+    "玩家確認",
+    "由玩家在面板確認",
+    "尚未經玩家面板確認",
+    "依玩家確認",
+    "已確認的前服",
+    "已用面板確認",
+    "玩家說法",
+)
+
+
+def check_attribution_cleanup(errors: list[str]) -> None:
+    """Visible body (before 資料說明) must state facts without confirmation-source wording."""
+    hero_dir = DOCS / "heroes"
+    paths = sorted(hero_dir.glob("*.html"))
+    if len(paths) != 57:
+        fail(f"expected 57 hero pages, found {len(paths)}", errors)
+    for path in paths:
+        html = path.read_text(encoding="utf-8")
+        vis = visible_before_notes(html)
+        all_text = text_of(html)
+        label = path.stem
+        for phrase in FORBIDDEN_VISIBLE_ATTRIBUTION:
+            if phrase in vis:
+                fail(f"{label}: visible body still has {phrase}", errors)
+        if "（本機預覽）" in html or "本機預覽" in vis:
+            fail(f"{label}: must not introduce a preview banner", errors)
+        hid = int(path.stem)
+        if hid in {10029, 15032, 15033, 15039}:
+            if "第二組標籤本頁不推算" not in vis:
+                fail(f"{label}: visible body should still say 第二組標籤本頁不推算", errors)
+            if "第二組標籤尚未經玩家面板確認，本頁不推算" not in all_text:
+                fail(f"{label}: data notes should keep the unconfirmed-second-group source", errors)
+        if "後項的官方說明沒有百分比" in all_text or "後兩項的官方說明沒有百分比" in all_text:
+            if "後項的官方說明沒有百分比" not in vis and "後兩項的官方說明沒有百分比" not in vis:
+                fail(f"{label}: official no-percentage fact should remain in the visible body", errors)
+        if "百分比按本站統一規則換算，說明見資料說明。" not in vis and "有兩個天賦槽" in vis:
+            # quality-1 heroes still have talent intro; all published heroes have talents
+            pass
+        if "有" in vis and "個天賦槽" in vis:
+            if "百分比按本站統一規則換算，說明見資料說明。" not in vis:
+                # some heroes might only have point talents; only require when percents exist
+                if "%" in (section_html(html, "spirit-talents") or "") and "90.00%" in all_text:
+                    fail(f"{label}: talent intro should cite the site conversion rule", errors)
+
+    for path, label in (
+        (DOCS / "equipment.html", "裝備總表"),
+        (DOCS / "talents.html", "天賦總表"),
+    ):
+        html = path.read_text(encoding="utf-8")
+        vis = visible_before_notes(html)
+        all_text = text_of(html)
+        for phrase in FORBIDDEN_VISIBLE_ATTRIBUTION:
+            if phrase in vis:
+                fail(f"{label}: visible body still has {phrase}", errors)
+        if "（本機預覽）" in html or "本機預覽" in vis:
+            fail(f"{label}: must not introduce a preview banner", errors)
+        if label == "裝備總表":
+            if "這三套尚未開放" not in vis:
+                fail("裝備總表: visible body should say the three later suits are 尚未開放", errors)
+            if "藥劑師歸自然" not in vis:
+                fail("裝備總表: visible body should still say 藥劑師歸自然", errors)
+            if "依玩家確認" not in all_text or "藥劑師歸自然亦依玩家確認" not in all_text:
+                fail("裝備總表: data notes should keep the confirmation source", errors)
+            if "不評定套裝強弱" not in vis:
+                fail("裝備總表: must keep the no-ranking rule", errors)
+        if label == "天賦總表":
+            if "以面板看得到的為準" not in vis:
+                fail("天賦總表: lede should say 以面板看得到的為準", errors)
+            if "不評定天賦強弱" not in vis:
+                fail("天賦總表: must keep the no-ranking rule", errors)
+            if "舊表與面板對照" not in vis:
+                fail("天賦總表: section title should be 舊表與面板對照", errors)
+            if "舊表對應與已確認面板" in vis:
+                fail("天賦總表: must not keep the old confirmed-panel title in the visible body", errors)
+            if "藥劑師" not in vis or "舞孃" not in vis or "審判官" not in vis or "90.00%" not in vis:
+                fail("天賦總表: visible body should keep the locked panel examples", errors)
+            if "已確認的前服面板" not in all_text:
+                fail("天賦總表: data notes should keep the confirmed 前服 panel source", errors)
+
+
 def check_index_published_catalogs(index: str, errors: list[str]) -> None:
     check_adjacent_term_spans(index, "index", errors)
     t = text_of(index)
@@ -2168,6 +2259,7 @@ def main() -> int:
     if re.search(r"顯示.?50.{0,12}10050|10050.{0,12}顯示.?50", jt + nt + rt + vt + it):
         fail("must not claim display 50 equals internal id 10050", errors)
 
+    check_attribution_cleanup(errors)
     check_hero_valhalla_attrs(errors)
     check_new_league_pages(errors)
     check_nature_tribe_pages(errors)

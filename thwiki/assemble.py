@@ -330,7 +330,7 @@ def talent_slot_note(hero_id: int, *, aname: str, vmax_s: str, kind: str, max_lv
     if first_slot:
         if kind == "percent":
             if hero_id in TALENT_PANEL_HERO_IDS:
-                return f"與槽 {first_slot} 同名、同數值；已用面板確認"
+                return f"與槽 {first_slot} 同名、同數值"
             return f"與槽 {first_slot} 同名、同數值"
         if kind == "point":
             return f"與槽 {first_slot} 同名、同點數"
@@ -338,7 +338,7 @@ def talent_slot_note(hero_id: int, *, aname: str, vmax_s: str, kind: str, max_lv
     if kind == "percent":
         shown = vmax_s.split("（")[0]
         if hero_id in TALENT_PANEL_HERO_IDS:
-            return f"面板原文：自身{aname}提升{shown}；{max_lv} 級已用面板確認" + ("。" + cap if cap else "")
+            return f"面板原文：自身{aname}提升{shown}。" + cap
         return f"自身{aname}提升{shown}。" + cap
     if kind == "point":
         shown = vmax_s.split("（")[0]
@@ -1010,11 +1010,11 @@ def assemble(hero_id: int) -> HeroPage:
     has_point = any(r.get("kind") == "point" for r in talents)
     if has_percent:
         if hero_id in TALENT_PANEL_HERO_IDS:
-            talent_intro += f"{name}的百分比已用面板確認。"
+            talent_intro += "百分比按本站統一規則換算，說明見資料說明。"
             if hero_id == 10031:
                 talent_intro += "格擋與套裝同層如何疊加尚未確認。"
         else:
-            talent_intro += "百分比依已確認的前服天賦規則換算，不是本英雄自己的面板確認。換算說明見資料說明。"
+            talent_intro += "百分比按本站統一規則換算，說明見資料說明。"
     if has_point:
         talent_intro += "點數依面板原文寫，沒有百分號。"
     odd_caps = sorted({r.get("max_level") for r in talents if r.get("max_level") and r["max_level"] != 30})
@@ -1149,12 +1149,12 @@ def assemble(hero_id: int) -> HeroPage:
     if len(seconds) == 2:
         second_prose = (
             f"{seconds[0]['name']}是「{seconds[0]['dec']}」，{seconds[1]['name']}是「{seconds[1]['dec']}」；"
-            "後兩項的官方說明沒有百分比，由玩家在面板確認。"
+            "後兩項的官方說明沒有百分比。"
         )
     elif seconds:
-        second_prose = "；".join(second_bits) + "。後項的官方說明沒有百分比，由玩家在面板確認。"
+        second_prose = "；".join(second_bits) + "。後項的官方說明沒有百分比。"
     else:
-        second_prose = "第二組標籤尚未經玩家面板確認，本頁不推算。"
+        second_prose = "第二組標籤本頁不推算。"
 
     rec_title = f"最佳{faction}" if faction in {"聯盟", "自然", "部族"} else "最佳聯盟"
     if recs:
@@ -1279,7 +1279,7 @@ def _build_notes(*, hero, hero_id, name, first, seconds, honor_group, honor_attr
     ]
     if seconds:
         sec_names = "、".join(s["name"] for s in seconds)
-        bits.append(f"{sec_names}為玩家在本英雄面板確認，表上尚無每人第二組欄位，不推及其他英雄。")
+        bits.append(f"{sec_names}由玩家在面板確認；官方說明沒有百分比。表上尚無每人第二組欄位，不推及其他英雄。")
     else:
         bits.append("第二組標籤尚未經玩家面板確認，本頁不推算。")
     if exclusive:
@@ -1343,7 +1343,7 @@ def _build_notes(*, hero, hero_id, name, first, seconds, honor_group, honor_attr
         id_bit = "、".join(str(i) for i in pct_ids)
         if hero_id in TALENT_PANEL_HERO_IDS:
             bits.append(
-                f"屬性 {id_bit} 的百分比已用本英雄面板確認，等於原值除100；"
+                f"屬性 {id_bit} 的百分比已用面板確認，等於原值除100；"
                 "此換算只用於英雄天賦，不推到羈絆或稱號。"
             )
         else:
@@ -1364,6 +1364,10 @@ def _build_notes(*, hero, hero_id, name, first, seconds, honor_group, honor_attr
             + " 依已確認面板為點數，沒有百分號、正號或千分位。"
         )
     bits.append("較新一張天賦表把槽 1／2／4 改掛為英雄攻擊／英雄生命，本頁不採。")
+    bits.append(
+        "建議裝備裡，後期泰坦之威、血之怒、騎士榮光若標尚未開放或未開放，"
+        "是本站依面板加上的標註，不是表上的欄位。"
+    )
     bits.append(
         "造型的自身、隊伍、套裝、成對與賽季效果依屬性類型顯示："
         "show_type=2 把原值除以 100，寫成加號、兩位小數、百分號；"
