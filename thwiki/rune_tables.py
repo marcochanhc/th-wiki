@@ -402,13 +402,13 @@ def _attr_info(attr_id: int, attr_by: dict) -> AttrInfo:
 def attr_label_text(info: AttrInfo) -> str:
     if info.name:
         return f"{info.name}（{info.attr_id}）"
-    return f"{info.attr_id}（無 attribute_name_{info.attr_id}）"
+    return f"{info.attr_id}（沒有官方屬性名）"
 
 
 def attr_label_html(info: AttrInfo, terms: list[str]) -> str:
     if info.name:
         return H(f"{info.name}（{info.attr_id}）", terms)
-    return e(f"{info.attr_id}（無 attribute_name_{info.attr_id}）")
+    return e(f"{info.attr_id}（沒有官方屬性名）")
 
 
 def _player_row(row: dict) -> PlayerLevel:
@@ -900,7 +900,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
 
     # 2. 隊列符文 1–10 級曲線（三營相同，不重列）
     cols = [
-        "等級", "品質 rare", "level_up_num",
+        "等級", "品質", "合成所需枚數",
         "力量／生命（分營隊列攻擊或生命）",
         "破甲：分營隊列攻擊", "破甲：突破防禦（64）",
         "厚甲：分營隊列生命", "厚甲：防禦（22）",
@@ -909,7 +909,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     ]
     # 表頭含官方屬性名時，用 html 並讓 highlight 包整名。短欄名用純文字即可。
     cols_html = [
-        "等級", "品質 rare", "level_up_num",
+        "等級", "品質", "合成所需枚數",
         H("力量符文", terms) + "／" + H("生命符文", terms) + "（分營隊列攻擊或生命）",
         H("破甲符文", terms) + "：" + "分營隊列攻擊",
         H("破甲符文", terms) + "：" + H("突破防禦", terms) + "（64）",
@@ -960,12 +960,12 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     out["team_ids"] = table(cols, rows, mobile="sticky")
 
     # 4. 羈絆
-    cols = ["符文等級 rune_lev", "出征上限（1019）", "queue（數值相同）", "列 id"]
+    cols = ["符文等級", "出征上限（1019）", "隊列欄（數值相同）", "資料列對照"]
     cols_html = [
-        "符文等級 rune_lev",
+        "符文等級",
         H("出征上限", terms) + "（1019）",
-        "queue（數值相同）",
-        "列 id",
+        "隊列欄（數值相同）",
+        "資料列對照",
     ]
     rows = []
     for lev in range(1, 10):
@@ -978,20 +978,18 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             str(lev),
             str(BOND_CAP[lev]),
             "2／3／4／5",
-            e("、".join(f"queue {q}→{i}" for q, i in ids)),
+            e("、".join(f"隊列 {q}→{i}" for q, i in ids)),
         ])
     out["bond"] = table(cols_html, rows, mobile="sticky")
 
     # 5. player_rune 官方名稱
-    cols = ["鍵（name／desc）", "名稱", "說明", "UI 鍵", "UI 字串（照原文，不加空格）", "名稱與說明"]
+    cols = ["名稱", "說明", "介面字串（照原文，不加空格）", "名稱與說明"]
     rows = []
     for pn in o.player_names:
         flag = "名實相符" if pn.name_desc_match else "不一致"
         rows.append([
-            e(f"{pn.name_key}／{pn.desc_key}"),
             H(pn.name, terms),
             H(pn.desc, terms),
-            e(pn.ui_key),
             H(pn.ui, terms),
             e(flag),
         ])
@@ -1030,7 +1028,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
 
     # 7. player_rune 共用曲線
     cols = [
-        "等級", "品質 rare", "level_up_num", "base_power",
+        "等級", "品質", "合成所需枚數", "base_power",
         "refine_exp", "refine_need", "refine_power",
         "refine_percent", "refine_percent_power",
     ]
@@ -1250,23 +1248,23 @@ def render_html(data: TablesData) -> str:
     add('    <section id="rules">')
     add("      <h2>官方規則</h2>")
     add(p_html(
-        "以下整段引自 <code>team_rune_info_desc</code>，連「1.」「2.」前綴一起，不拆開、不另行加句號："
+        "以下整段引自官方規則說明，連「1.」「2.」前綴一起，不拆開、不另行加句號。字串鍵見資料說明。"
     ))
     add(f"<p>{official_term_html(o.info_desc)}</p>")
     add(p_html(
-        "合成規則與表一致：<code>level_up_num</code> 在隊列符文 1–9 級為 3，第 10 級為 -1；"
-        "player_rune 1–11 級為 3，第 12 級為 -1。"
-        f"介面另有「{H(o.power_tip, terms)}」（<code>team_rune_power_tip</code>）、"
-        f"「{H(o.uncompound, terms)}」（<code>team_rune_uncompound</code>）。"
+        "合成規則與表一致：隊列符文 1–9 級需 3 枚，第 10 級不再合成；"
+        "後續資料包那套 1–11 級需 3 枚，第 12 級不再合成。"
+        f"介面另有「{H(o.power_tip, terms)}」、"
+        f"「{H(o.uncompound, terms)}」。"
         "羈絆列的提示原文是："
     ))
-    add(f"<p>{official_term_html(o.bond_tip)}（<code>team_rune_bond</code>）</p>")
+    add(f"<p>{official_term_html(o.bond_tip)}</p>")
     add(p_html(
-        f"以及「{H(o.tips5, terms)}」（<code>team_rune_tips5</code>）、"
-        f"「{H(o.tips6, terms)}」（<code>team_rune_tips6</code>）。"
+        f"以及「{H(o.tips5, terms)}」、"
+        f"「{H(o.tips6, terms)}」。"
     ))
     add(p_html(
-        f"<code>team_rune_info_desc</code> 寫「五個插槽」。另有郵件標題「{H(o.mail_title, terms)}」（<code>mail_rune_title</code>），正文如下。兩者都照官方字串記下，不自行裁斷插槽數，也不把它們寫成同一套規則。"
+        f"官方規則寫「五個插槽」。另有郵件標題「{H(o.mail_title, terms)}」，正文如下。兩者都照官方字串記下，不自行裁斷插槽數，也不把它們寫成同一套規則。鍵名見資料說明。"
     ))
     add(f"<p>{official_term_html(o.mail_desc)}</p>")
     add("    </section>")
@@ -1312,10 +1310,10 @@ def render_html(data: TablesData) -> str:
     add('    <section id="team-catalog">')
     add("      <h2>五種隊列符文</h2>")
     add(p_html(
-        "與 type 1–5 對得上的名稱鍵是 <code>team_rune_name_1</code>–<code>5</code>，說明是 <code>team_rune_desc_1</code>–<code>5</code>。"
+        "五種隊列符文各自使用對應的官方名稱與說明。鍵名見資料說明。"
         "三個陣營的數值相同，只換分營屬性編號：聯盟 3062／3063、部族 4062／4063、自然 5062／5063。"
-        "品質 rare 隨等級走：1–3 級為 3，4–6 級為 4，7–9 級為 5，10 級為 6。"
-        "編號規律是 <code>37{type}{race}{等級兩位}</code>，例如聯盟力量 1 級為 371101，自然絕對強擊 10 級為 375310。"
+        "品質隨等級走：1–3 級為 3，4–6 級為 4，7–9 級為 5，10 級為 6。"
+        "編號規律是 37、種類、陣營、等級兩位，例如聯盟力量 1 級為 371101，自然絕對強擊 10 級為 375310。"
     ))
     add(tbl["team_catalog"])
     add("    </section>")
@@ -1326,8 +1324,8 @@ def render_html(data: TablesData) -> str:
         "下列曲線三營相同，故不把 150 列重複展開。"
         f"{H('力量符文', terms)}與{H('生命符文', terms)}的分營隊列攻擊／生命數列相同；"
         f"{H('絕對強擊符文', terms)}是同一條數列的一半（含進位：第 8 級 1036，不是力量／生命第 8 級 2073 的一半，表上不是 1036.5）。"
-        "power 五種符文、三個陣營皆相同；base_power 亦同。"
-        "show_type=2 的分營隊列攻擊／生命只記原值，不換成百分比。"
+        "戰力五種符文、三個陣營皆相同；基礎戰力亦同。"
+        "分營隊列攻擊／生命只記原值，不換成百分比。顯示規則見資料說明。"
     ))
     add(tbl["team_curve"])
     add(p_html("編號與分營屬性對照（種族 1／2／3 對應聯盟／部族／自然）："))
@@ -1337,10 +1335,10 @@ def render_html(data: TablesData) -> str:
     add('    <section id="bond">')
     add("      <h2>羈絆（全隊同級加成）</h2>")
     add(p_html(
-        "<code>team_rune_bond</code> 36 筆：queue 為 2／3／4／5，rune_lev 為 1–9，"
-        f"屬性一律是 1019「{H('出征上限', terms)}」（type=1、show_type=1）。"
-        "同一等級、不同 queue 的數值完全相同。沒有 queue=1，也沒有 10 級羈絆。"
-        "官方說明是同一個隊列建築上的符文均達到同一等級後額外加成；表沒有解釋 queue 為何從 2 起算、為何 2–5 的數值相同，以及為何沒有 10 級，本頁不自行解釋。"
+        f"羈絆表 36 筆：隊列欄為 2／3／4／5，符文等級為 1–9，"
+        f"屬性一律是「{H('出征上限', terms)}」（點數類）。"
+        "同一等級、不同隊列欄的數值完全相同。沒有隊列欄 1，也沒有 10 級羈絆。"
+        "官方說明是同一個隊列建築上的符文均達到同一等級後額外加成；表沒有解釋隊列欄為何從 2 起算、為何 2–5 的數值相同，以及為何沒有 10 級，本頁不自行解釋。欄位名見資料說明。"
     ))
     add(tbl["bond"])
     add("    </section>")
@@ -1348,14 +1346,13 @@ def render_html(data: TablesData) -> str:
     add('    <section id="player-names">')
     add("      <h2>後續資料包符文的官方名稱與說明</h2>")
     add(p_html(
-        "<code>player_rune</code> 表沒有名稱欄。下列是字串表裡的 <code>team_rune_name_001</code>–<code>006</code>、"
-        "<code>team_rune_desc_001</code>–<code>006</code>，以及 <code>UI_player_rune_01</code>–<code>06</code>。"
-        "UI 字串前置羅馬數字，且鍵順序與 001–006 不同"
-        f"（<code>UI_player_rune_01</code> 是「{H(o.player_names[0].ui, terms)}」，照原文，不自行加空格）。"
-        "name_001–006 與 desc_001–006 並非一一對應："
-        f"name_002 是「{H('英雄強擊符文', terms)}」，desc_002 卻寫士兵生命；"
-        "只有 001 與 006 名實相符（001 的名稱與說明都寫英雄生命；006 的名稱是隊列強擊符文，說明寫提升突破及防禦屬性）。"
-        "這組名稱絕不用來標 team_rune 的 type，也不可寫成 player_rune 的 type N = <code>team_rune_name_00N</code>。"
+        "後續資料包那套符文表沒有名稱欄。下列是字串表裡的官方名稱、說明與介面字串。鍵名見資料說明。"
+        "介面字串前置羅馬數字，且順序與名稱表不完全相同"
+        f"（第一條介面字串是「{H(o.player_names[0].ui, terms)}」，照原文，不自行加空格）。"
+        "名稱與說明並非一一對應："
+        f"第二個名稱是「{H('英雄強擊符文', terms)}」，對應說明卻寫士兵生命；"
+        "只有第一個與第六個名實相符（第一個的名稱與說明都寫英雄生命；第六個的名稱是隊列強擊符文，說明寫提升突破及防禦屬性）。"
+        "這組名稱絕不用來標隊列符文的五種，也不可把後續資料包的種類編號直接對成這組名稱的第 N 條。"
     ))
     add(tbl["player_names"])
     add("    </section>")
@@ -1363,9 +1360,9 @@ def render_html(data: TablesData) -> str:
     add('    <section id="player-map">')
     add("      <h2>依寫入屬性對照</h2>")
     add(p_html(
-        "下表依各 type 實際寫入的屬性編號作對照，<strong>不是表內名稱欄</strong>，也不是把 type N 等同於 <code>team_rune_name_00N</code>。"
-        "type 號與 id 前綴並不一致：type 4 的前綴是 706，type 6 的前綴是 704。"
-        "type 3 用 sp_para1／sp_para2，不用 para，照欄位展示。"
+        "下表依各種類實際寫入的屬性編號作對照，<strong>不是表內名稱欄</strong>，也不是把種類編號直接對成上一節那組名稱的第 N 條。"
+        "種類號與編號前綴並不一致：第 4 種的前綴是 706，第 6 種的前綴是 704。"
+        "第 3 種用另一組寫入欄，照欄位展示。欄位名見資料說明。"
         "「像某某」只是依寫入屬性所作的對照說明。"
     ))
     add(tbl["player_map"])
@@ -1374,13 +1371,13 @@ def render_html(data: TablesData) -> str:
     add('    <section id="player-curves">')
     add("      <h2>後續資料包符文的數值與精煉</h2>")
     add(p_html(
-        "6 個 type × 12 級 = 72 筆。品質 rare：1–3 級為 3，4–6 級為 4，7–9 級為 5，10–12 級為 6。"
-        "level_up_num：1–11 級為 3，第 12 級為 -1。沒有 power 欄，只有 base_power；六個 type 各級的 base_power、refine_exp、refine_need、refine_power、refine_percent 與 refine_percent_power 完全相同，故先列共用表。"
-        "精煉欄（refine_need／refine_para 或 refine_sp_para1／refine_percent 等）在六個 type 都只出現於 7–11 級；1–6 級與 12 級（滿級）這些欄為空或 -1。"
-        "refine_need、refine_exp 照表記數字，不猜道具，也不猜經驗與材料的換算。"
+        "6 個種類 × 12 級 = 72 筆。品質：1–3 級為 3，4–6 級為 4，7–9 級為 5，10–12 級為 6。"
+        "合成所需枚數：1–11 級為 3，第 12 級為 -1。沒有戰力欄，只有基礎戰力；六個種類各級的基礎戰力與精煉相關欄完全相同，故先列共用表。"
+        "精煉欄在六個種類都只出現於 7–11 級；1–6 級與 12 級（滿級）這些欄為空或未填。欄位名見資料說明。"
+        "精煉需求與精煉經驗照表記數字，不猜道具，也不猜經驗與材料的換算。"
         "不把 1%、20% 規則自行代入結算面板；只列表上的精煉屬性與戰力數。"
     ))
-    add(p_html("官方精煉進度說明（<code>UI_player_rune_refine_progress_tip</code>，已去掉 color 標籤，整句收入單一標記，不拆句）："))
+    add(p_html("官方精煉進度說明（已去掉色彩標籤，整句收入單一標記，不拆句；字串鍵見資料說明）："))
     add(f"<p>{official_term_html(o.refine_progress_tip)}</p>")
     add(p_html(
         f"其他精煉相關原文：「{H(o.one_click_refine, terms)}」、「{H(o.refine_percent, terms)}」、"
@@ -1403,7 +1400,7 @@ def render_html(data: TablesData) -> str:
     add("<ul>")
     add("<li>羈絆 queue 從 2 起、沒有 1 與 10 的含義。</li>")
     add("<li>分營隊列攻擊／生命（3062 等）與不分營 62／63 如何疊加，以及如何進入戰鬥結算。</li>")
-    add("<li>name_001–006 與 desc 不一致的原因；也不把這組名稱派給 team_rune 或寫成 type N = name_00N。</li>")
+    add("<li>後續資料包名稱與說明不一致的原因；也不把這組名稱派給隊列符文，或按種類編號直接對成那組名稱的第 N 條。</li>")
     add("<li>精煉經驗與材料／道具的對應（表沒指明）。</li>")
     add("<li>插槽數為五或六的裁斷。</li>")
     add("<li>強弱評定與搭配模擬。</li>")
@@ -1422,6 +1419,15 @@ def render_html(data: TablesData) -> str:
     add(tbl["attr_ref"])
     add("<ul>")
     add("<li>以下是整理用註記，查名稱與效果可略過。</li>")
+    add(
+        "<li>官方 1.–5. 條規則引自 <code>team_rune_info_desc</code>。"
+        "合成所需枚數對應 <code>level_up_num</code>：隊列符文 1–9 級為 3，第 10 級為 -1；"
+        "<code>player_rune</code> 1–11 級為 3，第 12 級為 -1。"
+        "介面另有 <code>team_rune_power_tip</code>、<code>team_rune_uncompound</code>；"
+        "羈絆提示為 <code>team_rune_bond</code>，以及 <code>team_rune_tips5</code>／<code>team_rune_tips6</code>。"
+        "郵件標題鍵是 <code>mail_rune_title</code>。"
+        "符文名稱只使用對應的官方名稱鍵，不改官方名。</li>"
+    )
     add("<li>隊列符文對應 <code>team_rune.json</code>（150 筆）與 <code>team_rune_bond.json</code>（36 筆）；"
         "另一套是只在 LocalLow 包出現的 <code>player_rune.json</code>（72 筆：6 個 type × 12 級，含精煉欄）。"
         "player_rune 表沒有名稱欄，也沒有 power 欄，只有 base_power；本頁不編造 power，也不把 type N 寫成 <code>team_rune_name_00N</code>。</li>")
@@ -1505,7 +1511,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
         ])
     out["team_curve"] = md_table(
         [
-            "等級", "品質 rare", "level_up_num",
+            "等級", "品質", "合成所需枚數",
             "力量／生命（分營隊列攻擊或生命）",
             "破甲：分營隊列攻擊", "破甲：突破防禦（64）",
             "厚甲：分營隊列生命", "厚甲：防禦（22）",
@@ -1605,7 +1611,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
         ])
     out["player_shared"] = md_table(
         [
-            "等級", "品質 rare", "level_up_num", "base_power",
+            "等級", "品質", "合成所需枚數", "base_power",
             "refine_exp", "refine_need", "refine_power",
             "refine_percent", "refine_percent_power",
         ],

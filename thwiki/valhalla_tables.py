@@ -540,7 +540,7 @@ def _batch_groups(spirits: list[SpiritRow]) -> list[tuple[str, str, list[SpiritR
         note = ""
         if set(ids) == set(PREVIOUS_NARROW_HEROES):
             note = (
-                f"先前的 unlock_server 為 {PREVIOUS_NARROW_SERVER}；"
+                f"先前的伺服器欄為 {PREVIOUS_NARROW_SERVER}；"
                 f"現用資料已改為 {CURRENT_UNLOCK_SERVER}。只記現用值，不標已開放或未開放。"
             )
         rows.append((season, CURRENT_UNLOCK_SERVER, group, note))
@@ -634,7 +634,7 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
     for season, server, group, note in _batch_groups(data.spirits):
         names = "、".join(f"{s.spirit_short}（{s.hero_label}，{s.hero_id}）" for s in group)
         batch_rows.append([e(season), e(server), e(str(len(group))), H(names, terms), H(note, terms) if note else "—"])
-    t_batch = table(["unlock_season", "unlock_server", "隻數", "英靈", "備註"], batch_rows, mobile="cards", card_title="英靈")
+    t_batch = table(["解鎖賽季欄（照錄）", "解鎖伺服器欄（照錄）", "隻數", "英靈", "備註"], batch_rows, mobile="cards", card_title="英靈")
 
     t3_rows = []
     t3_ids = []
@@ -680,7 +680,7 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
         {"label": "簡介", "id": "lead"},
         {"label": "表一、通用升級素材與共通屬性", "id": "t1"},
         {"label": "消耗分段", "id": "t1-seg", "depth": 1},
-        {"label": "unlock_season／unlock_server", "id": "t1-batch", "depth": 1},
+        {"label": "解鎖欄位（照錄，不換算）", "id": "t1-batch", "depth": 1},
         {"label": "表二、15 隻英靈", "id": "t2"},
         {"label": "專屬屬性成長", "id": "t2-sixth", "depth": 1},
         {"label": "表三、素材消耗對能力提升的邊際效果", "id": "t3"},
@@ -720,8 +720,8 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
         {t_seg}
       </section>
       <section id="t1-batch">
-        <h3>unlock_season／unlock_server</h3>
-        <p>以下照錄定義表欄位，不自行對成 S2／S3，也不標已開放或未開放。現用資料 15 筆的 {e("unlock_server")} 都是 {e(CURRENT_UNLOCK_SERVER)}。{e("unlock_season")} 有 {e("2|5")}、{e("3|0")}、{e("3|5")}、{e("3|9")} 四種寫法；前三種各 3 隻，{e("3|9")} 仍分兩列（各 3 隻）。主教、行者、妖精先前的 {e("unlock_server")} 為 {e(PREVIOUS_NARROW_SERVER)}，現用資料已改為與其他列相同，只記現用值。</p>
+        <h3>解鎖欄位（照錄，不換算）</h3>
+        <p>以下照錄定義表的解鎖欄位原值，不自行對成 S2／S3，也不標已開放或未開放。現用資料 15 筆的伺服器欄都是 {e(CURRENT_UNLOCK_SERVER)}。賽季欄有 {e("2|5")}、{e("3|0")}、{e("3|5")}、{e("3|9")} 四種寫法；前三種各 3 隻，{e("3|9")} 仍分兩列（各 3 隻）。主教、行者、妖精先前的伺服器欄為 {e(PREVIOUS_NARROW_SERVER)}，現用資料已改為與其他列相同，只記現用值。欄位名見資料說明。</p>
         {t_batch}
       </section>
     </section>
@@ -866,20 +866,20 @@ def render_markdown(data: TablesData) -> str:
     lines.append("")
     lines.append(md_table(["等級範圍", "本級專屬碎片"], [[a, raw(b)] for a, b in _cost_segments(data.levels)]))
     lines.append("")
-    lines.append("### unlock_season／unlock_server")
+    lines.append("### 解鎖欄位（照錄，不換算）")
     lines.append("")
     lines.append(
-        "以下照錄定義表欄位，不自行對成 S2／S3，也不標已開放或未開放。"
-        f"現用資料 15 筆的 unlock_server 都是 `{CURRENT_UNLOCK_SERVER}`。"
-        "unlock_season 有 `2|5`、`3|0`、`3|5`、`3|9` 四種寫法；前三種各 3 隻，`3|9` 仍分兩列（各 3 隻）。"
-        f"主教、行者、妖精先前的 unlock_server 為 `{PREVIOUS_NARROW_SERVER}`，現用資料已改為與其他列相同，只記現用值。"
+        "以下照錄定義表的解鎖欄位原值，不自行對成 S2／S3，也不標已開放或未開放。"
+        f"現用資料 15 筆的伺服器欄都是 `{CURRENT_UNLOCK_SERVER}`。"
+        "賽季欄有 `2|5`、`3|0`、`3|5`、`3|9` 四種寫法；前三種各 3 隻，`3|9` 仍分兩列（各 3 隻）。"
+        f"主教、行者、妖精先前的伺服器欄為 `{PREVIOUS_NARROW_SERVER}`，現用資料已改為與其他列相同，只記現用值。欄位名見資料說明。"
     )
     lines.append("")
     batch_rows = []
     for season, server, group, note in _batch_groups(data.spirits):
         names = "、".join(f"{s.spirit_short}（{s.hero_label}，{s.hero_id}）" for s in group)
         batch_rows.append([season, server, str(len(group)), names, note or "—"])
-    lines.append(md_table(["unlock_season", "unlock_server", "隻數", "英靈", "備註"], batch_rows))
+    lines.append(md_table(["解鎖賽季欄（照錄）", "解鎖伺服器欄（照錄）", "隻數", "英靈", "備註"], batch_rows))
     lines.append("")
     lines.append("## 表二、15 隻英靈")
     lines.append("")

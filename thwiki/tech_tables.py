@@ -1384,9 +1384,9 @@ def render_html(data: TablesData) -> str:
         {"id": "lead", "label": "簡介與閱讀說明"},
         {"id": "classification", "label": "訓練分類"},
         {"id": "pages", "label": "頁面與伺服器名單"},
-        {"id": "set1", "label": "第一套 server_list", "depth": 1},
-        {"id": "set2", "label": "第二套 server_list", "depth": 1},
-        {"id": "empty-pages", "label": "server_list 為空的頁", "depth": 1},
+        {"id": "set1", "label": "第一套伺服器名單", "depth": 1},
+        {"id": "set2", "label": "第二套伺服器名單", "depth": 1},
+        {"id": "empty-pages", "label": "伺服器名單為空的頁", "depth": 1},
         {"id": "unmatched", "label": "對不上類型表的樹", "depth": 1},
         {"id": "combat", "label": "與戰鬥相關的寫入（玩家科技）"},
         {"id": "soul", "label": "英雄鑄魂"},
@@ -1430,37 +1430,36 @@ def render_html(data: TablesData) -> str:
     add("<ul>")
     add(
         "<li><strong>正文只根據遊戲資料表。</strong>不把玩家討論寫進正文。"
-        "明細表沒有「類型」外鍵，不能由 <code>tree_id</code> 前綴唯一對回 35 個頁面"
-        "（前綴會重疊，例如 20xxxx 既可能讀成類型 20，也可能讀成類型 202）。"
-        "本頁以類型表列出頁面，戰鬥相關寫入改按全表明細做屬性統計，不把每條樹強行劃進某一頁。</li>"
+        "明細表不能只靠編號前綴對回 35 個頁面（前綴會重疊）。"
+        "本頁以類型表列出頁面，戰鬥相關寫入改按全表明細做屬性統計，不把每條樹強行劃進某一頁。"
+        "對照見資料說明。</li>"
     )
     add(
-        "<li><strong>屬性名</strong>優先用 <code>attribute_name_{id}</code>。"
-        "<code>show_type=2</code> 只記表內原值，不自行換算成百分比。"
-        "不要把 <code>type=1</code> 與 <code>type=2</code> 的同名屬性混成同一欄："
-        f"例如「{H(o.name_atk_1, terms)}／{H(o.name_hp_1, terms)}」是 3／4"
-        f"（<code>type=1</code>、<code>show_type=1</code>），"
-        f"「{H(o.name_hero_atk, terms)}／{H(o.name_hero_hp, terms)}」是 103／104"
-        f"（<code>type=2</code>、<code>show_type=2</code>）；"
-        f"「{H(o.name_3003, terms)}」既有 3003（<code>type=1</code>）也有 3103（<code>type=2</code>）。"
-        "玩家科技寫的陣營英雄攻擊／生命是 3103／3104 這組 <code>type=2</code>。</li>"
+        "<li><strong>屬性用官方名稱。</strong>"
+        "百分比類屬性只記表內原值，不自行換算成百分比。"
+        "名稱相同但不是同一條屬性的，不要混成同一欄："
+        f"例如「{H(o.name_atk_1, terms)}／{H(o.name_hp_1, terms)}」與"
+        f"「{H(o.name_hero_atk, terms)}／{H(o.name_hero_hp, terms)}」是不同屬性；"
+        f"「{H(o.name_3003, terms)}」也有兩條，不要當成同一欄。"
+        "玩家科技寫的陣營英雄攻擊／生命，用的是英雄側那一組。"
+        "對照見資料說明。</li>"
     )
     add(
-        "<li><strong>不要從 <code>unlocktime</code>、<code>season</code> 或 <code>season_open</code> 自動標未開放。</strong>"
-        "季節頁的 <code>season_open</code> 只照錄。</li>"
+        "<li><strong>不要從解鎖時間或賽季欄自動標未開放。</strong>"
+        "季節頁上的開放欄只照錄。欄位名見資料說明。</li>"
     )
     add(
-        "<li>類型表的 <code>attribute_id</code>／<code>AttrNameList</code> 掛的是頁面加速屬性："
-        f"1152 {official_term_html(o.speed_1152)}、1153 {official_term_html(o.speed_1153)}、"
-        f"1154 {official_term_html(o.speed_1154)}、1155 {official_term_html(o.speed_1155)}，"
-        f"以及 1264 {official_term_html(o.speed_1264)}。"
-        "這些是研究加速，不是戰鬥攻擊。</li>"
+        "<li>類型表另掛的是各頁研究加速："
+        f"{official_term_html(o.speed_1152)}、{official_term_html(o.speed_1153)}、"
+        f"{official_term_html(o.speed_1154)}、{official_term_html(o.speed_1155)}，"
+        f"以及 {official_term_html(o.speed_1264)}。"
+        "這些是研究加速，不是戰鬥攻擊。編號對照見資料說明。</li>"
     )
     add(
-        "<li>節點消耗與時間、研究所建築等級寫在明細表。前置建築實際出現的是 "
-        f"136「{official_term_html(o.building_136)}」（<code>citybuilding_name_136</code>，"
-        f"說明「{official_term_html(o.building_136_des)}」）與 "
-        f"169「{official_term_html(o.building_169)}」"
+        "<li>節點消耗與時間、研究所建築等級寫在明細表。前置建築實際出現的是"
+        f"「{official_term_html(o.building_136)}」"
+        f"（說明「{official_term_html(o.building_136_des)}」）與"
+        f"「{official_term_html(o.building_169)}」"
         f"（說明「{official_term_html(o.building_169_des)}」）。"
         "屬性分類提示寫的是「研究所」，與建築正式名「研究院」用字不同，兩種寫法都照錄。</li>"
     )
@@ -1485,16 +1484,16 @@ def render_html(data: TablesData) -> str:
         "本頁只按表列出名單，不另外推哪一個客戶端開關會覆蓋這份名單。"
         f"<code>build_lv</code> 是該頁要求的{H(o.building_136, terms)}（136）或{H(o.building_169, terms)}（169）等級。"
     ))
-    add('    <h3 id="set1">第一套 <code>server_list</code></h3>')
+    add('    <h3 id="set1">第一套伺服器名單</h3>')
     add(p_html("第一套 <code>server_list</code> 含 1、6、11、13、15–999、1001–1004、10001–10107："))
     add(tbl["set1"])
-    add('    <h3 id="set2">第二套 <code>server_list</code></h3>')
+    add('    <h3 id="set2">第二套伺服器名單</h3>')
     add(p_html(
         "第二套 <code>server_list</code> 含 2–5、7–9、12、14、1005–9999、10108–99999"
         "（類型 20 的名單略有不同，見該列）："
     ))
     add(tbl["set2"])
-    add('    <h3 id="empty-pages"><code>server_list</code> 為空的頁</h3>')
+    add('    <h3 id="empty-pages">伺服器名單為空的頁</h3>')
     add(tbl["empty"])
     add(p_html(
         "多數樹是 5 級或 10 級；也有 1、2、3、20 級，以及英雄鑄魂底下 1,500 級的樹。"
@@ -1625,6 +1624,31 @@ def render_html(data: TablesData) -> str:
     add("      <h2>資料說明</h2>")
     add("<ul>")
     add("<li>以下是整理用註記，查科技頁名與效果可略過。</li>")
+    add(
+        "<li>明細表沒有「類型」外鍵，不能由 <code>tree_id</code> 前綴唯一對回 35 個頁面"
+        "（前綴會重疊，例如 20xxxx 既可能讀成類型 20，也可能讀成類型 202）。"
+        "屬性名優先用 <code>attribute_name_{id}</code>。"
+        "<code>show_type=2</code> 只記表內原值，不自行換算成百分比。"
+        "不要把 <code>type=1</code> 與 <code>type=2</code> 的同名屬性混成同一欄："
+        f"例如「{H(o.name_atk_1, terms)}／{H(o.name_hp_1, terms)}」是 3／4"
+        f"（<code>type=1</code>、<code>show_type=1</code>），"
+        f"「{H(o.name_hero_atk, terms)}／{H(o.name_hero_hp, terms)}」是 103／104"
+        f"（<code>type=2</code>、<code>show_type=2</code>）；"
+        f"「{H(o.name_3003, terms)}」既有 3003（<code>type=1</code>）也有 3103（<code>type=2</code>）。"
+        "玩家科技寫的陣營英雄攻擊／生命是 3103／3104 這組 <code>type=2</code>。"
+        "不要從 <code>unlocktime</code>、<code>season</code> 或 <code>season_open</code> 自動標未開放；"
+        "季節頁的 <code>season_open</code> 只照錄。"
+        "類型表的 <code>attribute_id</code>／<code>AttrNameList</code> 掛的是頁面加速屬性："
+        f"1152 {official_term_html(o.speed_1152)}、1153 {official_term_html(o.speed_1153)}、"
+        f"1154 {official_term_html(o.speed_1154)}、1155 {official_term_html(o.speed_1155)}，"
+        f"以及 1264 {official_term_html(o.speed_1264)}。"
+        "這些是研究加速，不是戰鬥攻擊。"
+        "前置建築實際出現的是 136「"
+        f"{official_term_html(o.building_136)}」（<code>citybuilding_name_136</code>，"
+        f"說明「{official_term_html(o.building_136_des)}」）與 169「"
+        f"{official_term_html(o.building_169)}」"
+        f"（說明「{official_term_html(o.building_169_des)}」）。</li>"
+    )
     add(
         "<li>玩家科技 <code>attr_category</code> 25。"
         f"定義頁在 <code>technology_advanced_type.json</code>（{comma(35)} 筆），"
@@ -1781,29 +1805,27 @@ def render_markdown(data: TablesData) -> str:
     add("")
     add(
         "本頁主體是玩家科技"
-        f"（`attr_category` 25，官方名稱「{o.tech_name}」，提示「{o.tech_dec}」）。"
-        "定義頁在 `technology_advanced_type.json`（35 筆），"
-        "節點在 `technology_advanced_detail.json`（24,104 筆、841 條樹）。"
-        "分類表 `technology_classfication.json` 只有兩類（檔名少一個 i）。"
+        f"（官方名稱「{o.tech_name}」，提示「{o.tech_dec}」）。"
+        "請先按遊戲研究所／研究院裡看得到的頁名查科技。"
+        "不同伺服器可能看到不同的一組頁面，本頁兩套都列出。頁面與節點的整理註記見資料說明。"
     )
     add("")
     add(
         "公會科技是另一個來源分類"
-        f"（`attr_category` 14，官方名稱「{o.guild_name}」，提示「{o.guild_dec}」），"
-        "表在 `alliance_tech.json` 等，下文另節登錄，不要與玩家科技混成同一欄。"
+        f"（官方名稱「{o.guild_name}」，提示「{o.guild_dec}」），"
+        "下文另節登錄，不要與玩家科技混成同一欄。"
     )
     add("")
     add(
-        f"{o.shine_building_name}（`attr_category` 32，提示「{o.shine_building_dec}」）不是科技樹，也不在本頁正文展開。"
-        f"本抽取另有光輝科技頁（類型 1001–1006，`IsShineTechnology=true`，前置建築 169「{o.building_169}」），"
-        "與光輝建築不是同一分類，見下文。"
+        f"{o.shine_building_name}（提示「{o.shine_building_dec}」）不是科技樹，也不在本頁正文展開。"
+        f"另有光輝科技頁（前置建築「{o.building_169}」），與光輝建築不是同一分類，見下文。分類編號與欄位見資料說明。"
     )
     add("")
-    add("- **正文只根據遊戲資料表。** 不把玩家討論寫進正文。明細表沒有「類型」外鍵，不能由 `tree_id` 前綴唯一對回 35 個頁面（前綴會重疊，例如 20xxxx 既可能讀成類型 20，也可能讀成類型 202）。本頁以類型表列出頁面，戰鬥相關寫入改按全表明細做屬性統計，不把每條樹強行劃進某一頁。")
-    add(f"- **屬性名**優先用 `attribute_name_{{id}}`。`show_type=2` 只記表內原值，不自行換算成百分比。不要把 `type=1` 與 `type=2` 的同名屬性混成同一欄：例如「{o.name_atk_1}／{o.name_hp_1}」是 3／4（`type=1`、`show_type=1`），「{o.name_hero_atk}／{o.name_hero_hp}」是 103／104（`type=2`、`show_type=2`）；「{o.name_3003}」既有 3003（`type=1`）也有 3103（`type=2`）。玩家科技寫的陣營英雄攻擊／生命是 3103／3104 這組 `type=2`。")
-    add("- **不要從 `unlocktime`、`season` 或 `season_open` 自動標未開放。** 季節頁的 `season_open` 只照錄。")
-    add(f"- 類型表的 `attribute_id`／`AttrNameList` 掛的是頁面加速屬性：1152 {o.speed_1152}、1153 {o.speed_1153}、1154 {o.speed_1154}、1155 {o.speed_1155}，以及 1264 {o.speed_1264}。這些是研究加速，不是戰鬥攻擊。")
-    add(f"- 節點消耗與時間、研究所建築等級寫在明細表。前置建築實際出現的是 136「{o.building_136}」（`citybuilding_name_136`，說明「{o.building_136_des}」）與 169「{o.building_169}」（說明「{o.building_169_des}」）。屬性分類提示寫的是「研究所」，與建築正式名「研究院」用字不同，兩種寫法都照錄。")
+    add("- **正文只根據遊戲資料表。** 不把玩家討論寫進正文。明細表不能只靠編號前綴對回 35 個頁面（前綴會重疊）。本頁以類型表列出頁面，戰鬥相關寫入改按全表明細做屬性統計，不把每條樹強行劃進某一頁。對照見資料說明。")
+    add(f"- **屬性用官方名稱。** 百分比類屬性只記表內原值，不自行換算成百分比。名稱相同但不是同一條屬性的，不要混成同一欄：例如「{o.name_atk_1}／{o.name_hp_1}」與「{o.name_hero_atk}／{o.name_hero_hp}」是不同屬性；「{o.name_3003}」也有兩條，不要當成同一欄。玩家科技寫的陣營英雄攻擊／生命，用的是英雄側那一組。對照見資料說明。")
+    add("- **不要從解鎖時間或賽季欄自動標未開放。** 季節頁上的開放欄只照錄。欄位名見資料說明。")
+    add(f"- 類型表另掛的是各頁研究加速：{o.speed_1152}、{o.speed_1153}、{o.speed_1154}、{o.speed_1155}，以及 {o.speed_1264}。這些是研究加速，不是戰鬥攻擊。編號對照見資料說明。")
+    add(f"- 節點消耗與時間、研究所建築等級寫在明細表。前置建築實際出現的是「{o.building_136}」（說明「{o.building_136_des}」）與「{o.building_169}」（說明「{o.building_169_des}」）。屬性分類提示寫的是「研究所」，與建築正式名「研究院」用字不同，兩種寫法都照錄。")
     add("")
     add("## 訓練分類")
     add("")
@@ -1817,19 +1839,19 @@ def render_markdown(data: TablesData) -> str:
     add("")
     add(f"類型表用 `server_list` 把同一名稱的頁面分成兩套。本頁只按表列出名單，不另外推哪一個客戶端開關會覆蓋這份名單。`build_lv` 是該頁要求的{o.building_136}（136）或{o.building_169}（169）等級。")
     add("")
-    add("### 第一套 `server_list`")
+    add("### 第一套伺服器名單")
     add("")
     add("第一套 `server_list` 含 1、6、11、13、15–999、1001–1004、10001–10107：")
     add("")
     add(tbl["set1"])
     add("")
-    add("### 第二套 `server_list`")
+    add("### 第二套伺服器名單")
     add("")
     add("第二套 `server_list` 含 2–5、7–9、12、14、1005–9999、10108–99999（類型 20 的名單略有不同，見該列）：")
     add("")
     add(tbl["set2"])
     add("")
-    add("### `server_list` 為空的頁")
+    add("### 伺服器名單為空的頁")
     add("")
     add(tbl["empty"])
     add("")
@@ -1895,6 +1917,27 @@ def render_markdown(data: TablesData) -> str:
     add("- 科技與英雄、士兵、站位的搭配模擬，以及強弱評定。")
     add("")
     add("## 資料說明")
+    add("")
+    add(
+        "明細表沒有「類型」外鍵，不能由 `tree_id` 前綴唯一對回 35 個頁面"
+        "（前綴會重疊，例如 20xxxx 既可能讀成類型 20，也可能讀成類型 202）。"
+        "屬性名優先用 `attribute_name_{id}`。`show_type=2` 只記表內原值，不自行換算成百分比。"
+        "不要把 `type=1` 與 `type=2` 的同名屬性混成同一欄："
+        f"例如「{o.name_atk_1}／{o.name_hp_1}」是 3／4（`type=1`、`show_type=1`），"
+        f"「{o.name_hero_atk}／{o.name_hero_hp}」是 103／104（`type=2`、`show_type=2`）；"
+        f"「{o.name_3003}」既有 3003（`type=1`）也有 3103（`type=2`）。"
+        "玩家科技寫的陣營英雄攻擊／生命是 3103／3104 這組 `type=2`。"
+        "不要從 `unlocktime`、`season` 或 `season_open` 自動標未開放；季節頁的 `season_open` 只照錄。"
+        f"類型表的 `attribute_id`／`AttrNameList` 掛的是頁面加速屬性：1152 {o.speed_1152}、1153 {o.speed_1153}、"
+        f"1154 {o.speed_1154}、1155 {o.speed_1155}，以及 1264 {o.speed_1264}。這些是研究加速，不是戰鬥攻擊。"
+        f"前置建築實際出現的是 136「{o.building_136}」（`citybuilding_name_136`，說明「{o.building_136_des}」）"
+        f"與 169「{o.building_169}」（說明「{o.building_169_des}」）。"
+        "玩家科技 `attr_category` 25，定義頁在 `technology_advanced_type.json`（35 筆），"
+        "節點在 `technology_advanced_detail.json`（24,104 筆、841 條樹）。"
+        "分類表 `technology_classfication.json` 只有兩類（檔名少一個 i）。"
+        f"公會科技 `attr_category` 14，表在 `alliance_tech.json` 等。"
+        f"{o.shine_building_name}為 `attr_category` 32。"
+    )
     add("")
     add(_data_notes(data).replace("`", "`"))
     add("")

@@ -238,7 +238,7 @@ def fill_skill_segment(template: str, params: list) -> str:
 def skill_fill(desc_keys, params) -> tuple[list[str], list[str], bool]:
     """Return (filled_lines, original_templates, show_originals)."""
     if desc_keys in (None, "", [], -1):
-        return ["（無 skill_desc）"], [], False
+        return ["（無技能說明）"], [], False
     keys = desc_keys if isinstance(desc_keys, list) else [desc_keys]
     plist = list(params or [])
     filled: list[str] = []
@@ -760,7 +760,7 @@ def load_tables_data() -> TablesData:
     # empty skill_desc locked
     for empty_name in ("煌雷裁決", "龍骸護符", "青藤古弓"):
         art = next(a for a in artifacts if a.name == empty_name)
-        if art.skill0.filled != ["（無 skill_desc）"] or art.skill100.filled != ["（無 skill_desc）"]:
+        if art.skill0.filled != ["（無技能說明）"] or art.skill100.filled != ["（無技能說明）"]:
             raise ValueError(f"{empty_name} unexpectedly has skill_desc")
     # locked skill fills
     bottle = next(a for a in artifacts if a.name == "秘藥之瓶")
@@ -1387,46 +1387,47 @@ def render_html(data: TablesData) -> str:
     add("<li><strong>屬性只錄表上的原值</strong>，不自行換成百分比。點數與百分比兩類屬性的對照見資料說明。</li>")
     add("<li><strong>品質欄是表上的 2／3／4。</strong>"
         f"任務與道具字串有「{H('藍色品質秘寶', terms)}／{H('紫色品質秘寶', terms)}／{H('橙色品質秘寶', terms)}」；"
-        f"{H(o.hammer, terms)}說明寫「{H('橙色秘寶', terms)}」，且只有 quality=4 的秘寶 <code>exchange_goods=514</code>。"
-        "品質欄仍錄數字，不把任務鍵編號自行解釋成另一套枚舉，也不把「傳奇(含)以上品質」強行對成 2／3／4。</li>")
-    add("<li>技能文案以 <code>artifact_star_up</code> 的 <code>skill_desc</code> 填入 <code>skill_desc_parameter</code> 後照錄。"
-        "同一列若有多段 desc，每段都從 <code>{0}</code> 起算，多餘參數不自行挪給下一段；"
-        "對不上的地方改並列原文與參數。</li>")
+        f"{H(o.hammer, terms)}說明寫「{H('橙色秘寶', terms)}」，且只有品質 4 的秘寶以{H(o.hammer, terms)}作為交換道具。"
+        "品質欄仍錄數字，不把任務鍵編號自行解釋成另一套枚舉，也不把「傳奇(含)以上品質」強行對成 2／3／4。"
+        "欄位對照見資料說明。</li>")
+    add("<li>技能文案以升星表的說明填入參數後照錄。"
+        "同一列若有多段說明，每段都從第一個佔位符起算，多餘參數不自行挪給下一段；"
+        "對不上的地方改並列原文與參數。欄位名見資料說明。</li>")
     add("<li>官方用語是「部族」不是「部落」。本頁用到的秘寶字串沒有「部落」。"
-        f"套裝 <code>race</code> 1／2／3 與士兵表{H('聯盟', terms)}／{H('部族', terms)}／{H('自然', terms)}編號相同。</li>")
+        f"套裝的陣營編號與士兵表{H('聯盟', terms)}／{H('部族', terms)}／{H('自然', terms)}相同。</li>")
     add("</ul>")
     add("    </section>")
 
     add('    <section id="scope">')
     add("      <h2>範圍</h2>")
     add(p_html(
-        f"介面寫：{H(o.buff_desc.replace(chr(10)*2, '；'), terms)}（<code>artifact_system_buff_desc</code>）。"
-        f"另有「{H(o.name_dec, terms)}」（<code>artifact_system_name_dec</code>）。"
-        f"影響力目錄把「{H('秘寶', terms)}」「{H('秘寶榮譽牆', terms)}」放在「隊伍提升」底下"
-        "（<code>influence_level</code> 類型 <code>ARTIFACT</code>／<code>ARTIFACT_HONOR</code>）。"
+        f"介面寫：{H(o.buff_desc.replace(chr(10)*2, '；'), terms)}。"
+        f"另有「{H(o.name_dec, terms)}」。"
+        f"影響力目錄把「{H('秘寶', terms)}」「{H('秘寶榮譽牆', terms)}」放在「隊伍提升」底下。"
+        "字串鍵見資料說明。"
     ))
     add(p_html(
         f"官方用「{H('秘寶', terms)}」這兩個字的，不只這一系統。活動與道具、尋寶／寶藏表、城堡裝飾等不在本頁展開，見「本頁未列入」。"
-        f"<code>function.json</code> 沒有以「{H('秘寶', terms)}」為名的功能列。"
+        f"功能表沒有以「{H('秘寶', terms)}」為名的功能列。"
     ))
     add("    </section>")
 
     add('    <section id="rules">')
     add("      <h2>系統規則（官方字串）</h2>")
     add(p_html("資料裡有兩套規則文案，用字不完全相同，一併照錄，不自行判斷哪一套是目前介面。"))
-    add(p_html(f"<strong><code>artifact_system_rules</code></strong>"))
+    add(p_html("<strong>規則原文</strong>"))
     add(f"      <p>{highlight_lines(o.rules, terms)}</p>")
-    add(p_html(f"<strong><code>artifact_system_rules_new</code></strong>"))
+    add(p_html("<strong>較新的規則原文</strong>"))
     add(f"      <p>{highlight_lines(o.rules_new, terms)}</p>")
     add(p_html(
-        "與 <code>artifact_system_rules_new</code> 並列的 <code>artifact_info_*</code> 用字也不完全相同，同樣照錄。"
-        f"<code>artifact_info_002</code> 寫「{H(o.info['artifact_info_002'], terms)}」，沒有「途徑」二字。"
-        f"<code>artifact_info_003</code> 把公式寫成「{H('上陣英雄攻擊', terms)}／{H('上陣英雄生命', terms)}」："
+        "與較新規則並列的補充說明用字也不完全相同，同樣照錄。"
+        f"其中一則寫「{H(o.info['artifact_info_002'], terms)}」，沒有「途徑」二字。"
+        f"公式一則把效果寫成「{H('上陣英雄攻擊', terms)}／{H('上陣英雄生命', terms)}」："
         f"{H(o.info['artifact_info_003'], terms)}"
     ))
     add(p_html(
-        f"<code>artifact_info_006</code>：{H(o.info['artifact_info_006'], terms)}"
-        f"<code>artifact_info_007</code>：{H(o.info['artifact_info_007'], terms)}"
+        f"另兩則寫：「{H(o.info['artifact_info_006'], terms)}」；"
+        f"「{H(o.info['artifact_info_007'], terms)}」"
         "與升級表欄位的對照見下節，兩處不完全相同，只並列記錄，不作顯示結論。"
     ))
     add(p_html("所有 58 筆的 <code>fragment_num</code> 都是 10。合成與升星消耗的物品 id 見升星節。"))
@@ -1450,7 +1451,7 @@ def render_html(data: TablesData) -> str:
     ))
     add(p_html(
         f"<code>string_para2</code> 是屬性 1097「{H(o.slot_name, terms)}」。"
-        f"官方說明寫 20 級、50 級解鎖額外位置（<code>artifact_info_007</code>）；"
+        f"官方說明寫 20 級、50 級解鎖額外位置；"
         "表上這欄在 0–20 級為 <code>1097|0|1</code>、21–34 級為 <code>1097|1|1</code>、35–2076 級為 <code>1097|2|1</code>。"
         "兩處對不上，只並列記錄，不作顯示結論。"
     ))
@@ -1497,7 +1498,7 @@ def render_html(data: TablesData) -> str:
     add("<li><strong>升星消耗：quality 3／4 兩套數量相同；quality 2 從 41 星起不同。</strong>"
         "<code>version=1</code> 的 quality 2 合計 4,860，<code>version=-1</code> 合計 4,450。見升星節。</li>")
     add("<li><strong>技能文案不完全相同。</strong><code>version=-1</code> 的平衡胸針在 55 星起把 <code>skill_name</code> 寫成秘藥之瓶那筆技能鍵；"
-        "恐懼之眼 0–100 星的 <code>skill_desc</code> 寫成神聖盟約的鍵，參數也不同；"
+        "恐懼之眼 0–100 星的技能說明寫成神聖盟約的鍵，參數也不同；"
         "禁魔手銬有 21 列只差在單一參數（例如 80 星一處為 21 對 20）。名錄技能以 <code>version=1</code> 為準。</li>")
     add("<li><strong>全英雄屬性（103／104）基本相同，只有兩處例外：</strong>"
         "<code>version=-1</code> 的元帥號角在 5–9 星為英雄攻擊 30、英雄生命 30（<code>version=1</code> 同期為 30／60）；"
@@ -1532,13 +1533,13 @@ def render_html(data: TablesData) -> str:
     add(tbl["catalog"])
     add(p_html(
         "quality 2 三件、quality 3 七件、quality 4 十九件（以一套編號計）。"
-        f"quality 4 的 <code>exchange_goods</code> 皆為 514（{H(o.hammer, terms)}，說明：{H(o.hammer_desc, terms)}）；"
+        f"品質 4 的交換道具皆為{H(o.hammer, terms)}（說明：{H(o.hammer_desc, terms)}）；"
         f"quality 2／3 為 -1。星級相同時無法交換（<code>artifact_swap_tips1</code>：{H(o.swap_tips, terms)}）。"
     ))
     add(p_html(
         f"道具說明另把「{H('電青蛙', terms)}」的合成／升星材料寫成秘寶「{H('蛙神圖騰', terms)}」"
-        f"（<code>goods_desc_340061</code>、{H(o.frog_totem_descs[0], terms)}；"
-        f"<code>goods_desc_364006</code>、{H(o.frog_totem_descs[1], terms)}），"
+        f"（{H(o.frog_totem_descs[0], terms)}；"
+        f"{H(o.frog_totem_descs[1], terms)}），"
         "與秘寶正式名不一致，只並列記錄。"
     ))
     add("    </section>")
@@ -1546,16 +1547,16 @@ def render_html(data: TablesData) -> str:
     add('    <section id="suits">')
     add("      <h2>套裝</h2>")
     add(p_html(
-        "<code>artifact_suit.json</code> 6 筆，去重後 3 套，各有一組對應 <code>version=-1</code>（id 101–103，成員為 5xxxx）"
-        "與 <code>version=1</code>（id 201–203，成員為 15xxxx）。三套 <code>suit_skill_star</code> 皆為 15。"
+        "套裝表 6 筆，去重後 3 套，各有一組對應另一套編號（id 101–103，成員為 5xxxx）"
+        "與目前這套（id 201–203，成員為 15xxxx）。三套都是 15 星解鎖套裝技能。"
         f"解鎖說明兩句：{H(o.suit_unlock[0], terms)}；{H(o.suit_unlock[1], terms)}。"
         "<code>{0}</code> 應對 15 星，表沒有另寫填入規則。"
         f"<code>race</code> 1／2／3 與士兵表{H('聯盟', terms)}／{H('部族', terms)}／{H('自然', terms)}編號相同。"
     ))
     add(tbl["suits"])
     add(p_html(
-        f"字串另有套裝名「{H(o.power_suit_name, terms)}」（<code>ui_artifact_suit_name_04</code>），說明：「{H(o.power_suit_desc, terms)}」。"
-        "<code>artifact_suit.json</code> 沒有這一套，本頁不把它算進 3 套之內。"
+        f"字串另有套裝名「{H(o.power_suit_name, terms)}」，說明：「{H(o.power_suit_desc, terms)}」。"
+        "套裝表沒有這一套，本頁不把它算進 3 套之內。"
         "「傳奇」與表上品質 2／3／4 如何對應，未驗證。"
     ))
     has_origin = [a.name for a in data.artifacts if a.suit_origin not in (-1, 0)]
@@ -1565,7 +1566,7 @@ def render_html(data: TablesData) -> str:
         + "、".join(H(n, terms) for n in has_origin)
         + "），與上列套裝成員大致相符，但"
         + "、".join(H(n, terms) for n in no_origin)
-        + "這欄為 -1。套裝技能 id（<code>suit_skill</code>）在本抽取沒有對到獨立技能文案表，效果以套裝說明為準。"
+        + "這欄為 -1。套裝技能在本抽取沒有對到獨立技能文案表，效果以套裝說明為準。"
     ))
     add("    </section>")
 
@@ -1578,9 +1579,9 @@ def render_html(data: TablesData) -> str:
     add(p_html(
         "消耗欄是 <code>[物品id, 數量]</code>，物品 id 為 303001–303003、304001–304007、305001–305019，"
         "與定義表 <code>FragmentId</code>／<code>fragment_formula</code>／<code>repeat_get</code> 同一組。"
-        "字串表沒有 <code>goods_name_303001</code> 這組名稱。"
-        f"另有 <code>goods_desc_330011</code> 等寫「{H(o.chip_descs_example[0], terms)}」，"
-        f"以及 <code>goods_desc_363001</code> 等寫「{H(o.chip_descs_example[1], terms)}」。"
+        "字串表沒有這組升星材料的官方短名。"
+        f"另有道具說明寫「{H(o.chip_descs_example[0], terms)}」，"
+        f"以及「{H(o.chip_descs_example[1], terms)}」。"
         "本頁不把 303001、330011、363001 這三組 id 自行當成同一件道具。"
         f"通用碎片 220201／220202／220203 名稱為{H(o.generic_chips[220201][0], terms)}／"
         f"{H(o.generic_chips[220202][0], terms)}／{H(o.generic_chips[220203][0], terms)}，"
@@ -1632,8 +1633,8 @@ def render_html(data: TablesData) -> str:
     add("</ul>")
     add(p_html(
         "中間星級的附加屬性幾乎每星上調，不在本頁逐星列出。"
-        "<code>artifact_skill_attr.json</code> 按 <code>type</code> 3／4／5"
-        "（與定義表 <code>artifact_skill_attr_type</code>、品質 2／3／4 對應）給攻擊、生命值、暴擊傷害（10，值固定 10000）曲線；"
+        "技能屬性輔表按類型 3／4／5"
+        "（與定義表的技能屬性類型、品質 2／3／4 對應）給攻擊、生命值、暴擊傷害（值固定 10000）曲線；"
         "三型都是 1–40 級共 40 列，且攻擊／生命／暴擊傷害曲線彼此相同。"
         "第 20 章曾寫級數分別到 11／16／40，與輔表不符，本頁以表為準。"
         "與升星表同級的攻擊／生命並不一致（例如 quality 2、level 1 升星表為 340／2300，輔表為 90／900）。"
@@ -1644,11 +1645,11 @@ def render_html(data: TablesData) -> str:
     add('    <section id="skills">')
     add("      <h2>技能</h2>")
     add(p_html(
-        "技能名稱與描述取自升星表的 <code>skill_name</code>、<code>skill_desc</code>、<code>skill_desc_parameter</code>（<code>version=1</code>）。"
+        "技能名稱與描述取自目前這套升星表的技能名稱、說明與參數。"
         "多數名稱鍵是 <code>hero_skill_name_23xxxxx</code>／<code>24xxxxx</code>／<code>25xxxxx</code>；"
         "神聖盟約起改把 <code>skill_name</code> 寫成 <code>artifact_name_50012</code> 這類秘寶名鍵，顯示會與秘寶同名，不是另有技能短名。"
         "下列每件先寫 0 星，再寫 100 星。中間解鎖星只改參數，不逐段展開。多段 desc 各自從 <code>{0}</code> 起算。"
-        "煌雷裁決、龍骸護符、青藤古弓在 0–100 星的 <code>skill_desc</code>／<code>skill_desc_parameter</code> 皆為空，只錄「無 skill_desc」，不從其他表補文案。"
+        "煌雷裁決、龍骸護符、青藤古弓在 0–100 星的技能說明與參數皆為空，只錄「無技能說明」，不從其他表補文案。"
     ))
     for a in data.artifacts:
         add(f'    <h3 id="skill-{a.id_v1}">{H(a.name, terms)}（{a.id_v1}／{a.id_vm1}，{H(a.type_name, terms)}，品質 {a.quality}）</h3>')
@@ -1671,14 +1672,14 @@ def render_html(data: TablesData) -> str:
         "（<code>artifact_honour_003</code>–<code>006</code>、<code>artifact_honour_005</code>）。"
     ))
     add(p_html(
-        "<code>artifact_honor.json</code> 3 筆，按品質 2／3／4："
+        "榮譽牆表 3 筆，按品質 2／3／4："
         f"<code>attribute_up</code> 為{H(o.hp, terms)}（4）40／80／160，戰力 160／880／1760。"
         "<code>need_chip</code> 三筆都是 <code>200|10,300|20,400|30,600|30</code>。"
         "這四個數字在表上沒有標題，本頁不自行解釋成哪一種碎片或等級。"
     ))
     add(tbl["honor"])
     add(p_html(
-        "<code>artifact_honor_bonus.json</code> 30 筆，按秘寶 <code>group_id</code> 分成 6 組，"
+        "榮譽牆加成表 30 筆，按秘寶組分成 6 組，"
         "門檻為榮譽等級 50／100／150／200／300（沒有 250）。"
         f"1301／1401／1501 加{H(o.hero_atk, terms)}（103），1302／1402／1502 加{H(o.hero_hp, terms)}（104）。"
         "各組成員見名錄「榮譽組」欄。數值是原值。"
@@ -1698,7 +1699,7 @@ def render_html(data: TablesData) -> str:
     add("<li><code>dig_treasure</code>、<code>mine_treasure*</code>、<code>season_treasure</code>、<code>raid_treasure_group</code>、<code>kvk_map_treasure</code> 等尋寶／寶藏表。</li>")
     add(f"<li>字串中的「{H(o.power_suit_name, terms)}」套裝（表上無列）、套裝技能 id 的獨立文案、以及「傳奇(含)以上品質」與品質 2／3／4 的對應。</li>")
     add("<li>秘寶大廳全部 2,077 級的中間值，以及 <code>para1</code>／<code>para2</code> 與「倍率／轉化率」三個名稱的逐欄對應。</li>")
-    add("<li>升星 1–99 星的逐星屬性與中間技能參數；<code>artifact_skill_attr</code> 與升星表的關係。</li>")
+    add("<li>升星 1–99 星的逐星屬性與中間技能參數；技能屬性輔表與升星表的關係。</li>")
     add("<li>通用碎片如何折算進合成或升星；303001 與 330011／363001 是否為同一道具。</li>")
     add("<li><code>SeasonParam</code> 與賽季日曆的對應（不標未開放）。</li>")
     add("<li>編隊面板「秘寶 52.50%」的完整加總式（只記沒有單一列 18｜5250／19｜5250，以及 3500＋1750 這個數字對得上）。</li>")
@@ -1710,6 +1711,16 @@ def render_html(data: TablesData) -> str:
     add("      <h2>資料說明</h2>")
     add("<ul>")
     add("<li>以下是整理用註記，查名錄與效果可略過。</li>")
+    add(
+        "<li>只有品質 4（<code>quality=4</code>）的秘寶 <code>exchange_goods=514</code>（奇蹟之錘）。"
+        "技能文案以 <code>artifact_star_up</code> 的 <code>skill_desc</code> 填入 <code>skill_desc_parameter</code> 後照錄；"
+        "同一列多段 <code>desc</code> 都從 <code>{0}</code> 起算。"
+        "套裝 <code>race</code> 1／2／3 與士兵表聯盟／部族／自然編號相同。"
+        "不要從 SeasonParam 或其他季節、活動欄自動標未開放。"
+        "品質 4 的 0 星攻擊／生命用 2780／19100，不要寫成 3530／23600。"
+        "編號 20006 不得冒用 20004 的官方名「秘寶生命」。"
+        "<code>show_type=2</code> 只記原值（天賦面板已鎖定例外除外，本頁不套用那套例外）。</li>"
+    )
     add("<li><strong>定義表：</strong>"
         "定義在 <code>artifact.json</code>（58 筆），升星在 <code>artifact_star_up.json</code>（5,858 筆，每件 0–100 星共 101 列），"
         "套裝在 <code>artifact_suit.json</code>（6 筆），榮譽在 <code>artifact_honor.json</code>（3 筆）與 "

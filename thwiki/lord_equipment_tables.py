@@ -708,7 +708,7 @@ def load_tables_data() -> TablesData:
         if lo == 136:
             if key != "lord_equip_desc011" or label != "神話T3" or tier != "icon_txt_T4":
                 raise ValueError("136–166 must remain 神話T3 with tier T4")
-            note = "名稱鍵仍是神話T3（lord_equip_desc011）；equip_tier 為 T4。不改稱為神話T4。"
+            note = "名稱仍是神話T3，階級欄為 T4。不改稱為神話T4。"
         first_six_stages.append(
             StageRow(lo=lo, hi=hi, desc_key=key, label=label, quality=quality, equip_tier=tier, note=note)
         )
@@ -753,7 +753,7 @@ def load_tables_data() -> TablesData:
             raise ValueError(f"first-six cost at {lo}: {mapping} != {expected}")
         label = quality_label(key)
         if lo == 136:
-            label = "（裝備列名稱鍵仍為神話T3，tier 為 T4）"
+            label = "（裝備列名稱仍為神話T3，階級欄為 T4）"
         cost_rows.append(CostRow(level=lo, stage_label=label, quantities=mapping))
     row166 = next(r for r in sample if _int(r["level"]) == 166)
     map166 = cost_map(_row_costs(row166))
@@ -1047,16 +1047,15 @@ def render_html(data: TablesData) -> str:
     for st in data.first_six_stages:
         name_cell = st.label
         if st.note:
-            name_cell = f"{st.label}（名稱鍵仍是「{st.label}」，{st.desc_key}）"
+            name_cell = f"{st.label}（{st.note}）"
         quality_rows.append([
             f"{st.lo}–{st.hi}",
             H(name_cell, terms),
-            e(st.desc_key),
             e(str(st.quality)),
             e(_tier_cell(st.equip_tier)),
         ])
     quality_tbl = table(
-        ["等級", "名稱字串", "名稱鍵", "quality", "equip_tier"],
+        ["等級", "名稱", "品質欄", "階級欄"],
         quality_rows,
         mobile="sticky",
         card_title="等級",
@@ -1068,13 +1067,12 @@ def render_html(data: TablesData) -> str:
         codex_quality_rows.append([
             f"{st.lo}–{st.hi}",
             H(st.label, terms),
-            e(st.desc_key),
             e(str(st.quality)),
             e(_tier_cell(st.equip_tier)),
             e(ml),
         ])
     codex_quality_tbl = table(
-        ["等級", "名稱字串", "名稱鍵", "quality", "equip_tier", "master_level"],
+        ["等級", "名稱", "品質欄", "階級欄", "大師等級"],
         codex_quality_rows,
         mobile="sticky",
         card_title="等級",
@@ -1094,7 +1092,7 @@ def render_html(data: TablesData) -> str:
     )
 
     def master_cells(rows: list[MasterRow], attr_ids: tuple[int, ...]) -> tuple[list[str], list[list[str]]]:
-        headers = ["level", "名稱鍵", *[attr_label(i) for i in attr_ids], "戰力"]
+        headers = ["等級", "名稱", *[attr_label(i) for i in attr_ids], "戰力"]
         body = []
         for r in rows:
             amap = _attr_map(r.attrs)
@@ -1132,7 +1130,7 @@ def render_html(data: TablesData) -> str:
     )
 
     unused = "、".join(
-        f"「{quality_label(k) if k != 'lord_equip_desc012' else official_text(k)}」（{k}）"
+        f"「{quality_label(k) if k != 'lord_equip_desc012' else official_text(k)}」"
         for k in UNUSED_DESC_KEYS
     )
     g154, g155, g156, g157 = (data.goods[i] for i in GOODS_IDS)
@@ -1166,15 +1164,15 @@ def render_html(data: TablesData) -> str:
       <ul>
         <li><strong>正文只根據遊戲資料表。</strong>不把玩家討論寫進正文。表上對不上唯一系統的，寫明範圍與待補，不推測。</li>
         <li><strong>表頭只用官方屬性名，不再掛編號。</strong>本頁數值先照表上的原值寫，不是面板上的百分比（例如{H("英雄攻擊", terms)}寫 {fmt_int(150)}，不是 1.50%）。編號對照見資料說明。</li>
-        <li><strong>不要從 <code>unlocktime</code>、<code>season</code> 自動標未開放。</strong>這三張表沒有這些欄，也沒有據此標{H(p7.name, terms)}或其他件是否已推出，本頁也不標。</li>
-        <li>品質與階段名稱取自 <code>lord_equip_desc001</code>–<code>013</code> 的原文（去掉色碼與未填的 <code>{{0}}</code> 後綴後為良好、稀有、史詩、傳說T1–T4、神話、神話T1–T4）。表上的 <code>quality</code> 欄是 2–6，與這些稱呼不是一一對應（例如傳說T1 至傳說T4 的 <code>quality</code> 都是 5），兩欄都照錄，不另改稱。傳說T3、傳說T4 的名稱鍵是 <code>lord_equip_desc0061</code>、<code>lord_equip_desc0071</code>。</li>
-        <li>消耗寫成 <code>2|物品id|數量</code>。物品 154 {H(g154["name"], terms)}、155 {H(g155["name"], terms)}、156 {H(g156["name"], terms)}、157 {H(g157["name"], terms)}，說明都寫「用於打造領主裝備」。類型 2 在本抽取裡對得上貨品；本頁不自行把開頭的 2 解釋成別的系統。這四個名稱取自官方字串 <code>goods_name_154</code>–<code>157</code>，不用骨架貨品表。</li>
+        <li><strong>不要從解鎖時間或賽季欄自動標未開放。</strong>這三張表沒有這些欄，也沒有據此標{H(p7.name, terms)}或其他件是否已推出，本頁也不標。欄位名見資料說明。</li>
+        <li>品質與階段名稱取自官方字串原文（去掉色碼與未填佔位符後綴後為良好、稀有、史詩、傳說T1–T4、神話、神話T1–T4）。表上的品質欄是 2–6，與這些稱呼不是一一對應（例如傳說T1 至傳說T4 的品質欄都是 5），兩欄都照錄，不另改稱。傳說T3、傳說T4 另有獨立名稱鍵。對照見資料說明。</li>
+        <li>消耗以類型、物品與數量三欄記錄。物品為 {H(g154["name"], terms)}、{H(g155["name"], terms)}、{H(g156["name"], terms)}、{H(g157["name"], terms)}，說明都寫「用於打造領主裝備」。開頭的類型編號在本抽取裡對得上貨品；本頁不自行把它解釋成別的系統。這四個名稱取自官方字串，不用骨架貨品表。編號與記法見資料說明。</li>
         <li>官方用語是「{H("部族", terms)}」，不是「部落」；若官方字串本身寫「部落」才照錄。本頁用到的領主裝備字串沒有「部落」。</li>
       </ul>
     </section>
     <section id="overview">
       <h2>七件裝備</h2>
-      <p><code>lord_equipment</code> 按 <code>type</code> 1–7 分件。前六件各 166 筆（<code>level</code> 1–166），{H(p7.name, terms)} 64 筆（<code>level</code> 1–64），合計 {fmt_int(1060)}。沒有像英雄裝備那樣的獨立部位名稱表；本頁用 <code>type</code> 與官方裝備名。同一 <code>type</code> 在全部等級寫入的屬性編號不變。目錄名稱一律取各件 1 級的官方名稱。</p>
+      <p>領主裝備按 1–7 分件。前六件各 166 筆（1–166 級），{H(p7.name, terms)} 64 筆（1–64 級），合計 {fmt_int(1060)}。沒有像英雄裝備那樣的獨立部位名稱表；本頁用類型編號與官方裝備名。同一類型在全部等級寫入的屬性編號不變。目錄名稱一律取各件 1 級的官方名稱。</p>
       {overview_tbl}
       <p>前六件在同一等級的戰力相同。{H(p1.name, terms)}、{H(p3.name, terms)}、{H(p5.name, terms)} 的數值曲線相同（只換陣營生命屬性）；{H(p2.name, terms)}、{H(p4.name, terms)}、{H(p6.name, terms)} 是另一條曲線（只換陣營攻擊屬性）。表沒有再給這兩組套裝名稱，本頁不另起套名。</p>
       <p>編號規律是 <code>13{{type}}0{{等級三位}}</code>，例如{H(p1.name, terms)} 1 級為 {e(str(p1.lv1_id))}，{H(p7.name, terms)} 64 級為 {e(str(p7.max_id))}。</p>
@@ -1182,12 +1180,12 @@ def render_html(data: TablesData) -> str:
 
     <section id="quality">
       <h2>品質與階段</h2>
-      <p>前六件的等級與 <code>lord_equip_desc</code>、<code>quality</code>、<code>equip_tier</code> 對照如下（六件斷檔相同）。階段起始列的 <code>star</code> 為 0。</p>
+      <p>前六件的等級與階段名稱、品質欄、階級欄對照如下（六件斷檔相同）。階段起始列的星數欄為 0。名稱鍵見資料說明。</p>
       {quality_tbl}
-      <p>字串表另有{H(unused, terms)}。前六件的裝備列沒有掛 004、005、012、013。神話T4 這條名稱出現在大師表 <code>level</code> 136 的 <code>attr_key</code>（見下節），與裝備列在 136–166 級仍寫「{H("神話T3", terms)}」、只把 <code>equip_tier</code> 改成 T4 不一致。本頁兩處都照錄，不自行把裝備列改稱為神話T4。</p>
+      <p>字串表另有{H(unused, terms)}。前六件的裝備列沒有用到這幾條。神話T4 這條名稱出現在大師表 136 級（見下節），與裝備列在 136–166 級仍寫「{H("神話T3", terms)}」、只把階級欄改成 T4 不一致。本頁兩處都照錄，不自行把裝備列改稱為神話T4。鍵名見資料說明。</p>
       <p>{H(g157["name"], terms)}（157）說明：「{H(g157["desc"], terms)}」與上表在 72 級進入「{H("神話", terms)}」、並從此開始消耗{H(g157["name"], terms)}相符；表沒有另給「晉升」專表。</p>
-      <p>每筆還有 <code>star</code>、<code>star_next</code>、<code>star_sub</code>、<code>star_sub_max</code>。在同一名稱階段內，<code>star</code> 會從 0 走到 3，<code>star_sub</code> 在 <code>star_sub_max</code> 內遞增；換到下一階段時 <code>star</code> 回到 0。表沒有說明這些欄等於介面第幾星，本頁不自行解釋。</p>
-      <p><strong>名稱鍵在 136–166 級的例外：</strong><code>type</code> 4／5／6（{H(p4.name, terms)}、{H(p5.name, terms)}、{H(p6.name, terms)}）從 136 級起，<code>lord_equip_name</code> 改掛 <code>lord_equip_name03</code>（{H(p3.name, terms)}），共各 31 筆。圖示仍是各件自己的（<code>{e(p4.icon)}</code>／<code>{e(p5.icon)}</code>／<code>{e(p6.icon)}</code>），寫入屬性仍是該件的聯盟或部族攻擊列，與{H(p3.name, terms)}（聯盟生命列）不同。本頁在總表保留各件 1 級的名稱，並註明這 31 筆名稱鍵與圖示、屬性不一致；不把這三件在 136 級之後改稱為{H(p3.name, terms)}。</p>
+      <p>每筆還有星數相關欄位。在同一名稱階段內，星數會從 0 走到 3，子星數在上限內遞增；換到下一階段時星數回到 0。表沒有說明這些欄等於介面第幾星，本頁不自行解釋。欄位名見資料說明。</p>
+      <p><strong>136–166 級的名稱例外：</strong>{H(p4.name, terms)}、{H(p5.name, terms)}、{H(p6.name, terms)}從 136 級起，名稱改掛成{H(p3.name, terms)}，共各 31 筆。圖示仍是各件自己的，寫入屬性仍是該件的聯盟或部族攻擊列，與{H(p3.name, terms)}（聯盟生命列）不同。本頁在總表保留各件 1 級的名稱，並註明這 31 筆名稱與圖示、屬性不一致；不把這三件在 136 級之後改稱為{H(p3.name, terms)}。鍵名見資料說明。</p>
     </section>
     <section id="codex">
       <h2>{e(p7.name)}</h2>
@@ -1204,7 +1202,7 @@ def render_html(data: TablesData) -> str:
     </section>
     <section id="costs">
       <h2>消耗（前六件階段起始列）</h2>
-      <p>六件在同一等級的消耗相同。下表列各階段第一級；不是完整養成曲線。類型皆為 <code>2|物品|數量</code>。本頁不計算累計消耗。</p>
+      <p>六件在同一等級的消耗相同。下表列各階段第一級；不是完整養成曲線。消耗以類型、物品與數量記錄。本頁不計算累計消耗。記法見資料說明。</p>
       {cost_tbl}
       <p>另錄 166 級（滿級）消耗，這一列不是階段起始列：</p>
       {cost_max_tbl}
@@ -1229,7 +1227,7 @@ def render_html(data: TablesData) -> str:
     <section id="out-of-scope">
       <h2>本頁未列入</h2>
       <ul>
-        <li>英雄裝備、專武、裝備精通（<code>equipment_master.json</code>，那是英雄裝備系統）。英雄裝備見<a href="equipment.html">裝備總表</a>；專武見已發佈的<a href="exclusive.html">專武總表</a>。</li>
+        <li>英雄裝備、專武、裝備精通（那是英雄裝備系統）。英雄裝備見<a href="equipment.html">裝備總表</a>；專武見已發佈的<a href="exclusive.html">專武總表</a>。</li>
         <li>1–166 級（或神聖法典 1–64 級）的完整屬性與消耗曲線，以及累計材料。</li>
         <li>等級階段其餘 229 筆的逐級加成，以及經驗如何計算（表上 <code>exp</code> 全是 -1）。</li>
         <li><code>master_additional</code> 加在哪一條屬性上；三件／六件加成的精確啟動條件；神聖法典三條解鎖字串各適用於哪一個介面。</li>
@@ -1243,6 +1241,7 @@ def render_html(data: TablesData) -> str:
       <h2>資料說明</h2>
       <ul>
         <li>以下是整理用註記，查屬性與消耗可略過。</li>
+        <li>不要從 <code>unlocktime</code>、<code>season</code> 自動標未開放。品質與階段名稱取自 <code>lord_equip_desc001</code>–<code>013</code> 的原文（去掉色碼與未填的 <code>{{0}}</code> 後綴）。表上的 <code>quality</code> 欄是 2–6，與這些稱呼不是一一對應（例如傳說T1 至傳說T4 的 <code>quality</code> 都是 5）。傳說T3、傳說T4 的名稱鍵是 <code>lord_equip_desc0061</code>、<code>lord_equip_desc0071</code>。消耗在表上寫成 <code>2|物品id|數量</code>；物品 154–157 名稱取自 <code>goods_name_154</code>–<code>157</code>，不用骨架貨品表。類型 2 在本抽取裡對得上貨品，本頁不自行把開頭的 2 解釋成別的系統。</li>
         <li>系統分類是 <code>attr_category</code> 49。介面標題鍵是 <code>ui_lordequip_002</code>。對應表為 <code>lord_equipment.json</code>（{fmt_int(data.counts["lord_equipment"])} 筆）、<code>lord_equip_master.json</code>（{fmt_int(data.counts["master"])} 筆，介面字串 <code>ui_lordequip_012</code>／<code>013</code>）、<code>lord_equipment_enchantment.json</code>（{fmt_int(data.counts["enchantment"])} 筆）。屬性名優先用 <code>attribute_name_{{id}}</code>。<code>show_type=2</code> 只記表內原值，不自行換算成百分比。除{H("突破防禦", terms)}（64）為 <code>type=1</code>、<code>show_type=1</code> 外，本頁其餘寫入屬性皆為 <code>type=2</code>、<code>show_type=2</code>。例如{H("英雄攻擊", terms)}（103）{fmt_int(150)}，不是 1.50%。消耗物品編號 154–157 只在資料說明保留，表頭改用官方物品名。資料表檔名含 <code>enchantment</code>；階段鍵是 <code>fmjd_1</code>–<code>fmjd_6</code>，說明鍵是 <code>lord_fm4</code>。</li>
         <li>資料出自遊戲資料表與官方字串（lord_equipment、lord_equip_master、lord_equipment_enchantment、attr_category、attribute、strings_zh.json），資料截至 {LORD_DATA_CUTOFF}（香港時間）。來源是 LocalLow 包 {e(LORD_DATA_PACK)}（759 張表），打包時戳 {LORD_DATA_PACKED}（香港時間）。這三張領主裝備表與第 25 章所用 2026-11-05 解壓檔、以及 2026-11-22 StreamingAssets／LocalLow 歸檔位元組相同；這不表示整個 LocalLow 包與 2026-11-05 解壓檔相同。本頁用到的領主裝備相關官方字串與這三份歸檔一致。顯示規則依攻略手冊「領主裝備圖鑑」第一版（2026-11-15，香港時間；該章標題仍寫來源解壓日期 2026-11-05）。這不是官方 wiki。</li>
         <li>屬性表 <code>attribute.json</code> 在後續包多了 <code>NameKey</code> 欄，與 2026-11-05 解壓檔不是整檔相同；本頁用到的屬性編號在 <code>type</code>、<code>show_type</code> 與名稱鍵上沒有差異，顯示名稱取自 <code>attribute_name_{{id}}</code>。</li>
@@ -1393,7 +1392,7 @@ def render_markdown(data: TablesData) -> str:
     add("")
 
     def master_md(rows: list[MasterRow], attr_ids: tuple[int, ...]) -> str:
-        headers = ["level", "名稱鍵", *[attr_label(i) for i in attr_ids], "戰力"]
+        headers = ["等級", "名稱", *[attr_label(i) for i in attr_ids], "戰力"]
         body = []
         for r in rows:
             amap = _attr_map(r.attrs)
