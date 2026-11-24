@@ -61,7 +61,7 @@ HALL_NOTES = {
     2076: "滿級，無再升級消耗",
 }
 
-# quality 2 version=1 per-star qty by inclusive star band; version=-1 differs from 41 星.
+# 品質 2 version=1 per-star qty by inclusive star band; version=-1 differs from 41 星.
 Q2_V1_BANDS = (
     ((1, 5), 2), ((6, 10), 4), ((11, 15), 6), ((16, 20), 8), ((21, 25), 10),
     ((26, 30), 12), ((31, 35), 14), ((36, 40), 16), ((41, 45), 20), ((46, 50), 30),
@@ -85,7 +85,7 @@ Q3_TOTAL = 3150
 Q4_TOTAL = 1800
 
 # 0/100 star self atk/hp and hero 103/104, plus fightforce v1 / v-1.
-# quality 4 0-star atk/hp is 2780／19100 in the table (source prose 3530／23600 is not in the star-up rows).
+# 品質 4 0-star atk/hp is 2780／19100 in the table (source prose 3530／23600 is not in the star-up rows).
 ATTR_SUMMARY = {
     2: {"atk0": 340, "hp0": 2300, "atk100": 8650, "hp100": 57700,
         "h0": (5, 10), "h100": (600, 1200), "ff0": (11400, 4000), "ff100": (288400, 150400)},
@@ -202,6 +202,28 @@ def format_params(params) -> str:
     if params in (None, "", [], -1):
         return "無"
     return "[" + ", ".join(fmt_num(x) for x in params) + "]"
+
+
+def format_unlock_stars(raw) -> str:
+    """Turn 0|4|7|11 into 0、4、7、11 星; two sets joined by comma become 另一套."""
+    if raw in (None, "", [], -1):
+        return EMPTY
+    text = str(raw).strip()
+    if not text:
+        return EMPTY
+
+    def one(seg: str) -> str:
+        nums = [x for x in seg.split("|") if x != ""]
+        if not nums:
+            return seg
+        return "、".join(nums) + " 星"
+
+    parts = [x.strip() for x in text.split(",") if x.strip()]
+    if len(parts) == 1:
+        return one(parts[0])
+    if len(parts) == 2:
+        return f"{one(parts[0])}；另一套 {one(parts[1])}"
+    return "；".join(one(x) for x in parts)
 
 
 def format_season(raw) -> str:
@@ -676,7 +698,7 @@ def load_tables_data() -> TablesData:
                 raise ValueError(f"{name} v1 hero attrs mismatch")
         else:
             if (hero0.get(103), hero0.get(104)) != exp["h0"] or (hero100.get(103), hero100.get(104)) != exp["h100"]:
-                raise ValueError("石化魔杖 v1 100-star hero should match quality 4")
+                raise ValueError("石化魔杖 v1 100-star hero should match 品質 4")
         h0_vm1 = _self_and_hero(star_by[vm1["id"]][0])[1]
         h100_vm1 = _self_and_hero(star_by[vm1["id"]][100])[1]
         # 第 20 章只寫石化魔杖；升星表同樣例外還有煌雷裁決、青藤古弓。
@@ -698,9 +720,9 @@ def load_tables_data() -> TablesData:
         if ff0 != exp["ff0"] or ff100 != exp["ff100"]:
             raise ValueError(f"{name} fightforce mismatch {ff0} {ff100}")
         if v1["quality"] == 4 and v1["exchange_goods"] != 514:
-            raise ValueError("quality 4 exchange_goods is not 514")
+            raise ValueError("品質 4 exchange_goods is not 514")
         if v1["quality"] in (2, 3) and v1["exchange_goods"] != -1:
-            raise ValueError("quality 2/3 exchange_goods is not -1")
+            raise ValueError("品質 2/3 exchange_goods is not -1")
         desc_key = v1["desc"]
         desc_missing = not has_key(desc_key)
         if desc_missing:
@@ -1143,7 +1165,7 @@ def _extra_plain(extra: dict[int, int], official: Official) -> str:
 def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     o = data.official
     hall = table(
-        ["大廳等級", "para1", "para2", f"{H(o.slot_name, terms)}（1097）", "戰力", "備註"],
+        ["大廳等級", "參數欄 1", "參數欄 2", f"{H(o.slot_name, terms)}（1097）", "戰力", "備註"],
         [
             [str(r.lv), str(r.para1), str(r.para2), str(r.slot), str(r.fightforce), H(r.note, terms) if r.note else ""]
             for r in data.hall
@@ -1164,12 +1186,12 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             H(typ, terms),
             str(a.group_id),
             a.season,
-            f"<code>{e(a.unlock)}</code>",
+            e(format_unlock_stars(a.unlock)),
             H(desc, terms),
         ])
         row_ids.append(f"art-{a.id_v1}")
     catalog = table(
-        ["名稱", "version=1", "version=-1", "品質", "類型", "榮譽組", "SeasonParam", "技能解鎖星", "說明"],
+        ["名稱", "現行編號", "另一套編號", "品質", "類型", "榮譽組", "賽季參數（只照錄）", "技能解鎖星", "說明"],
         catalog_rows,
         mobile="cards",
         card_title="名稱",
@@ -1187,7 +1209,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             highlight_lines(s.desc, terms),
         ])
     suits = table(
-        ["套裝", "race", "version=1 id", "version=-1 id", "成員", "官方說明（原文）"],
+        ["套裝", "陣營", "現行編號", "另一套編號", "成員", "官方說明（原文）"],
         suit_rows,
         mobile="cards",
         card_title="套裝",
@@ -1195,8 +1217,8 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     cost_q2 = table(
         ["版本"] + _cost_headers(Q2_V1_BANDS),
         [
-            [H("version=1", terms)] + _cost_qty_row(Q2_V1_BANDS, lambda lo: qty_at(Q2_V1_BANDS, lo)),
-            [H("version=-1", terms)] + _cost_qty_row(Q2_V1_BANDS, _q2_vm1_qty),
+            [H("現行這套編號", terms)] + _cost_qty_row(Q2_V1_BANDS, lambda lo: qty_at(Q2_V1_BANDS, lo)),
+            [H("另一套編號", terms)] + _cost_qty_row(Q2_V1_BANDS, _q2_vm1_qty),
         ],
         mobile="sticky",
     )
@@ -1236,7 +1258,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         mobile="sticky",
     )
     honor = table(
-        ["品質", "attribute_up", "戰力", "need_chip（表上無標題）"],
+        ["品質", "附加屬性", "戰力", "碎片欄（表上無標題）"],
         [
             [str(r.quality), _alabel(r.attr_name, r.attr_id, terms) + f" {r.attr_value}", str(r.combat), e(r.need_chip)]
             for r in data.honor
@@ -1271,7 +1293,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
                 _skill_cell_html(snap, terms),
             ])
         skills[a.id_v1] = table(
-            ["星級", "level", "skillShowLevel", "技能名", "參數", "技能文案"],
+            ["星級", "等級", "技能顯示等級", "技能名", "參數", "技能文案"],
             rows,
             mobile="cards",
             card_title="星級",
@@ -1327,9 +1349,9 @@ def _data_notes(data: TablesData) -> str:
         "`attribute.json` 列數同為 764，2026-11-05 與現行包位元組不同，差在後來多了欄位；"
         "本頁用到的 type／show_type／name 與 2026-11-05 相同。"
         "顯示規則依攻略手冊「秘寶圖鑑」第一版（2026-11-15，香港時間；該章標題仍寫來源解壓日期 2026-11-05）。"
-        "第 20 章升星節摘要把 quality 4 的 0 星攻擊／生命寫成 3530／23600、把 quality 3 的 100 星"
+        "第 20 章升星節摘要把 品質 4 的 0 星攻擊／生命寫成 3530／23600、把 品質 3 的 100 星"
         "寫成 level 16／skillShowLevel 15、把 artifact_skill_attr 的級數寫成 11／16／40；"
-        "本頁改以升星表與輔表實有列為準：quality 4 的 0 星為 2780／19100，quality 3 的 100 星為"
+        "本頁改以升星表與輔表實有列為準：品質 4 的 0 星為 2780／19100，品質 3 的 100 星為"
         "level 13／skillShowLevel 12（該章各件技能小節原本已寫 13／12），輔表三型皆為 1–40 級且曲線相同。"
     )
 
@@ -1430,54 +1452,52 @@ def render_html(data: TablesData) -> str:
         f"「{H(o.info['artifact_info_007'], terms)}」"
         "與升級表欄位的對照見下節，兩處不完全相同，只並列記錄，不作顯示結論。"
     ))
-    add(p_html("所有 58 筆的 <code>fragment_num</code> 都是 10。合成與升星消耗的物品 id 見升星節。"))
+    add(p_html("所有 58 筆的碎片數量都是 10。合成與升星消耗的物品 id 見升星節。"))
     add("    </section>")
 
     add('    <section id="hall">')
     add(f"      <h2>{H('秘寶大廳', terms)}</h2>")
     add(p_html(
         f"建築 140，官方名稱「{H(o.hall_name, terms)}」，說明：「{H(o.hall_des, terms)}」。"
-        f"解鎖／升級前置寫在 <code>pre_building_level</code>，早期級是{H(o.castle, terms)}（建築 117）達到指定等級，"
-        "例如 0 級列為 <code>117|12</code>；40 級起這欄為空。"
+        f"解鎖／升級前置早期級是{H(o.castle, terms)}達到指定等級，"
+        f"例如 0 級列為{H(o.castle, terms)} 12 級；40 級起這欄為空。"
     ))
     add(p_html(
-        "升級表 0–2076 級，共 2,077 列。<code>citybuilding_lvup</code> 與 <code>citybuilding_lvup_new</code> 此建築數值相同。"
-        f"每級 <code>des</code> 三個鍵依序是「{H(o.atk_up, terms)}」「{H(o.hp_up, terms)}」「{H(o.attr_up, terms)}」"
-        "（第三個鍵在表上少了首字，寫成 <code>uilding_lvup_des_115003</code>，字串內容確是"
-        f"「{H(o.typo_des, terms)}」；相近的 <code>building_lvup_des_115003</code> 是「{H(o.wrong_des, terms)}」，不是同一鍵）。"
-        "數值欄是 <code>para1</code>／<code>para2</code>（<code>para3</code> 全表為 0）。"
-        "表沒有把這兩欄逐一標上上述三個名稱，本頁只列出各級 <code>para1</code>／<code>para2</code>，"
+        "升級表 0–2076 級，共 2,077 列。兩張建築升級表此建築數值相同。"
+        f"每級說明三個鍵依序是「{H(o.atk_up, terms)}」「{H(o.hp_up, terms)}」「{H(o.attr_up, terms)}」"
+        "（第三個鍵在表上少了首字，字串內容確是"
+        f"「{H(o.typo_des, terms)}」；相近的另一鍵是「{H(o.wrong_des, terms)}」，不是同一鍵。對照見資料說明）。"
+        "數值有兩欄（第三欄全表為 0）。"
+        "表沒有把這兩欄逐一標上上述三個名稱，本頁只列出各級數值，"
         "不自行指定哪一欄是倍率、哪一欄是轉化率。"
     ))
     add(p_html(
-        f"<code>string_para2</code> 是屬性 1097「{H(o.slot_name, terms)}」。"
-        f"官方說明寫 20 級、50 級解鎖額外位置；"
-        "表上這欄在 0–20 級為 <code>1097|0|1</code>、21–34 級為 <code>1097|1|1</code>、35–2076 級為 <code>1097|2|1</code>。"
-        "兩處對不上，只並列記錄，不作顯示結論。"
+        f"屬性 1097「{H(o.slot_name, terms)}」：表上這欄是額外秘寶插槽 0／1／2（對應 0–20、21–34、35–2076 級）。"
+        "官方說明寫 20 級、50 級解鎖，與表上這欄對不上，只並列記錄，不作顯示結論。"
     ))
     add(p_html(
-        f"<code>string_para1</code> 從 1 級起寫{H(o.atk, terms)}、{H(o.hp, terms)}、以及 id 20005／20006"
+        f"字串參數欄從 1 級起寫{H(o.atk, terms)}、{H(o.hp, terms)}、以及 id 20005／20006"
         f"（名稱欄指向{H(o.art_atk, terms)}／{H(o.art_hp, terms)}），數值隨大廳等級增加，"
-        "例如 1 級為 13535、2076 級為 37771。這組與 <code>para1</code>／<code>para2</code> 的換算關係表上沒寫。"
+        "例如 1 級為 13535、2076 級為 37771。這組與參數欄 1／參數欄 2 的換算關係表上沒寫。"
     ))
     add(p_html(
         f"消耗：0–39 級為類型 999、資源 4／5（頂欄名稱為{H(o.wood, terms)}／{H(o.stone, terms)}），並有建造時間；"
-        f"40–2075 級改為道具 237「{H(o.magic_stone, terms)}」與 238「{H(o.arcane, terms)}」；多數列的 <code>buildTime</code> 為 -1，但 440–478 與 1440–1478 共 78 級為 0；"
+        f"40–2075 級改為道具 237「{H(o.magic_stone, terms)}」與 238「{H(o.arcane, terms)}」；多數列的建造時間為 -1，但 440–478 與 1440–1478 共 78 級為 0；"
         "2076 級沒有再升級消耗。這與「額外需要使用奧術水晶升級時無法暴擊」的字串相符，"
         "但表沒有標哪一級開始算「額外使用奧術水晶」。"
     ))
     add(p_html(
-        f"榮譽牆解鎖字串：「{H(o.honour_unlock, terms)}」（<code>artifact_honour_005</code>）。"
+        f"榮譽牆解鎖字串：「{H(o.honour_unlock, terms)}」。"
     ))
     add(p_html(
-        f"<code>para1</code> 從 1 級的 1000 起跳，共 129 個不同值，滿級 3440；"
-        "<code>para2</code> 從 1 級的 1 增至 199，共 200 個不同值。完整 2,077 級不在本頁逐列。"
+        "參數欄 1 從 1 級的 1000 起跳，共 129 個不同值，滿級 3440；"
+        "參數欄 2 從 1 級的 1 增至 199，共 200 個不同值。完整 2,077 級不在本頁逐列。"
     ))
     add(tbl["hall"])
     add(p_html(
         "戰鬥公式分析裡，編隊面板有「秘寶 52.50%」作為增傷／減傷的來源分項；"
         "本抽取沒有單一列 18｜5250 或 19｜5250，可能是加總，只能載為面板來源，不編造表 id。"
-        "單件 quality 4、<code>version=1</code> 滿星時，進攻型自身增傷原值 3500，生存型自身減傷原值 3500，通用型兩項各 1750；"
+        "單件 品質 4、現行這套編號 滿星時，進攻型自身增傷原值 3500，生存型自身減傷原值 3500，通用型兩項各 1750；"
         "3500＋1750＝5250，與面板那個分項數字相同，但表與官方說明都沒有把這兩件寫成固定搭配，不作唯一來源結論。"
         "完整加總式不在本頁展開。"
     ))
@@ -1486,36 +1506,36 @@ def render_html(data: TablesData) -> str:
     add('    <section id="versions">')
     add("      <h2>兩套編號</h2>")
     add(p_html(
-        "29 個中文名各自有一筆 <code>version=-1</code> 與一筆 <code>version=1</code>，碎片、品質、類型、"
-        "<code>group_id</code>、<code>SeasonParam</code>、技能解鎖星相同。"
+        "29 個中文名各自有一筆 另一套編號 與一筆 現行這套編號，碎片、品質、類型、"
+        "組編號、賽季參數欄、技能解鎖星相同。"
         f"升星表中，自身{H(o.atk, terms)}／{H(o.hp, terms)}（3／4）與附加的{H(o.dmg_up, terms)}／{H(o.dmg_cut, terms)}（18／19）兩套一致；"
-        "<code>level</code> 與 <code>skillShowLevel</code> 也一致。差別如下："
+        "等級與技能顯示等級也一致。差別如下："
     ))
     add("<ul>")
-    add("<li><strong>戰力全列不同。</strong><code>version=1</code> 滿星戰力：quality 2 為 288,400，quality 3 為 866,400，quality 4 為 2,174,400。"
-        "<code>version=-1</code> 滿星戰力分別為 150,400、179,500、293,500。"
-        "0 星戰力同樣是 <code>version=1</code> 較高（11,400／35,400／93,800 對 4,000／5,000／7,500）。</li>")
-    add("<li><strong>升星消耗：quality 3／4 兩套數量相同；quality 2 從 41 星起不同。</strong>"
-        "<code>version=1</code> 的 quality 2 合計 4,860，<code>version=-1</code> 合計 4,450。見升星節。</li>")
-    add("<li><strong>技能文案不完全相同。</strong><code>version=-1</code> 的平衡胸針在 55 星起把 <code>skill_name</code> 寫成秘藥之瓶那筆技能鍵；"
+    add("<li><strong>戰力全列不同。</strong>現行這套編號 滿星戰力：品質 2 為 288,400，品質 3 為 866,400，品質 4 為 2,174,400。"
+        "另一套編號 滿星戰力分別為 150,400、179,500、293,500。"
+        "0 星戰力同樣是 現行這套編號 較高（11,400／35,400／93,800 對 4,000／5,000／7,500）。</li>")
+    add("<li><strong>升星消耗：品質 3／4 兩套數量相同；品質 2 從 41 星起不同。</strong>"
+        "現行這套編號 的 品質 2 合計 4,860，另一套編號 合計 4,450。見升星節。</li>")
+    add("<li><strong>技能文案不完全相同。</strong>另一套編號 的平衡胸針在 55 星起把技能名稱欄寫成秘藥之瓶那筆技能鍵；"
         "恐懼之眼 0–100 星的技能說明寫成神聖盟約的鍵，參數也不同；"
-        "禁魔手銬有 21 列只差在單一參數（例如 80 星一處為 21 對 20）。名錄技能以 <code>version=1</code> 為準。</li>")
+        "禁魔手銬有 21 列只差在單一參數（例如 80 星一處為 21 對 20）。名錄技能以 現行這套編號 為準。</li>")
     add("<li><strong>全英雄屬性（103／104）基本相同，只有兩處例外：</strong>"
-        "<code>version=-1</code> 的元帥號角在 5–9 星為英雄攻擊 30、英雄生命 30（<code>version=1</code> 同期為 30／60）；"
-        "<code>version=-1</code> 的石化魔杖、煌雷裁決、青藤古弓 100 星為 1800／3600（<code>version=1</code> 為 2000／4000，與同品質其餘秘寶滿星一致；第 20 章只寫了石化魔杖，另兩件以升星表為準）。</li>")
+        "另一套編號 的元帥號角在 5–9 星為英雄攻擊 30、英雄生命 30（現行這套編號 同期為 30／60）；"
+        "另一套編號 的石化魔杖、煌雷裁決、青藤古弓 100 星為 1800／3600（現行這套編號 為 2000／4000，與同品質其餘秘寶滿星一致；第 20 章只寫了石化魔杖，另兩件以升星表為準）。</li>")
     add("</ul>")
     add(p_html(
-        "套裝表也是兩套 id：101–103 掛 <code>version=-1</code> 的 5xxxx，201–203 掛 <code>version=1</code> 的 15xxxx，套裝名與說明相同。"
+        "套裝表也是兩套 id：101–103 掛 另一套編號 的 5xxxx，201–203 掛 現行這套編號 的 15xxxx，套裝名與說明相同。"
     ))
     add("    </section>")
 
     add('    <section id="catalog">')
     add("      <h2>名錄</h2>")
     add(p_html(
-        "下列以 <code>version=1</code> 的 id 為準，並附 <code>version=-1</code> 的對應 id。"
-        "說明文案取自 <code>artifact_desc_3xxxx</code>／<code>4xxxx</code>／<code>5xxxx</code>（兩套編號共用這組鍵）；"
-        "神聖盟約至不敗華冠沒有對應的 <code>artifact_desc_50012</code>–<code>50019</code>，不編造說明。"
-        "<code>SeasonParam</code> 只照錄。"
+        "下列以 現行這套編號 的 id 為準，並附 另一套編號 的對應 id。"
+        "說明文案取自對應說明鍵（兩套編號共用同一組鍵）；"
+        "神聖盟約至不敗華冠沒有對應的說明鍵（50012–50019），不編造說明。"
+        "賽季參數欄只照錄。"
     ))
     add(p_html(
         f"類型 1／2／3 的官方短名是「{H(o.type_names[1], terms)}」「{H(o.type_names[2], terms)}」「{H(o.type_names[3], terms)}」。"
@@ -1532,9 +1552,9 @@ def render_html(data: TablesData) -> str:
     add("</ul>")
     add(tbl["catalog"])
     add(p_html(
-        "quality 2 三件、quality 3 七件、quality 4 十九件（以一套編號計）。"
+        "品質 2 三件、品質 3 七件、品質 4 十九件（以一套編號計）。"
         f"品質 4 的交換道具皆為{H(o.hammer, terms)}（說明：{H(o.hammer_desc, terms)}）；"
-        f"quality 2／3 為 -1。星級相同時無法交換（<code>artifact_swap_tips1</code>：{H(o.swap_tips, terms)}）。"
+        f"品質 2／3 為 -1。星級相同時無法交換（介面提示：{H(o.swap_tips, terms)}）。"
     ))
     add(p_html(
         f"道具說明另把「{H('電青蛙', terms)}」的合成／升星材料寫成秘寶「{H('蛙神圖騰', terms)}」"
@@ -1551,7 +1571,7 @@ def render_html(data: TablesData) -> str:
         "與目前這套（id 201–203，成員為 15xxxx）。三套都是 15 星解鎖套裝技能。"
         f"解鎖說明兩句：{H(o.suit_unlock[0], terms)}；{H(o.suit_unlock[1], terms)}。"
         "<code>{0}</code> 應對 15 星，表沒有另寫填入規則。"
-        f"<code>race</code> 1／2／3 與士兵表{H('聯盟', terms)}／{H('部族', terms)}／{H('自然', terms)}編號相同。"
+        f"陣營編號 1／2／3 與士兵表{H('聯盟', terms)}／{H('部族', terms)}／{H('自然', terms)}編號相同。"
     ))
     add(tbl["suits"])
     add(p_html(
@@ -1562,7 +1582,7 @@ def render_html(data: TablesData) -> str:
     has_origin = [a.name for a in data.artifacts if a.suit_origin not in (-1, 0)]
     no_origin = [a.name for a in data.artifacts if a.name in ("契約之羽", "龍骸護符", "神聖盟約")]
     add(p_html(
-        "升星表部分秘寶另有 <code>suit_originID</code>（"
+        "升星表部分秘寶另有套裝來源編號（"
         + "、".join(H(n, terms) for n in has_origin)
         + "），與上列套裝成員大致相符，但"
         + "、".join(H(n, terms) for n in no_origin)
@@ -1573,12 +1593,12 @@ def render_html(data: TablesData) -> str:
     add('    <section id="upgrade">')
     add("      <h2>升星、消耗與屬性</h2>")
     add(p_html(
-        "每件 0–100 星。0 星列沒有升星消耗（<code>star_up_cost</code> 為空）；"
-        "首次合成解鎖與 0 星的關係，規則字串有寫「首次合成會解鎖」，表沒有另列解鎖消耗，只有定義表 <code>fragment_num=10</code>。"
+        "每件 0–100 星。0 星列沒有升星消耗（該欄為空）；"
+        "首次合成解鎖與 0 星的關係，規則字串有寫「首次合成會解鎖」，表沒有另列解鎖消耗，只有定義表寫碎片數量 10。"
     ))
     add(p_html(
         "消耗欄是 <code>[物品id, 數量]</code>，物品 id 為 303001–303003、304001–304007、305001–305019，"
-        "與定義表 <code>FragmentId</code>／<code>fragment_formula</code>／<code>repeat_get</code> 同一組。"
+        "與定義表的碎片編號／合成式／重複獲得欄同一組。"
         "字串表沒有這組升星材料的官方短名。"
         f"另有道具說明寫「{H(o.chip_descs_example[0], terms)}」，"
         f"以及「{H(o.chip_descs_example[1], terms)}」。"
@@ -1588,48 +1608,47 @@ def render_html(data: TablesData) -> str:
         f"說明為「{H(o.generic_chips[220201][1], terms)}／{H(o.generic_chips[220202][1], terms)}／{H(o.generic_chips[220203][1], terms)}」；"
         "升星消耗欄沒有列出通用碎片的替代規則。"
     ))
-    add(p_html("數量曲線按品質（同一品質各件數量相同，只是物品 id 不同）。quality 3／4 兩套編號數量相同；quality 2 從 41 星起分岔。"))
-    add(p_html("quality 2（<code>version=1</code> 合計 4,860；<code>version=-1</code> 在 41–45 星為 18、46–50 星為 20、66–70 星為 70、71–75 星為 80，合計 4,450）："))
+    add(p_html("數量曲線按品質（同一品質各件數量相同，只是物品 id 不同）。品質 3／4 兩套編號數量相同；品質 2 從 41 星起分岔。"))
+    add(p_html("品質 2（現行這套編號 合計 4,860；另一套編號 在 41–45 星為 18、46–50 星為 20、66–70 星為 70、71–75 星為 80，合計 4,450）："))
     add(tbl["cost_q2"])
-    add(p_html("quality 3（兩套皆合計 3,150）："))
+    add(p_html("品質 3（兩套皆合計 3,150）："))
     add(tbl["cost_q3"])
-    add(p_html("quality 4（兩套皆合計 1,800）："))
+    add(p_html("品質 4（兩套皆合計 1,800）："))
     add(tbl["cost_q4"])
     add(p_html(
-        "<code>level</code> 與 <code>skillShowLevel</code> 同品質全件相同（兩套編號也相同）。"
-        "quality 2：0–4 星為 level 1，之後每 5 星升 1 級，50–100 星維持 level 11、<code>skillShowLevel</code> 10。"
-        "quality 3：0–4 星 level 1，之後每 5 星升 1 級，60–100 星維持 level 13、<code>skillShowLevel</code> 12。"
-        "quality 4：0–4 星 level 1／<code>skillShowLevel</code> 0，其後每 5 星升一檔，100 星為 level 21、<code>skillShowLevel</code> 20。"
-        "技能解鎖星見名錄，與 <code>skillShowLevel</code> 的對應不是簡單的「解鎖星＝顯示等級」，本頁不自行對齊。"
-        "第 20 章升星節摘要曾把 quality 3 的 100 星寫成 level 16／15，與同章各件技能小節及升星表不符，本頁以表為準。"
+        "等級與技能顯示等級同品質全件相同（兩套編號也相同）。"
+        "品質 2：0–4 星為等級 1，之後每 5 星升 1 級，50–100 星維持等級 11、技能顯示等級 10。"
+        "品質 3：0–4 星為等級 1，之後每 5 星升 1 級，60–100 星維持等級 13、技能顯示等級 12。"
+        "品質 4：0–4 星為等級 1／技能顯示等級 0，其後每 5 星升一檔，100 星為等級 21、技能顯示等級 20。"
+        "技能解鎖星見名錄，與技能顯示等級的對應不是簡單的「解鎖星＝顯示等級」，本頁不自行對齊。"
+        "第 20 章升星節摘要曾把品質 3 的 100 星寫成等級 16／15，與同章各件技能小節及升星表不符，本頁以表為準。"
     ))
     add(p_html(
         f"自身{H(o.atk, terms)}／{H(o.hp, terms)}（3／4）同品質全件相同。"
-        "quality 3／4 另有增傷（18）或減傷（19），或兩者都有，按件列出。"
-        f"全英雄加成是{H(o.hero_atk, terms)}、{H(o.hero_hp, terms)}（103／104），同品質曲線相同（<code>version=1</code>；"
-        "<code>version=-1</code> 的兩處例外見上）。"
+        "品質 3／4 另有增傷（18）或減傷（19），或兩者都有，按件列出。"
+        f"全英雄加成是{H(o.hero_atk, terms)}、{H(o.hero_hp, terms)}（103／104），同品質曲線相同（現行這套編號；"
+        "另一套編號的兩處例外見上）。"
     ))
     add(tbl["attrs"])
     add(p_html(
-        "quality 4 的 0 星攻擊／生命與 100 星攻擊／生命，三件類型都是 2780／19100 與 65180／435400"
-        "（與附加屬性無關，全件相同；升星表 <code>attribute</code>、<code>AttributeArr</code>、<code>newFightAttrs</code> 一致）。"
-        "第 20 章升星節曾把 0 星寫成 3530／23600，該數字未出現在升星表，本頁以表為準。"
-        "附加屬性（<code>version=1</code> 與 <code>version=-1</code> 相同）："
+        "品質 4 的 0 星攻擊／生命與 100 星攻擊／生命，三件類型都是 2780／19100 與 65180／435400"
+        "（與附加屬性無關，全件相同；升星表三欄數值一致，欄名見資料說明）。"
+        "附加屬性（現行這套編號與另一套編號相同）："
     ))
     add("<ul>")
-    add("<li>quality 2：沒有 18／19。</li>")
+    add("<li>品質 2：沒有 18／19。</li>")
     q3_up = [a.name for a in data.artifacts if a.quality == 3 and 18 in a.extra0]
     q3_cut = [a.name for a in data.artifacts if a.quality == 3 and 19 in a.extra0]
-    add("<li>quality 3："
+    add("<li>品質 3："
         + "、".join(H(n, terms) for n in q3_up)
         + f"為{H(o.dmg_up, terms)}，0 星 50、100 星 1750；"
         + "、".join(H(n, terms) for n in q3_cut)
         + f"為{H(o.dmg_cut, terms)}，0 星 50、100 星 1750。"
         f"{H('恐懼之眼', terms)}是通用型，附加的是{H(o.dmg_up, terms)}不是{H(o.dmg_cut, terms)}。</li>")
-    add("<li>quality 4 進攻型（含青藤古弓，其 <code>group_id</code> 為 1502）："
+    add("<li>品質 4 進攻型（含青藤古弓，其 組編號 為 1502）："
         f"{H(o.dmg_up, terms)} 0 星 200、100 星 3500。</li>")
-    add(f"<li>quality 4 生存型：{H(o.dmg_cut, terms)} 0 星 200、100 星 3500。</li>")
-    add(f"<li>quality 4 通用型：{H(o.dmg_up, terms)}與{H(o.dmg_cut, terms)}各 0 星 100、100 星 1750。</li>")
+    add(f"<li>品質 4 生存型：{H(o.dmg_cut, terms)} 0 星 200、100 星 3500。</li>")
+    add(f"<li>品質 4 通用型：{H(o.dmg_up, terms)}與{H(o.dmg_cut, terms)}各 0 星 100、100 星 1750。</li>")
     add("</ul>")
     add(p_html(
         "中間星級的附加屬性幾乎每星上調，不在本頁逐星列出。"
@@ -1637,7 +1656,7 @@ def render_html(data: TablesData) -> str:
         "（與定義表的技能屬性類型、品質 2／3／4 對應）給攻擊、生命值、暴擊傷害（值固定 10000）曲線；"
         "三型都是 1–40 級共 40 列，且攻擊／生命／暴擊傷害曲線彼此相同。"
         "第 20 章曾寫級數分別到 11／16／40，與輔表不符，本頁以表為準。"
-        "與升星表同級的攻擊／生命並不一致（例如 quality 2、level 1 升星表為 340／2300，輔表為 90／900）。"
+        "與升星表同級的攻擊／生命並不一致（例如 品質 2、等級 1 升星表為 340／2300，輔表為 90／900）。"
         "兩者關係未驗證，本頁不以輔表覆蓋升星表，也不把 120 列整表倒進頁面。"
     ))
     add("    </section>")
@@ -1646,8 +1665,7 @@ def render_html(data: TablesData) -> str:
     add("      <h2>技能</h2>")
     add(p_html(
         "技能名稱與描述取自目前這套升星表的技能名稱、說明與參數。"
-        "多數名稱鍵是 <code>hero_skill_name_23xxxxx</code>／<code>24xxxxx</code>／<code>25xxxxx</code>；"
-        "神聖盟約起改把 <code>skill_name</code> 寫成 <code>artifact_name_50012</code> 這類秘寶名鍵，顯示會與秘寶同名，不是另有技能短名。"
+        "多數技能名稱取自對應名稱鍵；神聖盟約起改把技能名稱欄寫成秘寶名鍵，顯示會與秘寶同名，不是另有技能短名。鍵名對照見資料說明。"
         "下列每件先寫 0 星，再寫 100 星。中間解鎖星只改參數，不逐段展開。多段 desc 各自從 <code>{0}</code> 起算。"
         "煌雷裁決、龍骸護符、青藤古弓在 0–100 星的技能說明與參數皆為空，只錄「無技能說明」，不從其他表補文案。"
     ))
@@ -1657,7 +1675,7 @@ def render_html(data: TablesData) -> str:
         if a.skill0.name_is_artifact:
             note = "技能名鍵是秘寶名鍵，顯示與秘寶同名。"
         add(p_html(
-            f"解鎖星：<code>{e(a.unlock)}</code>。0 星技能名「{H(a.skill0.name, terms)}」，"
+            f"解鎖星：{e(format_unlock_stars(a.unlock))}。0 星技能名「{H(a.skill0.name, terms)}」，"
             f"100 星技能名「{H(a.skill100.name, terms)}」。{H(note, terms) if note else ''}"
         ))
         add(tbl["skills"][a.id_v1])
@@ -1669,12 +1687,12 @@ def render_html(data: TablesData) -> str:
         f"官方說明：{H(o.honour_lines['artifact_honour_004'], terms)}；"
         f"{H(o.honour_lines['artifact_honour_002'], terms)}；"
         f"{H(o.honour_unlock, terms)}。"
-        "（<code>artifact_honour_003</code>–<code>006</code>、<code>artifact_honour_005</code>）。"
+        "（榮譽說明各句出處見資料說明）。"
     ))
     add(p_html(
         "榮譽牆表 3 筆，按品質 2／3／4："
-        f"<code>attribute_up</code> 為{H(o.hp, terms)}（4）40／80／160，戰力 160／880／1760。"
-        "<code>need_chip</code> 三筆都是 <code>200|10,300|20,400|30,600|30</code>。"
+        f"附加屬性為{H(o.hp, terms)}（4）40／80／160，戰力 160／880／1760。"
+        "碎片欄三筆都是 200|10,300|20,400|30,600|30。"
         "這四個數字在表上沒有標題，本頁不自行解釋成哪一種碎片或等級。"
     ))
     add(tbl["honor"])
@@ -1686,7 +1704,7 @@ def render_html(data: TablesData) -> str:
     ))
     add(tbl["bonus"])
     add(p_html(
-        "同一 <code>group_id</code> 在兩套編號裡都會出現（例如 1301 同時掛平衡胸針的 30002 與 130002）。"
+        "同一 組編號 在兩套編號裡都會出現（例如 1301 同時掛平衡胸針的 30002 與 130002）。"
         "榮譽牆如何計算「等級」、兩套 id 是否分開累計，表上沒有說明，不要猜。"
     ))
     add("    </section>")
@@ -1696,12 +1714,12 @@ def render_html(data: TablesData) -> str:
     add("<ul>")
     add(f"<li>{H('英雄裝備', terms)}、{H('專武', terms)}、{H('領主裝備', terms)}；城堡裝飾「秘寶之劍」。</li>")
     add("<li>紫金秘寶等活動、秘寶禮包與儲值檔位、秘寶隨機箱／自選箱的完整開箱表、秘寶占卜與秘寶卷軸。</li>")
-    add("<li><code>dig_treasure</code>、<code>mine_treasure*</code>、<code>season_treasure</code>、<code>raid_treasure_group</code>、<code>kvk_map_treasure</code> 等尋寶／寶藏表。</li>")
+    add("<li>尋寶／寶藏相關表。</li>")
     add(f"<li>字串中的「{H(o.power_suit_name, terms)}」套裝（表上無列）、套裝技能 id 的獨立文案、以及「傳奇(含)以上品質」與品質 2／3／4 的對應。</li>")
-    add("<li>秘寶大廳全部 2,077 級的中間值，以及 <code>para1</code>／<code>para2</code> 與「倍率／轉化率」三個名稱的逐欄對應。</li>")
+    add("<li>秘寶大廳全部 2,077 級的中間值，以及兩欄數值與「倍率／轉化率」三個名稱的逐欄對應。</li>")
     add("<li>升星 1–99 星的逐星屬性與中間技能參數；技能屬性輔表與升星表的關係。</li>")
     add("<li>通用碎片如何折算進合成或升星；303001 與 330011／363001 是否為同一道具。</li>")
-    add("<li><code>SeasonParam</code> 與賽季日曆的對應（不標未開放）。</li>")
+    add("<li>賽季參數欄與賽季日曆的對應（不標未開放）。</li>")
     add("<li>編隊面板「秘寶 52.50%」的完整加總式（只記沒有單一列 18｜5250／19｜5250，以及 3500＋1750 這個數字對得上）。</li>")
     add("<li>與英雄技能、站位、士兵的搭配模擬。</li>")
     add("</ul>")
@@ -1712,12 +1730,20 @@ def render_html(data: TablesData) -> str:
     add("<ul>")
     add("<li>以下是整理用註記，查名錄與效果可略過。</li>")
     add(
+        "<li>技能解鎖星可見寫成「0、4、7、11 星」或「0、7、13、21 星；另一套 4、10、16 星」；"
+        "原值記法是 <code>0|4|7|11</code>、<code>0|7|13|21,4|10|16</code> 這種用 | 與逗號分套的寫法。"
+        "本頁不把解鎖星自行對齊 <code>skillShowLevel</code>。"
+        f"秘寶大廳 0 級前置可見寫成{H('城堡', terms)} 12 級，原值 <code>117|12</code>（建築 117 官方名稱是城堡）。"
+        "額外秘寶插槽可見寫 0／1／2（對應 0–20、21–34、35–2076 級），原值 <code>1097|0|1</code>、<code>1097|1|1</code>、<code>1097|2|1</code>。"
+        "技能表「等級」「技能顯示等級」原名 <code>level</code>、<code>skillShowLevel</code>，數字不改。名錄「現行編號／另一套編號」對應 <code>version=1</code>／<code>version=-1</code>；「賽季參數（只照錄）」原名 <code>SeasonParam</code>。兩張建築升級表原名 <code>citybuilding_lvup</code>／<code>citybuilding_lvup_new</code>。大廳說明第三鍵在表上少了首字，原名 <code>uilding_lvup_des_115003</code>；相近另一鍵是 <code>building_lvup_des_115003</code>。數值兩欄原名 <code>para1</code>／<code>para2</code>（<code>para3</code> 全 0）；可見表頭寫參數欄 1／參數欄 2。大廳字串參數欄原名 <code>string_para1</code>；建造時間原名 <code>buildTime</code>。榮譽牆解鎖字串原名 <code>artifact_honour_005</code>。碎片數量原名 <code>fragment_num</code>；榮譽牆附加屬性原名 <code>attribute_up</code>，碎片欄原名 <code>need_chip</code>。</li>"
+    )
+    add(
         "<li>只有品質 4（<code>quality=4</code>）的秘寶 <code>exchange_goods=514</code>（奇蹟之錘）。"
         "技能文案以 <code>artifact_star_up</code> 的 <code>skill_desc</code> 填入 <code>skill_desc_parameter</code> 後照錄；"
         "同一列多段 <code>desc</code> 都從 <code>{0}</code> 起算。"
         "套裝 <code>race</code> 1／2／3 與士兵表聯盟／部族／自然編號相同。"
         "不要從 SeasonParam 或其他季節、活動欄自動標未開放。"
-        "品質 4 的 0 星攻擊／生命用 2780／19100，不要寫成 3530／23600。"
+        "品質 4 的 0 星攻擊／生命用 2780／19100。第 20 章升星節摘要曾把品質 4 的 0 星攻擊／生命寫成 3530／23600，該數字未出現在升星表，本頁以表為準（2780／19100）。"
         "編號 20006 不得冒用 20004 的官方名「秘寶生命」。"
         "<code>show_type=2</code> 只記原值（天賦面板已鎖定例外除外，本頁不套用那套例外）。</li>"
     )
@@ -1773,10 +1799,10 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
         catalog_rows.append([
             a.name, str(a.id_v1), str(a.id_vm1), str(a.quality),
             f"{a.typ} {a.type_name}", str(a.group_id), a.season,
-            f"`{a.unlock}`", desc,
+            format_unlock_stars(a.unlock), desc,
         ])
     catalog = md_table(
-        ["名稱", "version=1", "version=-1", "品質", "類型", "榮譽組", "SeasonParam", "技能解鎖星", "說明"],
+        ["名稱", "現行編號", "另一套編號", "品質", "類型", "榮譽組", "賽季參數（只照錄）", "技能解鎖星", "說明"],
         catalog_rows,
     )
     suit_rows = []
@@ -1786,7 +1812,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
             "、".join(s.members), s.desc.replace("\n", "；"),
         ])
     suits = md_table(
-        ["套裝", "race", "version=1 id", "version=-1 id", "成員", "官方說明（原文）"],
+        ["套裝", "陣營", "現行編號", "另一套編號", "成員", "官方說明（原文）"],
         suit_rows,
     )
     cost_q2 = md_table(
@@ -1851,7 +1877,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
                 _skill_cell_plain(snap),
             ])
         skills[a.id_v1] = md_table(
-            ["星級", "level", "skillShowLevel", "技能名", "參數", "技能文案"],
+            ["星級", "等級", "技能顯示等級", "技能名", "參數", "技能文案"],
             rows,
         )
     return {
@@ -1955,7 +1981,7 @@ def render_markdown(data: TablesData) -> str:
     add(
         f"建築 140，官方名稱「{o.hall_name}」，說明：「{o.hall_des}」。"
         f"解鎖／升級前置寫在 `pre_building_level`，早期級是{o.castle}（建築 117）達到指定等級，"
-        "例如 0 級列為 `117|12`；40 級起這欄為空。"
+        "例如 0 級列為城堡 12 級；40 級起這欄為空。"
     )
     add("")
     add(
@@ -1969,7 +1995,7 @@ def render_markdown(data: TablesData) -> str:
     add("")
     add(
         f"`string_para2` 是屬性 1097「{o.slot_name}」。官方說明寫 20 級、50 級解鎖額外位置（`artifact_info_007`）；"
-        "表上這欄在 0–20 級為 `1097|0|1`、21–34 級為 `1097|1|1`、35–2076 級為 `1097|2|1`。"
+        "表上這欄是額外秘寶插槽 0／1／2（對應 0–20、21–34、35–2076 級）。官方說明寫 20 級、50 級解鎖，與表上這欄對不上，只並列記錄。"
         "兩處對不上，只並列記錄，不作顯示結論。"
     )
     add("")
@@ -2157,7 +2183,7 @@ def render_markdown(data: TablesData) -> str:
         add(f"### {a.name}（{a.id_v1}／{a.id_vm1}，{a.type_name}，品質 {a.quality}）")
         add("")
         note = "技能名鍵是秘寶名鍵，顯示與秘寶同名。" if a.skill0.name_is_artifact else ""
-        add(f"解鎖星：`{a.unlock}`。0 星技能名「{a.skill0.name}」，100 星技能名「{a.skill100.name}」。{note}")
+        add(f"解鎖星：{format_unlock_stars(a.unlock)}。0 星技能名「{a.skill0.name}」，100 星技能名「{a.skill100.name}」。{note}")
         add("")
         add(tbl["skills"][a.id_v1])
         add("")

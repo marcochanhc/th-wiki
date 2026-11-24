@@ -506,12 +506,16 @@ def _cost_segments(levels: list[LevelRow]) -> list[tuple[str, int]]:
     return segs
 
 
-def _level_note(row: LevelRow, prev_rank: int | None) -> str:
+def _level_note(row: LevelRow, prev_rank: int | None, *, html: bool = False) -> str:
     bits = []
     if prev_rank is None or row.skill_rank != prev_rank:
         bits.append(f"專屬技能 {row.skill_rank} 階")
     if row.appearance:
-        bits.append(row.appearance)
+        if html:
+            text = row.appearance.replace("外觀欄改為 lv", "外觀欄改為第 ").replace("（preview=", " 檔（預覽標記為 ")
+            bits.append(text)
+        else:
+            bits.append(row.appearance)
     if row.delta_attrs[1098]:
         bits.append(f"英雄等級上限 {row.attrs[1098]}")
     return "；".join(bits)
@@ -563,7 +567,7 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
     t1_ids = []
     prev_rank = None
     for r in data.levels:
-        note = _level_note(r, prev_rank)
+        note = _level_note(r, prev_rank, html=True)
         t1_rows.append([
             e(f"{r.level} 級"),
             e(raw(r.cost)),
@@ -640,7 +644,7 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
     t3_ids = []
     prev_rank = None
     for r in data.levels:
-        note = _level_note(r, prev_rank)
+        note = _level_note(r, prev_rank, html=True)
         t3_rows.append([
             e(f"{r.level} 級"),
             e(raw(r.cost)),
@@ -711,7 +715,7 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
     <section id="t1">
       <h2>表一、通用升級素材與共通屬性</h2>
       <p>等級指升級後的英靈等級。本級專屬碎片是到達該級時的消耗（第 1 級為 10）。累計是第 1 級到該級相加。本表只記數量，不區分各隻專屬碎片名稱。前五項屬性與戰力 15 隻共用，錄的是該級累計顯示值，不是本級增量。第 6 項專屬屬性因種類不同，列在表二。</p>
-      <p>專屬技能在 1／25／50／75／100 級升階。升級表的外觀欄在 75 級改為 lv2、100 級改為 lv3（這兩級的 preview 為 1）；此處只記欄位變更，不描述外觀。</p>
+      <p>專屬技能在 1／25／50／75／100 級升階。升級表的外觀欄在 75 級改為第 2 檔、100 級改為第 3 檔（這兩級的預覽標記為 1）；此處只記欄位變更，不描述外觀。</p>
       {_jump_nav("u-lv-", jumps, "跳到等級")}
       {t1}
       <section id="t1-seg">
@@ -752,7 +756,7 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
         <li>行者專屬技能「{H("齊天鎮岳", terms)}」第 4 階官方原文是「全體部落增傷率+10%，免傷率+20%」。本頁正文用語是部族，這句技能仍照錄「部落」。</li>
         <li>官方用字並不完全統一，一律照錄：例如「釋放／施放」、「暴擊／爆擊」、「閃避／迴避」。</li>
         <li>另有首發／啟用禮包字串。薔薇公主那筆首發禮包字串只寫「英靈首發禮包」，沒有冠上英靈短名。本頁不展開活動與儲值。</li>
-        <li>不把 unlock_season、unlock_server 自行標成未開放。本頁沒有社群備註，也沒有把猜測寫進正文，也不寫戰鬥結算公式。</li>
+        <li>不把 unlock_season、unlock_server 自行標成未開放。本頁沒有社群備註，也沒有把猜測寫進正文，也不寫戰鬥結算公式。可見外觀欄寫第 2 檔／第 3 檔，預覽標記為 1；原欄為 lv2／lv3，preview=1。</li>
       </ul>
     </section>
     """

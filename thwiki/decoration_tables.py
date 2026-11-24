@@ -253,6 +253,20 @@ def fmt_int(value) -> str:
         return str(value)
 
 
+def format_timerange(raw, empty: str = EMPTY) -> str:
+    """Turn A|B datetimes into「A 至 B」. Other shapes stay as-is."""
+    if is_empty(raw):
+        return empty
+    text = str(raw).strip()
+    m = re.fullmatch(
+        r"(\d{4}-\d{1,2}-\d{1,2} \d{2}:\d{2}:\d{2})\|(\d{4}-\d{1,2}-\d{1,2} \d{2}:\d{2}:\d{2})",
+        text,
+    )
+    if m:
+        return f"{m.group(1)} 至 {m.group(2)}"
+    return text
+
+
 def fmt_field(value, empty: str = EMPTY) -> str:
     if is_empty(value):
         return empty
@@ -1246,17 +1260,19 @@ def _deco_note(deco: Decoration, data: TablesData) -> str:
     if deco.time_type is not None:
         bits.append(f"時間類型 {deco.time_type}")
     if deco.time_para1:
-        bits.append(f"時間參數 {deco.time_para1}")
         if deco.group_id == TREE_ID:
-            bits.append("表上沒有說明這三個數字的含義")
+            bits.append("時間參數表上沒有說明含義，對照見資料說明")
+        else:
+            bits.append(f"時間 {format_timerange(deco.time_para1)}")
     if deco.reward:
-        bits.append(f"每日獎勵 {deco.reward}")
         if deco.group_id == CRYSTAL_ID:
-            bits.append("類型 999 在屬性名稱表沒有名稱")
-        if deco.group_id in ELITE_IDS:
-            bits.append("這三個道具編號在本抽取沒有物品名")
-        if deco.group_id == TREE_ID:
-            bits.append("驚喜寶箱 ×2")
+            bits.append("每日獎勵第 1 級 4,000、滿級 15 為 96,000；類型 999 與中段 6 沒有官方名稱")
+        elif deco.group_id in ELITE_IDS:
+            bits.append(f"每日獎勵 {deco.reward}（本抽取沒有物品名）")
+        elif deco.group_id == TREE_ID:
+            bits.append("每日獎勵 驚喜寶箱 ×2")
+        else:
+            bits.append(f"每日獎勵 {deco.reward}")
     if deco.is_treasure and deco.collection_quality is not None:
         bits.append(f"收藏品質 {deco.collection_quality}")
     if deco.group_id == WELCOME_ID:
@@ -1331,15 +1347,15 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         ["組別", "數量", "名稱來源", "常見滿級"],
         [
             [
-                H("名稱取自 citybuilding_DIY_name_*", terms),
+                H("名稱取自城鎮裝飾名稱鍵", terms),
                 comma(src.get("diy", 0)),
                 "城鎮裝飾名稱鍵",
                 "多數 15 級",
             ],
             [
-                H("名稱取自 collection_name_*", terms),
+                H("名稱取自收藏名稱鍵", terms),
                 comma(src.get("collection", 0)),
-                f"其中 {treasure_named} 筆同時在 collection_detail（世界大尋寶藏品，滿級 4、評分欄 -1）；另外 {col_other} 筆不在該表，而是「永世名將」「王國節日」的套裝成員",
+                f"其中 {treasure_named} 筆同時在世界大尋寶藏品表（滿級 4、評分欄 -1）；另外 {col_other} 筆不在該表，而是「永世名將」「王國節日」的套裝成員",
                 f"{treasure_named} 件為 4 級；其餘 {col_other} 件為 15 級",
             ],
             [
@@ -1364,14 +1380,14 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
 
     curve_rows = [
         ["15", comma(curves.get(15, 0)), "60", "1、2、4、7、11、15，之後每級再加 5，直到 60"],
-        ["4", comma(curves.get(4, 0)), "4", "1、2、3、4（皆為 collection_detail 中的尋寶藏品）"],
+        ["4", comma(curves.get(4, 0)), "4", "1、2、3、4（皆為尋寶藏品）"],
         ["9", comma(curves.get(9, 0)), "30", "1、2、4、7、11、15、20、25、30，與 15 級曲線的前 9 級相同（聯盟／部族／自然聖塔）"],
         ["3", comma(curves.get(3, 0)), "4", f"1、2、4（{names_for(lambda d: d.max_level == 3)}）"],
         ["2", comma(curves.get(2, 0)), "2", f"1、2（{names_for(lambda d: d.max_level == 2)}）"],
         ["1", comma(curves.get(1, 0)), "1", f"只有 1 級（{names_for(lambda d: d.max_level == 1)}）"],
     ]
     out["upgrade"] = table(
-        ["最高等級", "件數", "升滿所需個數", "曲線（各級 total_num）"],
+        ["最高等級", "件數", "升滿所需個數", "曲線（各級累積個數）"],
         [[e(c) if i != 3 else H(c, terms) for i, c in enumerate(row)] for row in curve_rows],
         mobile="sticky",
     )
@@ -1383,9 +1399,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         typ = EMPTY if suit.typ is None else str(suit.typ)
         def_text = _fmt_suit_attrs(suit.def_self, suit.def_alliance, attrs)
         if suit.alliance_max_num != EMPTY:
-            def_text = (def_text + "；" if def_text != EMPTY else "") + f"property_alliance_max_num {e(suit.alliance_max_num)}" if False else (
-                ("" if def_text == EMPTY else def_text + "；") + f"property_alliance_max_num {suit.alliance_max_num}"
-            )
+            def_text = ("" if def_text == EMPTY else def_text + "；") + f"公會屬性生效人數上限 {suit.alliance_max_num}"
         note = suit.def_diff_note if suit.def_differs_from_lv1 else ""
         if sid == 9999:
             note = ("；" if note else "") and note
@@ -1401,7 +1415,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             H(def_text, terms) if def_text != EMPTY else EMPTY,
             e(suit.unlock_days),
             e(suit.unlock_season),
-            e(suit.unlocktime),
+            e(format_timerange(suit.unlocktime)),
             H(note, terms) if note else "",
         ])
     out["suits"] = table(
@@ -1427,7 +1441,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             H(_fmt_suit_attrs(mx.self_attrs, mx.alliance_attrs, attrs, mx.power, True), terms),
         ])
     out["suit_levels"] = table(
-        ["套裝", "最高等級", "Activation（第 1 級）", "第 1 級", "Activation（滿級）", "滿級"],
+        ["套裝", "最高等級", "啟動欄（第 1 級）", "第 1 級", "啟動欄（滿級）", "滿級"],
         level_rows,
         mobile="cards",
         card_title="套裝",
@@ -1492,12 +1506,11 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
                 continue
             rows.append([
                 str(rec.level),
-                f"<code>{e(rec.desc_key)}</code>",
                 e(rec.params_text),
                 official_term_html(rec.text),
             ])
         return table(
-            ["等級", "說明鍵", "參數", "文案（代入參數、已去色碼）"],
+            ["等級", "參數", "文案（代入參數、已去色碼）"],
             rows,
             mobile="cards",
             card_title="等級",
@@ -1514,11 +1527,10 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             official_term_html(data.decorations[tid].name),
             str(tid),
             str({308501: 1, 308502: 2, 308503: 3}[tid]),
-            f"<code>{e(k1)}</code>／<code>{e(k2)}</code>",
             "見下表" if tid == 308501 else "參數與聯盟聖塔相同",
         ])
     out["skill_meta"] = table(
-        ["裝飾物", "編號", "race", "season 0／type 1 說明鍵", "備註"],
+        ["裝飾物", "編號", "陣營編號", "備註"],
         skill_meta_rows,
         mobile="cards",
         card_title="裝飾物",
@@ -1537,7 +1549,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             str(g.quality),
             H(fmt_attr_pairs(g.max_attrs, attrs), terms) if g.max_attrs else EMPTY,
             e(str(g.season) if g.season is not None else EMPTY),
-            e(g.unlocktime),
+            e(format_timerange(g.unlocktime)),
         ])
     out["guild"] = table(
         ["裝飾物", "編號", "品質", "滿級屬性", "賽季欄（只照錄）", "解鎖時間（只照錄）"],
@@ -1693,7 +1705,7 @@ def render_html(data: TablesData) -> str:
     add(p_html(_published_links_html(terms)))
     add("<ul>")
     add(
-        "<li><strong>正文只根據遊戲資料表。</strong>不把玩家討論寫進正文。"
+        "<li><strong>正文只根據遊戲資料表。</strong>"
         "表上沒有的標未驗證或待補，不編造公式或名稱。</li>"
     )
     add(
@@ -1791,7 +1803,7 @@ def render_html(data: TablesData) -> str:
     add(p_html(
         f"有藍、紫、橙、紅四種萬能裝飾物：{univ}。"
         "主表沒有品質欄，哪些件能用萬能、什麼顏色對哪一件，表上沒有直接對照。另有一句"
-        f"「{official_term_html(o.tip_no_universal)}」（<code>citybuilding_diy_lvup</code>），"
+        f"「{official_term_html(o.tip_no_universal)}」，"
         "沒有列出適用或排除的編號。公會另有一套同名色的萬能材料（"
         + "、".join(f"{official_term_html(name)}（{iid}）" for iid, name, desc in o.guild_univ)
         + "），說明是公會裝飾物專用。"
@@ -1807,7 +1819,7 @@ def render_html(data: TablesData) -> str:
     f15 = [d.fight for d in data.decorations.values() if d.max_level == 15]
     min_deco = min(data.decorations.values(), key=lambda d: (d.fight, d.group_id))
     add(p_html(
-        "每級有戰力（<code>fight</code>）和評分（<code>score</code>）。"
+        "每級有戰力和評分。"
         f"滿級戰力最低是 {comma(min(fights))}（{H(deco_display_name(min_deco), terms)}，只有 {min_deco.max_level} 級），"
         f"最高是 {comma(max(fights))}（15 級滿級的上限；15 級件的滿級戰力從 {comma(min(f15))} 到 {comma(max(f15))}）。"
         "滿級評分沒有 0：尋寶藏品 4 級件的評分欄是 -1；其餘滿級評分為 "
@@ -1822,13 +1834,12 @@ def render_html(data: TablesData) -> str:
         if suit:
             max_nums.append(f"{H(suit.name, terms)}為 {e(suit.alliance_max_num)}")
     add(p_html(
-        f"{comma(len(share))} 件有公會共享屬性（<code>property_alliance</code>／<code>alliance_attrs</code>）："
-        f"{share_txt}。通用介面字串是「{official_term_html(o.tip_alliance)}」"
-        f"（官方鍵拼寫為 <code>{e(o.tip_alliance_key)}</code>）。"
+        f"{comma(len(share))} 件有公會共享屬性："
+        f"{share_txt}。通用介面字串是「{official_term_html(o.tip_alliance)}」。"
         "部分件或套裝另有不同寫法：例如"
         f"{H('黑之皇帝', terms)}／{H('黑之皇后', terms)} 的說明寫「可享受同公會 10 名領主的累加值」；"
-        f"介面也有「{official_term_html(o.tip_member)}」（<code>diy_alliance_effect_member_tip</code>）。"
-        "套裝表的 <code>property_alliance_max_num</code>："
+        f"介面也有「{official_term_html(o.tip_member)}」。"
+        "套裝表的公會屬性生效人數上限："
         + "、".join(max_nums)
         + "。這兩套規則如何同時套用，表上沒有合併說明，本頁只並記，不另寫公式。"
     ))
@@ -1838,23 +1849,22 @@ def render_html(data: TablesData) -> str:
     # reward curve
     prop = None
     add(
-        f"<li>{H(crystal.name, terms)}（{CRYSTAL_ID}）：<code>time_type</code> {crystal.time_type}，"
-        f"時間 <code>{e(crystal.time_para1)}</code>。每日獎勵欄為 <code>999|6|{{數值}}</code>，"
-        "數值隨等級提高：第 1 級 4,000，滿級 15 為 96,000。"
-        "類型 999 在屬性表與官方屬性名裡都沒有名稱。</li>"
+        f"<li>{H(crystal.name, terms)}（{CRYSTAL_ID}）：時限類型 {crystal.time_type}，"
+        f"時間 {e(format_timerange(crystal.time_para1))}。每日獎勵第 1 級 4,000、滿級 15 為 96,000。"
+        "類型 999 與中段 6 在屬性表與官方屬性名裡都沒有名稱。</li>"
     )
     elites = "、".join(f"{H(data.decorations[i].name, terms)}（{i}）" for i in ELITE_IDS)
     e0 = data.decorations[ELITE_IDS[0]]
     rewards = "、".join(f"<code>{e(data.decorations[i].reward)}</code>" for i in ELITE_IDS)
     add(
-        f"<li>{elites}：<code>time_type</code> {e0.time_type}，同一段時間；每日獎勵分別為 {rewards}。"
-        "這三個道具編號在本抽取沒有 <code>goods_name</code>。這三件本身沒有自身屬性列。</li>"
+        f"<li>{elites}：時限類型 {e0.time_type}，同一段時間；每日獎勵分別為 {rewards}。"
+        "這三個道具編號在本抽取沒有官方物品名。這三件本身沒有自身屬性列。</li>"
     )
     tree = data.decorations[TREE_ID]
     add(
-        f"<li>{H(tree.name, terms)}（{TREE_ID}）：<code>time_type</code> {tree.time_type}，"
-        f"<code>time_para1</code> 為 <code>{e(tree.time_para1)}</code>（表上沒有說明這三個數字的含義）；"
-        f"每日獎勵 <code>{e(tree.reward)}</code>（{H('驚喜寶箱', terms)} ×2）。本身沒有自身屬性列。</li>"
+        f"<li>{H(tree.name, terms)}（{TREE_ID}）：時限類型 {tree.time_type}，"
+        "時間參數表上沒有說明含義，對照見資料說明；"
+        f"每日獎勵 {H('驚喜寶箱', terms)} ×2。本身沒有自身屬性列。</li>"
     )
     add("</ul>")
     add("    </section>")
@@ -1874,7 +1884,7 @@ def render_html(data: TablesData) -> str:
         "第二套全程用較短文案，但人數與百分比的起始值不同。"
     ))
     add(p_html(
-        "三座聖塔的人數與百分比參數完全相同，只是文案裡的陣營與 <code>race</code>"
+        "三座聖塔的人數與百分比參數完全相同，只是文案裡的陣營"
         "（聯盟 1、部族 2、自然 3）不同。官方陣營用語是「部族」，不是「部落」，"
         f"除非官方字串本身就是「部落」（例如裝飾物名稱「{H('部落榮耀', terms)}」）。"
         "以聯盟聖塔為例（其餘兩座把「聯盟」換成「部族」或「自然」即可）："
@@ -1885,8 +1895,7 @@ def render_html(data: TablesData) -> str:
     add("      <h3>第二套技能文案</h3>")
     add(tbl["skill1"])
     add(p_html(
-        f"{H('部族聖塔', terms)}對應說明鍵為 <code>citybuilding_DIY_skill_3</code>／<code>_4</code>，"
-        f"{H('自然聖塔', terms)}為 <code>citybuilding_DIY_skill_5</code>／<code>_6</code>，參數與上表相同。"
+        f"{H('部族聖塔', terms)}、{H('自然聖塔', terms)}的說明文案與參數與上表相同（說明鍵見資料說明）。"
     ))
     add("    </section>")
 
@@ -1894,7 +1903,7 @@ def render_html(data: TablesData) -> str:
     add("      <h2>城鎮裝飾套裝</h2>")
     add(p_html(
         f"城鎮裝飾套裝共 {comma(len(data.suits))} 套（沒有編號 12、34、36；另有 3301、3302、502、503、9999）。"
-        "套裝 <code>type</code> 為 1–5，表上沒有類型名稱。"
+        "套裝類型欄為 1–5，表上沒有類型名稱。"
         "有一類套裝名稱對得上若干賽季稱呼，且帶有解鎖賽季欄，本頁只照錄，"
         f"不自行對成日曆賽季，也不標未開放，更不把「{official_term_html('雲海紀行')}」寫成已核對的官方賽季名。"
         "解鎖天數與解鎖時間同樣只照錄。欄位名見資料說明。"
@@ -1904,7 +1913,7 @@ def render_html(data: TablesData) -> str:
         f"例外見備註欄與資料說明，例如{H('永世名將', terms)}、{H('雲海巡航', terms)}。"
         f"部分套裝另有套裝等級表（{comma(data.table_meta['suit_prop_rows'])} 筆）："
         "多數為 10 級，信仰為 9 級，搗蛋鬼、夢幻莊園只有 1 級。"
-        "各級有 <code>Activation</code> 欄，表上沒有說明這兩個數字的含義。"
+        "各級有啟動欄，表上沒有說明這兩個數字的含義。欄名見資料說明。"
         "下面總表先寫定義列屬性；有等級表的套裝，第 1 級與滿級另列於其後。中間第 2–9 級不展開。"
         f"編號 9999 的「{H('馴龍高手', terms)}」沒有成員；另有「{H('馴龍高手', terms)}」（47）與"
         f"「{H('馴龍高手第二期', terms)}」（55）兩套有成員。"
@@ -1913,18 +1922,17 @@ def render_html(data: TablesData) -> str:
     not_in = [d for d in diy_named if not d.suit_ids]
     not_in_txt = "、".join(f"{H(d.name, terms)}（{d.group_id}）" for d in not_in)
     add(p_html(
-        f"{comma(len(diy_named))} 件有 <code>citybuilding_DIY_name_*</code> 的裝飾物裡，"
+        f"{comma(len(diy_named))} 件有 城鎮裝飾名稱鍵 的裝飾物裡，"
         f"{comma(sum(1 for d in diy_named if d.suit_ids))} 件出現在某套套裝成員列；"
         f"不在成員列的 {comma(len(not_in))} 件是{not_in_txt}。"
-        "這 4 件編號出現在「世界之最」另外列出的裝飾編號欄，但不在該套的 "
-        "<code>citybuilding_DIY_id</code> 成員列。"
-        f"<code>collection_detail</code> 的 {comma(data.table_meta['treasure_count'])} 件尋寶藏品都不進這些套裝；"
-        "名稱也取自 <code>collection_name_*</code>、但不在 <code>collection_detail</code> 的 9 件，"
+        "這 4 件編號出現在「世界之最」另外列出的裝飾編號欄，但不在該套的成員列。"
+        f"尋寶藏品表的 {comma(data.table_meta['treasure_count'])} 件尋寶藏品都不進這些套裝；"
+        "名稱也取自 收藏名稱鍵、但不在尋寶藏品表的 9 件，"
         "則分別在「永世名將」與「王國節日」。"
     ))
     add(tbl["suits"])
     add('      <h3 id="suit-levels">套裝等級表（有才列）</h3>')
-    add(p_html("下表只列第 1 級與最高級。戰力取 <code>power</code>。<code>active_season</code> 全為 -1，<code>property_num_add</code> 全空。"))
+    add(p_html("下表只列第 1 級與最高級。戰力取戰力欄。另有一欄全為 -1、一欄全空，欄名見資料說明。"))
     add(tbl["suit_levels"])
     add("    </section>")
 
@@ -1959,30 +1967,30 @@ def render_html(data: TablesData) -> str:
     add('      <h3 id="named-only">有名稱但不在套裝成員列</h3>')
     add(p_html("這 4 件編號出現在「世界之最」另外列出的裝飾編號欄，但不在套裝成員列。"))
     add(tbl["named_only"])
-    add('      <h3 id="treasure">尋寶藏品（<code>collection_detail</code> type=1，未列入上述套裝）</h3>')
+    add('      <h3 id="treasure">尋寶藏品（未列入上述套裝）</h3>')
     add(p_html(
-        f"規則字串稱「{official_term_html(o.dig_title)}」（<code>collection_dig_rule_title</code>）。"
-        f"完整規則文案（<code>collection_dig_rule_desc_1</code>，已去色碼）為：「{official_term_html(o.dig_rule_1)}」。"
+        f"規則字串稱「{official_term_html(o.dig_title)}」。"
+        f"完整規則文案（已去色碼）為：「{official_term_html(o.dig_rule_1)}」。"
         "主題 1–4 各 40 件，對應"
-        + "、".join(f"{official_term_html(o.theme_names[i])}（<code>collection_dig_desc_{i}</code>）" for i in THEME_IDS)
+        + "、".join(official_term_html(o.theme_names[i]) for i in THEME_IDS)
         + "；品質 3／4／5／6 的件數每主題相同（18／12／8／2）。"
         f"這 {comma(data.table_meta['treasure_count'])} 件同時是城鎮裝飾，升級為 4 級、評分欄為 -1。"
         "收藏裝飾可以擺進主城；規則並寫「獲得重複藏品可升級藏品屬性」。"
     ))
     add(p_html(
         f"尋寶主題里程碑表 {comma(data.table_meta['milestone_rows'])} 筆："
-        "各主題在解鎖 1／10／20 件時各給一筆 <code>reward</code>（46301–46312），這些獎勵編號在本抽取沒有 <code>goods_name</code>。"
+        "各主題在解鎖 1／10／20 件時各給一筆獎勵（46301–46312），這些獎勵編號在本抽取沒有道具名。"
         f"尋寶刷新表 {comma(data.table_meta['refresh_rows'])} 筆，對應各藏品的刷新／投放。檔名見資料說明。"
     ))
     for theme in THEME_IDS:
         add(f'      <h4 id="treasure-{theme}">{e(o.theme_names[theme])}</h4>')
         add(tbl["treasure"][theme])
-    add('      <h3 id="junk">尋寶廢品（<code>collection_detail</code> type=2，不在裝飾屬性表）</h3>')
+    add('      <h3 id="junk">尋寶廢品（不在裝飾屬性表）</h3>')
     add(p_html(
-        f"另外 {comma(len(data.junk))} 筆 <code>type=2</code>、<code>theme=-1</code>、品質 2、<code>is_show=-1</code>，"
+        f"另外 {comma(len(data.junk))} 筆類型為 2、主題欄為 -1、品質 2、顯示欄為 -1，"
         "不在城鎮裝飾屬性表。它們沒有藏品名稱鍵，但有道具名稱，"
         "名稱皆帶「（廢品）」。規則文案寫：廢品較為常見，發現後可獲得對應道具，使用後可轉化為資源"
-        f"（見 <code>collection_dig_rule_desc_2</code>）。道具說明亦寫「{official_term_html(o.junk_item_desc)}」。"
+        f"。道具說明亦寫「{official_term_html(o.junk_item_desc)}」。"
         "廢品不是有屬性列的城鎮裝飾。"
     ))
     add(tbl["junk"])
@@ -2013,19 +2021,18 @@ def render_html(data: TablesData) -> str:
     add(p_html(
         f"公會裝飾物 {comma(data.table_meta['alliance_rows'])} 件，"
         f"屬性表 {comma(data.table_meta['alliance_prop_rows'])} 筆（每件 5 級）。檔名見資料說明。"
-        "升級同樣靠累積同一件：各級 <code>total_num</code> 為 1、2、4、7、11，升到 5 級。"
+        "升級同樣靠累積同一件：各級累積個數為 1、2、4、7、11，升到 5 級。"
         "獲得說明寫「重複獲得可用於提升裝飾物等級」（17–19 的用字是「啟動」，其餘多為「啟用」）。"
-        f"領地說明寫：「{official_term_html(o.tip_territory)}」（<code>alliance_bastion_04_014</code>）。"
-        f"另有「{official_term_html(o.tip_guild_cap)}」（<code>guild_decoration_tips_1</code>）。"
-        "屬性表的 <code>territory_effect</code> 欄全為 -1，本頁不把這個 -1 自行解釋成某種領地效果。"
+        f"領地說明寫：「{official_term_html(o.tip_territory)}」。"
+        f"另有「{official_term_html(o.tip_guild_cap)}」。"
+        "屬性表的領地效果欄全為 -1，本頁不把這個 -1 自行解釋成某種領地效果。"
     ))
     q = Counter(g.quality for g in data.guild)
     add(p_html(
-        "名稱鍵是 <code>alliance_decorations_name1</code>–<code>22</code>。17–19 沒有名稱鍵，"
-        "正式名稱取自獲得說明 <code>alliance_decorations_item_desc17</code>–<code>19</code>："
+        "17–19 沒有名稱鍵，正式名稱取自獲得說明："
         + "、".join(official_term_html(g.name) for g in data.guild if g.name_from_obtain)
         + f"。品質欄為 3／4／5（品質 3 共 {q.get(3, 0)} 件、品質 4 共 {q.get(4, 0)} 件、品質 5 共 {q.get(5, 0)} 件）。"
-        "全部 <code>suit_id=1</code>，表上沒有另一套公會套裝定義。"
+        "全部同屬一套公會套裝，表上沒有另一套定義。"
         "賽季欄有 0、3、5、999，部分有解鎖時間，只照錄，不標未開放。欄位名見資料說明。"
         "公會裝飾物各級（非滿級）的中間屬性不展開，下表只列滿級。"
     ))
@@ -2043,7 +2050,7 @@ def render_html(data: TablesData) -> str:
     add("      <h2>尚無名稱或對不上的城鎮裝飾</h2>")
     nameless = [d for d in data.decorations.values() if d.name_src == "none"]
     add(p_html(
-        f"{comma(len(nameless))} 件沒有 <code>citybuilding_DIY_name_*</code> 也沒有 <code>collection_name_*</code>。其中："
+        f"{comma(len(nameless))} 件沒有 城鎮裝飾名稱鍵 也沒有 收藏名稱鍵。其中："
     ))
     add("<ul>")
     add(
@@ -2085,7 +2092,7 @@ def render_html(data: TablesData) -> str:
     add("<li>各裝飾物的取得途徑（禮包、活動、尋寶、商店）沒有完整來源表，本頁沒有逐件對商店，也不編造取得表。</li>")
     add(
         f"<li>城市建築圖鑑表 {comma(data.table_meta['guidebook_rows'])} 筆（編號 1–80），"
-        "每筆有 <code>level_exp</code> 與一組 <code>active_attr</code>。"
+        "每筆有等級經驗與一組啟用屬性。"
         "屬性都是冒險相關：冒險攻擊百分比（1100103）、冒險生命百分比（1100104）、"
         "增傷（對冒險首領生效）（68）、減傷（對冒險首領生效）（69）、"
         "冒險模式復活時間縮短（1125）、冒險模式脫戰每秒回血速度（1108）、"
@@ -2097,7 +2104,7 @@ def render_html(data: TablesData) -> str:
     add("</ul>")
     add(p_html(
         "待補（均未決議，本頁不補寫答案）：一般城鎮裝飾與藍紫橙紅萬能裝飾物的顏色對照；"
-        "套裝 <code>type</code> 1–5 與 <code>Activation</code> 兩數字的含義；"
+        "套裝類型欄 1–5 與啟動欄兩數字的含義；"
         "解鎖天數、解鎖賽季與解鎖時間如何卡開（不自行標未開放）；"
         "世界的起源五件、10023／10024、馴龍高手兩期無名稱件、151601 在客戶端實際顯示什麼；"
         "尋寶主題里程碑獎勵 46301–46312、榮耀雕像每日獎勵道具的名稱；各件取得途徑。"
@@ -2107,6 +2114,29 @@ def render_html(data: TablesData) -> str:
     add('    <section id="notes">')
     add("      <h2>資料說明</h2>")
     add("<p>以下是整理用註記，查名稱與效果可略過。</p>")
+    add(
+        "<p>解鎖時間若是兩段日期，可見正文寫成「A 至 B」，原值是 <code>A|B</code>，欄位原名 <code>unlocktime</code> 或時間參數 <code>time_para1</code>。"
+        f"{H('紅水晶礦', terms)}每日獎勵可見寫第 1 級 4,000、滿級 15 為 96,000；原值記法是 <code>999|6|{{數值}}</code>（滿級 <code>999|6|96000</code>）。類型 999 與中段 6 沒有官方資源名，不編造。"
+        f"{H('繽紛聖誕樹', terms)}每日獎勵可見寫{H('驚喜寶箱', terms)} ×2，原值 <code>2|512110003|2</code>。"
+        "其時間參數原值 <code>4519|4474|2144</code>，表上沒有說明這三個數字的含義，可見正文不推算。"
+        "自然精英·永恆等三件每日獎勵原值 <code>2|601283006|1</code>、<code>2|601283005|1</code>、<code>2|601283004|1</code>，本抽取沒有官方物品名，可見表照錄編號。"
+        "套裝「解鎖賽季（只照錄）」的 <code>1|0</code>、<code>2|0</code>、<code>3|0</code>、<code>4|0</code> 只照錄，不換算成賽季日曆。"
+        "聖塔技能「參數」欄原值如 <code>1|40</code>、<code>1|90|6|2</code> 保留照錄，文案已代入參數，不另推算含義。可見表不再列出說明鍵；聯盟／部族／自然聖塔說明鍵原名 <code>citybuilding_DIY_skill_1</code>／<code>_2</code>、<code>citybuilding_DIY_skill_3</code>／<code>_4</code>、<code>citybuilding_DIY_skill_5</code>／<code>_6</code>。城鎮裝飾名稱鍵原名 <code>citybuilding_DIY_name_*</code>，收藏名稱鍵原名 <code>collection_name_*</code>。公會屬性生效人數上限原名 <code>property_alliance_max_num</code>。公會裝飾物「全部同屬一套公會套裝」原欄是 <code>suit_id=1</code>。"
+        "戰力／評分欄原名 <code>fight</code>／<code>score</code>；公會共享屬性原名 <code>property_alliance</code>／<code>alliance_attrs</code>。"
+        "通用公會共享介面字串原名 <code>citybuilding_diy_allance_content</code>（表上拼寫如此，照錄）；人數上限提示原名 <code>diy_alliance_effect_member_tip</code>。"
+        "不能用萬能裝飾物升級的說明原名 <code>citybuilding_diy_lvup</code>。聖塔陣營欄原名 <code>race</code>。"
+        "套裝類型欄原名 <code>type</code>，啟動欄原名 <code>Activation</code>。套裝成員列原名 <code>citybuilding_DIY_id</code>。"
+        "尋寶藏品／廢品表原名 <code>collection_detail</code>（藏品 <code>type=1</code>、廢品 <code>type=2</code>）。"
+        "尋寶規則標題／正文原名 <code>collection_dig_rule_title</code>、<code>collection_dig_rule_desc_1</code>／<code>_2</code>；"
+        "主題名原名 <code>collection_dig_desc_1</code>–<code>4</code>。"
+        "套裝等級戰力欄原名 <code>power</code>；另兩欄原名 <code>active_season</code>（全為 -1）、<code>property_num_add</code>（全空）。"
+        "尋寶里程碑獎勵欄原名 <code>reward</code>；本抽取沒有對應的 <code>goods_name</code>。"
+        "廢品主題欄原名 <code>theme</code>，顯示欄原名 <code>is_show</code>。"
+        "公會裝飾累積個數原名 <code>total_num</code>；領地說明原名 <code>alliance_bastion_04_014</code>，公會上限提示原名 <code>guild_decoration_tips_1</code>，領地效果欄原名 <code>territory_effect</code>。"
+        "公會裝飾名稱鍵原名 <code>alliance_decorations_name1</code>–<code>22</code>；17–19 正式名稱取自 <code>alliance_decorations_item_desc17</code>–<code>19</code>。"
+        "城市建築圖鑑各級經驗與啟用屬性原名 <code>level_exp</code>、<code>active_attr</code>。"
+        "模型路徑如 <code>Building/Building_DIY/Building_diy_10019</code> 是表上路徑事實，可見正文保留路徑，不另解釋檔名。</p>"
+    )
     add(
         "<p>不依 <code>unlocktime</code>、<code>unlock_season</code>、<code>unlock_days</code>、"
         "<code>season</code> 或伺服器欄位標未開放；表上有這些欄位的，只照錄。"
@@ -2220,7 +2250,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
             def_text,
             suit.unlock_days,
             suit.unlock_season,
-            suit.unlocktime,
+            format_timerange(suit.unlocktime),
             note,
         ])
     out["suits"] = md_table(
@@ -2324,7 +2354,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
                 str(g.quality),
                 fmt_attr_pairs(g.max_attrs, attrs) if g.max_attrs else EMPTY,
                 str(g.season) if g.season is not None else EMPTY,
-                g.unlocktime,
+                format_timerange(g.unlocktime),
             ]
             for g in data.guild
         ],
@@ -2358,7 +2388,7 @@ def render_markdown(data: TablesData) -> str:
         "城堡外觀見[城堡外觀總表](castle.html)，不在本頁展開。"
     )
     add("")
-    add("- **正文只根據遊戲資料表。** 不把玩家討論寫進正文。表上沒有的標未驗證或待補，不編造公式或名稱。")
+    add("- **正文只根據遊戲資料表。** 表上沒有的標未驗證或待補，不編造公式或名稱。")
     add(
         f"- **名錄以 `citybuilding_DIY_property.json` 的 `group_id` 為準**"
         f"（{comma(data.table_meta['property_rows'])} 筆等級列，{comma(len(data.decorations))} 個裝飾物）。"

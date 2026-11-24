@@ -618,17 +618,41 @@ def _parse_slot(row: dict) -> HeroSlot:
     )
 
 
+def _type_show_plain(typ, show) -> str:
+    """Player wording for type/show_type. Never convert show_type=2 values to percents."""
+    if typ in (None, "", EMPTY) and show in (None, "", EMPTY):
+        return ""
+    try:
+        typ_i = int(typ) if typ not in (None, "", EMPTY) else None
+    except (TypeError, ValueError):
+        typ_i = typ
+    try:
+        show_i = int(show) if show not in (None, "", EMPTY) else None
+    except (TypeError, ValueError):
+        show_i = show
+    if typ_i == 2 and show_i == 2:
+        return "百分比類，本頁不自行換成百分比"
+    if typ_i == 1 and show_i == 1:
+        return "點數"
+    parts = []
+    if typ_i is not None:
+        parts.append(f"類型 {typ_i}")
+    if show_i is not None:
+        parts.append(f"顯示類型 {show_i}")
+    return "、".join(parts)
+
+
 def _attr_label(info: AttrInfo | None, aid: int | None) -> str:
     if aid is None:
         return EMPTY
+    note = _type_show_plain(info.typ, info.show_type) if info else ""
     if info and info.name:
-        typ = EMPTY if info.typ is None else str(info.typ)
-        show = EMPTY if info.show_type is None else str(info.show_type)
-        return f"{info.name}（{aid}，type={typ}，show_type={show}）"
+        return f"{info.name}（{aid}，{note}）" if note else f"{info.name}（{aid}）"
     if info and info.name_missing:
-        typ = EMPTY if info.typ is None else str(info.typ)
-        show = EMPTY if info.show_type is None else str(info.show_type)
-        return f"屬性 {aid}（type={typ}，show_type={show}；表有 {info.name_col or info.name_key}，本抽取沒有對應字串，名稱未定）"
+        base = f"屬性 {aid}（沒有官方屬性名稱字串"
+        if note:
+            base += f"；{note}"
+        return base + "）"
     return f"屬性 {aid}"
 
 
@@ -1146,10 +1170,11 @@ def _slot3_name_note(slot: HeroSlot, curve: GroupCurve) -> str:
 
 def _attr_cell(curve: GroupCurve, attrs: dict[int, AttrInfo]) -> str:
     info = attrs.get(curve.attr_id)
-    typ = EMPTY if not info or info.typ is None else str(info.typ)
-    show = EMPTY if not info or info.show_type is None else str(info.show_type)
     aname = info.name if info and info.name else f"屬性 {curve.attr_id}"
-    return f"{aname}（{curve.attr_id}，type={typ}，show_type={show}）"
+    if info and info.name_missing:
+        aname = f"屬性 {curve.attr_id}（沒有官方屬性名稱字串）"
+    note = _type_show_plain(info.typ, info.show_type) if info else ""
+    return f"{aname}（{curve.attr_id}，{note}）" if note else f"{aname}（{curve.attr_id}）"
 
 
 def _lord_effect(tree: LordTree, data: TablesData) -> str:
@@ -1157,8 +1182,8 @@ def _lord_effect(tree: LordTree, data: TablesData) -> str:
     if tree.tree_id == 70050100:
         ids = "／".join(tree.map_buildings)
         return (
-            f"無 `attributes`，只寫 `map_building_id`：1／2／3 級分別為 {ids.replace('|', '／')}。"
-            f"三筆在 `map_building.json` 的名稱都是「{o.light_tower}」（`talent_tower_001`）。"
+            f"無寫入屬性，只寫地圖建築編號：1／2／3 級分別為 {ids.replace('|', '／')}。"
+            f"三筆在地圖建築表的名稱都是「{o.light_tower}」。"
             "應視為解鎖地圖建築的節點，不是屬性加成"
         )
     if tree.tree_id == 70050300:
@@ -1166,14 +1191,13 @@ def _lord_effect(tree: LordTree, data: TablesData) -> str:
             f"{lv} 級為 `{raw}`" for lv, raw in enumerate(tree.map_buildings, 1)
         )
         return (
-            f"無屬性。{parts}。這些 id 在 `map_building.json` 的名稱都是「{o.auto_facility}」"
-            f"（`talent_facilities_001`）；資源類型分別對應{o.wood}、{o.stone}、{o.crystal}"
-            f"（`top_resource_name_4`／`5`／`6`）"
+            f"無屬性。{parts}。這些編號在地圖建築表的名稱都是「{o.auto_facility}」"
+            f"；資源類型分別對應{o.wood}、{o.stone}、{o.crystal}"
         )
     if tree.tree_id == 70050500:
         ids = "／".join(tree.map_buildings)
         return (
-            f"無屬性。1／2／3 級分別為 {ids}，名稱都是「{o.dark_tower}」（`talent_tower_002`）"
+            f"無屬性。1／2／3 級分別為 {ids}，名稱都是「{o.dark_tower}」"
         )
     if tree.tree_id == 70040700:
         ids = "／".join(tree.map_buildings)
@@ -1186,20 +1210,21 @@ def _lord_effect(tree: LordTree, data: TablesData) -> str:
     v = f"{comma(tree.v_first)}→{comma(tree.v_last)}"
     if info and info.name_missing:
         text = (
-            f"屬性 {tree.attr_id}：{v}。屬性表有 `{info.name_key}`，但本抽取沒有對應字串，名稱未定"
+            f"屬性 {tree.attr_id}：{v}。沒有官方屬性名稱字串"
         )
     else:
         aname = info.name if info and info.name else f"屬性 {tree.attr_id}"
         typ_note = ""
         if info and (info.typ, info.show_type) != (2, 2):
-            typ_note = f"，type={info.typ}，show_type={info.show_type}"
+            plain = _type_show_plain(info.typ, info.show_type)
+            typ_note = f"，{plain}" if plain else ""
         text = f"{aname}（{tree.attr_id}{typ_note}）{v}"
     if tree.node_name:
         text += f"。節點名稱字串「{tree.node_name}」"
     if tree.tree_id == 71040700:
         text += (
-            "。與戰爭樹 60070500 的醫院容量上限（1032，type=1，show_type=1）官方名稱相同，"
-            "但不是同一個屬性編號，`type`／`show_type` 也不同"
+            "。與戰爭樹 60070500 的醫院容量上限（1032，點數）官方名稱相同，"
+            "但不是同一個屬性編號，類型與顯示類型也不同"
         )
     return text
 
@@ -1347,7 +1372,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
 
     def lord_table(trees: list[LordTree], with_bld: bool) -> str:
         rows = []
-        cols = ["樹 id", "級數", "`talent_building_lv`", "前置（樹|等級）", "寫入屬性（1 級→滿級）"] if with_bld else ["樹 id", "級數", "寫入屬性（1 級→滿級）"]
+        cols = ["樹 id", "級數", "天賦建築等級", "前置（樹|等級）", "寫入屬性（1 級→滿級）"] if with_bld else ["樹 id", "級數", "寫入屬性（1 級→滿級）"]
         title = "樹 id"
         for tree in trees:
             effect = _lord_effect(tree, data)
@@ -1433,7 +1458,7 @@ def render_html(data: TablesData) -> str:
     ))
     add("<ul>")
     add(
-        "<li><strong>正文只根據遊戲資料表與面板看得到的內容。</strong>不把玩家討論寫進正文。"
+        "<li><strong>正文只根據遊戲資料表與面板看得到的內容。</strong>"
         "不評定天賦強弱，也不做搭配模擬。兩套英雄天賦定義不要混用，本頁不以後來的那一套當成現用全表。"
         "對照與換算規則見「舊表與面板對照」與資料說明。</li>"
     )
@@ -1449,31 +1474,30 @@ def render_html(data: TablesData) -> str:
     add('    <section id="hero-talents">')
     add("      <h2>英雄天賦</h2>")
     add(p_html(
-        f"官方說明是在英雄介面消耗對應英雄碎片升級（<code>hero_talent_dec</code>：「{official_term_html(o.hero_talent_dec)}」）。"
-        f"同一品質才能交換（<code>hero_talent_quality_not_swap</code>：「{official_term_html(o.quality_not_swap)}」）；"
-        f"官方另有「{official_term_html(o.swap_count)}」「{official_term_html(o.swap_level)}」「{official_term_html(o.swap_slot)}」等提示"
-        f"（<code>hero_talent_swap_*</code>）。解鎖需先解鎖上一個天賦（<code>hero_talent_tips_3</code>：「{official_term_html(o.tips_unlock)}」）。"
+        f"官方說明是在英雄介面消耗對應英雄碎片升級：「{official_term_html(o.hero_talent_dec)}」。"
+        f"同一品質才能交換（「{official_term_html(o.quality_not_swap)}」）；"
+        f"官方另有「{official_term_html(o.swap_count)}」「{official_term_html(o.swap_level)}」「{official_term_html(o.swap_slot)}」等提示。"
+        f"解鎖需先解鎖上一個天賦（「{official_term_html(o.tips_unlock)}」）。"
     ))
 
     add('    <section id="slots">')
     add("      <h3>槽位、品質與升級</h3>")
     add(p_html(
-        "<code>hero_detail</code> 的 57 個英雄 id 在新表都有 4 個槽位，共 228 筆。"
-        "四個槽位的解鎖消耗一律寫成 <code>999|2|數量</code>，數量依槽位為 200／500／1,000／2,000，與 <code>talent_quality</code> 無關。"
-        f"既有圖鑑對 <code>999|2</code> 的說明：類型 2 對得上頂欄資源「{H(o.diamond, terms)}」"
-        f"（<code>top_resource</code> id 2，<code>top_resource_name_2</code>）；類型 999 在表上沒有名稱，本頁不自行斷定。"
+        "名冊 57 個英雄編號在新表都有 4 個槽位，共 228 筆。"
+        "四個槽位的解鎖消耗一律是類型 999、資源 2 ×數量，數量依槽位為 200／500／1,000／2,000，與天賦品質欄無關。"
+        f"類型 2 對得上頂欄資源「{H(o.diamond, terms)}」；類型 999 在表上沒有名稱，本頁不自行斷定。"
     ))
     add(p_html(
-        "升級消耗是 <code>upgrade_cost</code>：類型 2、數量 10（碎片）。"
+        "升級消耗是類型 2、數量 10（碎片）。"
         "多數列的英雄 id 等於該英雄自己的 id；15032／15033／15039 用的也是自己的 id，不是 10032／10033／10039。"
         f"表上另有一條例外，第 23 章未列出：{hero_link_html(10012, terms, data.roster_names)}（10012）在新表槽 1／2／4 的升級消耗寫的是 10008，"
         "只有槽 3 寫 10012；舊表四槽都寫 10012。本頁照表記錄，不推測原因。"
     ))
     add(p_html(
-        f"<code>talent_quality</code> 1／2／3 把英雄分成三檔。<strong>新表</strong>裡，槽 1／2／4 對應攻擊或生命群組的強度；"
-        f"群組都是 1–30 級，寫入皆為英雄側、<code>type=2</code>、<code>show_type=2</code> 的"
+        f"天賦品質欄 1／2／3 把英雄分成三檔。<strong>新表</strong>裡，槽 1／2／4 對應攻擊或生命群組的強度；"
+        f"群組都是 1–30 級，寫入皆為英雄側、百分比類（本頁不自行換成百分比）的"
         f"{H('英雄攻擊', terms)}（103）或{H('英雄生命', terms)}（104）。"
-        f"說明文是「{official_term_html(o.des_101)}」（<code>hero_talent_des_101</code>）。"
+        f"說明文是「{official_term_html(o.des_101)}」。"
         f"槽 1 一般名稱是「{H(o.name_atk, terms)}」、槽 2 是「{H(o.name_hp_i, terms)}」、槽 4 是「{H(o.name_hp_ii, terms)}」。"
         "這些是新表的寫法，不是這次前服面板顯示的那套。"
     ))
@@ -1547,7 +1571,7 @@ def render_html(data: TablesData) -> str:
     )
     add("</ul>")
     add(p_html(
-        "此對應只鎖定這些已確認的天賦顯示，不要自行推到所有 <code>show_type=2</code>，"
+        "此對應只鎖定這些已確認的天賦顯示，不要自行推到所有 百分比類屬性，"
         "也不要推到稱號、羈絆或其他非天賦來源。"
         "這幾筆仍不能寫死所有伺服器、所有英雄都只讀舊表；新表是否已在其他伺服器或未對面板的英雄上線，表內沒有開關可鎖。"
         "舊表另有 14 名英雄不是 4 槽，見「舊表、交換、未引用群組」。"
@@ -1555,7 +1579,7 @@ def render_html(data: TablesData) -> str:
     add(p_html(
         "103／104 如何進入官方「攻擊百分比／生命百分比」欄，表沒有標。"
         "前服已確認的天賦百分比是舊表的 10103／10104／16／1022／21 等，不是新表 103／104。"
-        "除上述已鎖定的天賦顯示外，本頁其餘 <code>show_type=2</code> 只記原值。"
+        "除上述已鎖定的天賦顯示外，本頁其餘 百分比類屬性 只記原值。"
     ))
     add("    </section>")
 
@@ -1563,7 +1587,7 @@ def render_html(data: TablesData) -> str:
     add("      <h3>槽 3（每人一條，名稱以群組屬性為準）</h3>")
     add(p_html(
         "槽 3 的名稱與群組多數一致，說明文有"
-        f"「{official_term_html(o.des_101)}」（<code>hero_talent_des_101</code>）、"
+        f"「{official_term_html(o.des_101)}」、"
         f"「{official_term_html(o.des_102)}」（102）、"
         f"「{official_term_html(o.des_104)}」（104）三種。"
         "下面按實際寫入的屬性排列；1 級與 30 級數值已對過群組表。名稱與屬性不一致的，在該條註明。"
@@ -1573,7 +1597,7 @@ def render_html(data: TablesData) -> str:
     add(tbl["slot3_combat"])
     add("    </section>")
     add('    <section id="slot3-march">')
-    add("      <h4>行軍、帶兵、經濟（多寫入領主側 <code>player_attr</code>）</h4>")
+    add("      <h4>行軍、帶兵、經濟（多寫入領主側）</h4>")
     add(tbl["slot3_march"])
     add("    </section>")
     add(p_html(
@@ -1588,7 +1612,7 @@ def render_html(data: TablesData) -> str:
     add(p_html(
         "15032／15033／15039 的四槽與 10032／10033／10039（"
         + join_heroes_html([10032, 10033, 10039], terms, data.roster_names)
-        + "）相同，只是沒有 <code>hero_name_*</code> 字串。本頁不把它們與 10032／10033／10039 合併成同一人。"
+        + "）相同，只是沒有對應的英雄名稱字串。本頁不把它們與 10032／10033／10039 合併成同一人。"
     ))
     add("    </section>")
 
@@ -1600,19 +1624,19 @@ def render_html(data: TablesData) -> str:
         + "在舊表只有槽 1／2；"
         + join_heroes_html(list(QUALITY2_IDS), terms, data.roster_names)
         + "在舊表只有槽 1／2／3。舊表專用、新表不再掛的群組是 20013／20014／20015／20253／20254。"
-        "本抽取沒有欄位標明客戶端讀哪張表，其他表也不引用 <code>hero_talent_new</code>。"
+        "本抽取沒有欄位標明客戶端讀哪張表，其他表也不引用後來那一套定義。"
         "從槽位數與群組改掛來看，新表是後來的定義，但這不是表內開關。"
         "這次已對過面板的藥劑師、舞孃、審判官（以及術士、守望者、沙漠王子的槽 3），顯示的都是舊表，不是新表"
         "（槽 3 兩表相同的除外）；現役以哪張為準仍不能全庫寫死。"
     ))
     add(p_html(
-        "<code>hero_talent_swap</code> 4 筆按 <code>swap_quality</code> 給交換消耗：品質 3 為 <code>999|2|200</code>，"
+        "交換消耗表 4 筆按交換品質欄給消耗：品質 3 為類型 999、資源 2 ×200，"
         "品質 4 為 500，品質 5 與 6 各有一筆、皆為 2,000。"
-        "這裡的品質編號是 3／4／5／6，與英雄天賦定義表上的 <code>talent_quality</code> 1／2／3 不是同一欄，"
+        "這裡的品質編號是 3／4／5／6，與英雄天賦定義表上的天賦品質欄 1／2／3 不是同一欄，"
         "本頁不自行對成同一套品質。官方提示品質不同、槽位或等級不匹配時不能交換。"
     ))
     add(p_html(
-        f"<code>hero_talent_group</code> 另有 81 個群組沒有被新舊定義表引用（滿級為 10 級的 {data.unref_caps[10]} 個、"
+        f"天賦群組表另有 81 個群組沒有被新舊定義表引用（滿級為 10 級的 {data.unref_caps[10]} 個、"
         f"20 級的 {data.unref_caps[20]} 個、30 級的 {data.unref_caps[30]} 個，多為採集、行軍、攻城等）。"
         "本頁不當成現役天賦，也不推測它們何時會掛上。"
     ))
@@ -1622,33 +1646,33 @@ def render_html(data: TablesData) -> str:
     add('    <section id="lord-talents">')
     add("      <h2>領主天賦</h2>")
     add(p_html(
-        f"領主天賦是另一套系統，在{H(o.hall_name, terms)}學習（<code>property_lordtalent_dec</code>）。"
+        f"領主天賦是另一套系統，在{H(o.hall_name, terms)}學習。"
         f"志向只有兩筆，官方名稱是「{H(o.war_name, terms)}」「{H(o.abundance_name, terms)}」"
-        "（<code>professional_name01</code>／<code>professional_name02</code>）。"
+        "。"
     ))
     add(p_html(
-        f"{H(o.war_name, terms)}的說明（<code>professional_des01</code>）：「{official_term_html(o.war_des)}」"
+        f"{H(o.war_name, terms)}的說明：「{official_term_html(o.war_des)}」"
     ))
     add(p_html(
-        f"{H(o.abundance_name, terms)}的說明（<code>professional_des02</code>）：「{official_term_html(o.abundance_des)}」"
+        f"{H(o.abundance_name, terms)}的說明：「{official_term_html(o.abundance_des)}」"
     ))
     add(p_html(
-        f"變更志向或重置會退還已學習的天賦點數（<code>player_talent_switch_desc</code>：「{official_term_html(o.switch_desc)}」；"
-        f"<code>player_talent_reset_desc</code>：「{official_term_html(o.reset_desc)}」）。"
-        f"重置／變更消耗是 <code>2|12210100|1</code>（物品 12210100「{H(o.scroll_name, terms)}」，"
+        f"變更志向或重置會退還已學習的天賦點數（「{official_term_html(o.switch_desc)}」；"
+        f"「{official_term_html(o.reset_desc)}」）。"
+        f"重置／變更消耗是物品 12210100「{H(o.scroll_name, terms)}」×1（"
         f"說明：「{official_term_html(o.scroll_desc)}」）。"
-        f"節點升級多用 <code>2|12210000|1</code>（物品 12210000「{H(o.point_name, terms)}」，"
+        f"節點升級多用物品 12210000「{H(o.point_name, terms)}」×1（"
         f"說明：「{official_term_html(o.point_desc)}」）；"
         f"部分節點另加物品 12210200「{H(o.medal_name, terms)}」（說明：「{official_term_html(o.medal_desc)}」），"
         "附加數量在表上為 100、200、300、600、1,000 或 2,000。"
-        "節點另要求 <code>talent_building_lv</code>（1 到 21）。"
+        "節點另要求天賦建築等級欄（1 到 21）。"
         f"表沒有把這個欄位直接寫成哪一座建築的等級；物品說明提到{H(o.hall_name, terms)}"
-        "（<code>citybuilding_name_145</code>），本頁不自行斷定欄位就等於建築 145。"
+        "，本頁不自行斷定該欄就等於建築 145。"
     ))
     add(p_html(
-        "<code>player_talent_detail</code> 293 筆、47 條樹。所有節點的 <code>des</code>、<code>time</code>、<code>quality</code> 皆為空或 -1。"
+        "領主天賦明細 293 筆、47 條樹。所有節點的說明、時間、品質欄皆為空或 -1。"
         f"樹 id 以 600 開頭的是{H(o.war_name, terms)}（22 條），700 開頭的是{H(o.abundance_name, terms)}（20 條）；"
-        "另有 710 開頭五條沒有前置。下面各樹列出 1 級→滿級；屬性皆 <code>type=2</code>、<code>show_type=2</code>，除非另註。"
+        "另有 710 開頭五條沒有前置。下面各樹列出 1 級→滿級；屬性皆 百分比類（本頁不自行換成百分比），除非另註。"
         "有官方節點名稱字串的（僅少數）一併註明。"
     ))
 
@@ -1656,7 +1680,7 @@ def render_html(data: TablesData) -> str:
     add(f"      <h3>{e(o.war_name)}</h3>")
     add(tbl["war"])
     add(p_html(
-        f"字串表另有 <code>player_talent_name_1016</code>「{H(o.train_accel_name, terms)}」，"
+        f"字串表另有「{H(o.train_accel_name, terms)}」，"
         "對應屬性名稱鍵 1016（士兵訓練速度）。戰爭樹沒有寫入 1016，本頁不把這條名稱掛到任何節點。"
     ))
     add("    </section>")
@@ -1666,18 +1690,18 @@ def render_html(data: TablesData) -> str:
     add(tbl["abundance"])
     add(p_html(
         f"地圖建築的官方說明文寫「{H(o.abundance_name, terms)}建造」的特殊建築或自動採集設施"
-        "（<code>mapBuilding_tips_01</code>／<code>02</code>／<code>03</code>）。"
-        f"<code>mapBuilding_tips_01</code> 稱強化塔為「{H(o.light_tower, terms)}」，與建築名稱一致；"
-        f"<code>mapBuilding_tips_02</code> 稱削弱塔為「{H('黑暗之塔', terms)}」，"
+        "。"
+        f"其中一則稱強化塔為「{H(o.light_tower, terms)}」，與建築名稱一致；"
+        f"另一則稱削弱塔為「{H('黑暗之塔', terms)}」，"
         f"與建築表名稱「{H(o.dark_tower, terms)}」用字不同，本頁兩種寫法都照錄，不自行統一。"
         "說明文還寫：同一範圍內多座光明之塔只生效最高等級、效果不可疊加；黑暗之塔同樣按非所在公會的最高等級計算。"
         "本頁不展開建築戰鬥效果與耐久規則。官方說明全文如下。"
     ))
-    add("<h4>mapBuilding_tips_01</h4>")
+    add("<h4>強化塔說明</h4>")
     add(f"<blockquote>{official_term_html(o.tips_light)}</blockquote>")
-    add("<h4>mapBuilding_tips_02</h4>")
+    add("<h4>削弱塔說明</h4>")
     add(f"<blockquote>{official_term_html(o.tips_dark)}</blockquote>")
-    add("<h4>mapBuilding_tips_03</h4>")
+    add("<h4>自動採集設施說明</h4>")
     add(f"<blockquote>{official_term_html(o.tips_facility)}</blockquote>")
     add(p_html(
         "1040「英雄攻擊轉化率」如何進入士兵或戰鬥公式，表沒有寫。本頁只記錄它被豐饒樹寫入。"
@@ -1687,7 +1711,7 @@ def render_html(data: TablesData) -> str:
     add('    <section id="series-710">')
     add("      <h3>710 系列（沒有前置）</h3>")
     add(p_html(
-        "以下五條樹的 <code>lvup_pre_id</code> 皆空，<code>talent_building_lv</code> 皆為 21，"
+        "以下五條樹沒有前置，天賦建築等級欄皆為 21，"
         "與 700 部分節點（醫院、治療、三種採集）並列。表沒有標哪套現役。"
     ))
     add(tbl["series710"])
@@ -1699,9 +1723,7 @@ def render_html(data: TablesData) -> str:
     add("<ul>")
     add(
         f"<li>領主職業（{H(o.knight_lord, terms)}、{H(o.farm_lord, terms)}、{H(o.scholar, terms)}）及其進階樹、職業技能與紋章"
-        "（<code>professional.json</code>、<code>professional_advanced_tree.json</code>、"
-        "<code>professional_advanced_detail.json</code>、<code>professional_plugin.json</code> 等）。"
-        "這是與領主天賦分開的來源分類（<code>attr_category</code> 41–43），表沒有寫兩者如何疊加。</li>"
+        "。這是與領主天賦分開的來源分類（分類 41–43），表沒有寫兩者如何疊加。檔名見資料說明。</li>"
     )
     add("<li>未被新舊英雄天賦定義表引用的 81 個群組。</li>")
     add(
@@ -1717,6 +1739,14 @@ def render_html(data: TablesData) -> str:
     add("      <h2>資料說明</h2>")
     add("<ul>")
     add("<li>以下是整理用註記，查天賦名稱與效果可略過。</li>")
+    add(
+        "<li>可見正文把檔名與欄位名收到這裡。"
+        "屬性 <code>type=2</code>／<code>show_type=2</code> 在可見正文寫成「百分比類，本頁不自行換成百分比」；"
+        "<code>type=1</code>／<code>show_type=1</code> 寫成「點數」。沒有把百分比類原值自行換成百分比，已鎖定的面板顯示除外。"
+        "志向官方名稱鍵是 <code>professional_name01</code>／<code>professional_name02</code>（戰爭領主、豐饒領主），說明鍵 <code>professional_des01</code>／<code>professional_des02</code>。"
+        "英雄天賦官方說明鍵 <code>hero_talent_dec</code>；交換／解鎖提示鍵見 <code>hero_talent_quality_not_swap</code>、<code>hero_talent_swap_*</code>、<code>hero_talent_tips_3</code>。"
+        "解鎖消耗原值 <code>999|2|數量</code>。地圖建築表原名 <code>map_building.json</code>。</li>"
+    )
     add(
         "<li>正文所據：遊戲資料表與已確認的前服面板。英雄天賦同時登錄 <code>hero_talent.json</code>（208 筆）與 <code>hero_talent_new.json</code>（228 筆）。"
         "新表是後來的定義，但 2026-11-16 至 2026-11-21 已確認的前服面板，槽名與數值都對得上舊表，對不上新表"
@@ -1766,7 +1796,9 @@ def render_html(data: TablesData) -> str:
         "藥劑師槽 2 的面板原文（未入鏡）；"
         "<code>hero_talent_swap</code> 的品質 3–6 與 <code>talent_quality</code> 1–3 如何對應；"
         "屬性 1212、1085、1079 的名稱；710 系列與 700 對應節點哪套現役；"
-        "<code>talent_building_lv</code> 對應哪一座建築；領主天賦與職業加成是否同時生效。</li>"
+        "<code>talent_building_lv</code> 對應哪一座建築；領主天賦與職業加成是否同時生效。"
+        "可見表頭「天賦建築等級」原名 <code>talent_building_lv</code>。"
+        "地圖建築官方說明全文對應 <code>mapBuilding_tips_01</code>／<code>_02</code>／<code>_03</code>。</li>"
     )
     add("</ul>")
     add("    </section>")
@@ -1900,7 +1932,7 @@ def render_markdown(data: TablesData) -> str:
         "本頁不把職業寫進領主天賦正文，見文末「本頁未列入」。檔名與分類編號見資料說明。"
     )
     add("")
-    add("- **正文只根據遊戲資料表與面板看得到的內容。** 不把玩家討論寫進正文。不評定天賦強弱，也不做搭配模擬。兩套英雄天賦定義不要混用，本頁不以後來的那一套當成現用全表。對照與換算規則見「舊表與面板對照」與資料說明。")
+    add("- **正文只根據遊戲資料表與面板看得到的內容。** 不評定天賦強弱，也不做搭配模擬。兩套英雄天賦定義不要混用，本頁不以後來的那一套當成現用全表。對照與換算規則見「舊表與面板對照」與資料說明。")
     add("- 公開名冊裡只有牧羊人標未開放；老闆娘不標未開放。不要從解鎖時間或賽季欄自動標未開放。15032、15033、15039 三筆沒有官方中文名，本頁不編造。")
     add("- 本頁不把未被引用的 81 個天賦群組當成現役英雄天賦。檔名、欄位與換算細節見資料說明。")
     add("")

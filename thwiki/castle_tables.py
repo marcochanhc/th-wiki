@@ -1369,14 +1369,19 @@ def _standard_group_prose(g: SkinGroup, html: bool, attrs: dict[int, AttrInfo], 
         f"{_cost_sentence(rows)}"
     )
     extra = GROUP_EXTRA.get(g.group, "")
+    level_note = (
+        "本節只抄表上等級與擁有／使用屬性，不是已用面板核過 0 星或滿星。"
+        if html else
+        "本節只抄表上 level 與擁有／使用屬性，不是已用面板核過 0 星或滿星。"
+    )
     if g.group not in (301, 302, 317, 318, 311, 327, 0, 1, 171, 312) and g.group in CURVE_16_ORDER and not extra:
-        text += "本節只抄表上 level 與擁有／使用屬性，不是已用面板核過 0 星或滿星。"
+        text += level_note
     elif extra and g.group in CURVE_16_ORDER and g.group not in (211, 212, 231, 312, 131):
-        text += extra + "本節只抄表上 level 與擁有／使用屬性，不是已用面板核過 0 星或滿星。"
+        text += extra + level_note
     elif extra:
         text += extra
     elif g.group in CURVE_16_ORDER:
-        text += "本節只抄表上 level 與擁有／使用屬性，不是已用面板核過 0 星或滿星。"
+        text += level_note
     return text
 
 
@@ -1625,7 +1630,7 @@ def render_html(data: TablesData) -> str:
         "<strong>共鳴。</strong>"
         f"官方說明為「{official_term_html(official_text('eternity_gm11'))}」，沒有寫死是哪兩座。"
         "須同時擁有創世紀與永恆紀才會啟動。"
-        "不能把共鳴表上的等級讀成面板星數；0 星＝level 1、滿 1 星＝level 6 只鎖定在蛋糕城、飛翔號，"
+        "不能把共鳴表上的等級讀成面板星數；0 星＝表上等級 1、滿 1 星＝表上等級 6 只鎖定在蛋糕城、飛翔號，"
         "不能套到創世紀或永恆紀，也不要把永恆紀目前的 0 星當成已核對的表上等級 1。"
         "已見到共鳴等級 1、2、3 的條件與額外擁有／額外使用（等級 3 另有領域範圍），詳見「共鳴」。"
         "不要把這三檔逕指為創世紀或永恆紀的基礎擁有／使用屬性或滿星屬性。"
@@ -1727,7 +1732,7 @@ def render_html(data: TablesData) -> str:
         f"本節抄錄全部 {data.table_meta['skin_groups']} 組城堡造型的擁有／使用曲線。"
         "表上沒有 0 這一行。預設「城堡」有五檔，賢者之城有三檔，創世紀與永恆紀有十一檔，"
         "另有一批只有一檔、一批有六檔；檔數是表上列數，不是面板星數，不要把「只有一檔」當成 0 星。"
-        "<strong>不能把表的 level 當成面板星數。</strong>"
+        "<strong>不能把表上等級當成面板星數。</strong>"
         "也不能把創世紀或永恆紀的表上等級 1／6／11 寫成面板幾星。"
         "表上也沒有標成「0 星／1 星」的欄。"
         "蛋糕城、飛翔號仍為已鎖定的表上等級 1–6 與 0 星／滿 1 星對應；"
@@ -1743,7 +1748,7 @@ def render_html(data: TablesData) -> str:
         add(f'    <section id="{hid}">')
         add(f"      <h3>{H(g.name, terms)}</h3>")
         add(p_html(
-            f"六列，level 1–6；id 依序為 {_ids_list(g.rows, html=True)}。"
+            f"六列，表上等級 1–6；編號依序為 {_ids_list(g.rows, html=True)}。"
             f"{'使用屬性六階完全相同' + ('，與蛋糕城的使用屬性相同' if gid==302 else '') + '；擁有屬性隨表上等級遞增。' if True else ''}"
             f"{_cost_sentence(g.rows)}"
             f"{_quality_sentence(g.rows)}"
@@ -1812,8 +1817,8 @@ def render_html(data: TablesData) -> str:
 
     add(p_html(
         "以下為其餘 64 組的主表擁有／使用曲線。一律只抄表上等級與擁有／使用屬性，"
-        "<strong>不能把表的 level 當成面板星數</strong>。"
-        "0 星＝level 1 只鎖定蛋糕城、飛翔號、美味史萊姆、夢幻摩天輪，不是 68 組通例。"
+        "<strong>不能把表上等級當成面板星數</strong>。"
+        "0 星＝表上等級 1 只鎖定蛋糕城、飛翔號、美味史萊姆、夢幻摩天輪，不是 68 組通例。"
         "已有介面實例的組（熾火要塞、山岳之傲、創世紀、永恆紀、天空之城、水晶聖城）面板數字仍以「介面實例」為準，"
         "此處不把某一列寫成已用面板核過的 0 星或滿星。"
         "創世紀目前最高 2 星、永恆紀目前最高 0 星仍保留，不把他們的表上等級 1／6／11 寫成面板幾星。"
@@ -1864,11 +1869,11 @@ def render_html(data: TablesData) -> str:
 
     add_simple_group(
         171, "g-171", "h3",
-        "三列，level 1–3；id 依序為 171、172、173。"
+        "三列，表上等級 1–3；編號依序為 171、172、173。"
         + _quality_sentence(data.groups[171].rows)
         + _cost_sentence(data.groups[171].rows)
-        + "<code>hide</code> 在 level 1–3 為 1。三列擁有屬性完全相同，使用屬性皆空。"
-        "本節只抄表上 level 與擁有／使用屬性，不是已用面板核過 0 星或滿星。",
+        + "隱藏欄在表上等級 1–3 為 1。三列擁有屬性完全相同，使用屬性皆空。"
+        "本節只抄表上等級與擁有／使用屬性，不是已用面板核過 0 星或滿星。",
     )
     add_simple_group(
         311, "g-311", "h3",
@@ -2046,24 +2051,23 @@ def render_html(data: TablesData) -> str:
                 continue
             stage = "基礎"
             if "star5" in r.desc_key:
-                stage = "鍵名 star5"
+                stage = "1 顆可見星"
             elif "star10" in r.desc_key:
-                stage = "鍵名 star10"
+                stage = "2 顆可見星（滿星）"
             elif "lv2" in r.desc_key:
                 stage = "強化"
             b_rows.append([H(label, terms), stage, official_term_html(r.desc), str(r.reset_times)])
     add(_tbl(["造型", "階段", "效果（官方說明，已去色碼）", "每日"], b_rows, "cards", card_title="造型"))
     add(p_html(
-        "夢幻摩天輪當時開到的技能畫面與升級檔 <code>world_skin_skill_318_lv2</code> 完全一致："
+        "夢幻摩天輪當時開到的技能畫面與升級檔完全一致："
         "減傷 +15%、士兵生命 +120%，持續 20 分鐘，每日 3 次。這是面板與強化檔對上，不是另推的換算。"
     ))
     add(p_html(
-        "創世紀三筆技能的 <code>skill_level</code> 皆為 0，表內沒有星級數字欄；說明鍵分別為 "
-        "<code>world_skin_skill_311</code>、<code>world_skin_skill_311_star5</code>、<code>world_skin_skill_311_star10</code>，"
-        "與道具 305「可用於城堡造型創世紀、天空之城的升星」相符。"
-        "<strong>不要把鍵名 star5／star10 讀成滿星至少 5 星或 10 星。</strong>"
-        "內部 star5＝畫面 1 顆星、star10＝2 顆星；創世紀滿星為 2 顆金星，與這檔對得上。"
-        "這三筆依鍵名對應基礎、1 顆可見星、2 顆可見星（滿星），不是從升星上限欄讀出的。"
+        "創世紀三筆技能的技能等級皆為 0，表內沒有星級數字欄。"
+        "這三筆對應基礎、1 顆可見星、2 顆可見星（滿星），與道具 305「可用於城堡造型創世紀、天空之城的升星」相符。"
+        "<strong>不要把檔名裡的 5／10 讀成滿星至少 5 星或 10 星。</strong>"
+        "1 顆可見星、2 顆可見星已與創世紀畫面金星對上；創世紀滿星為 2 顆金星。"
+        "不是從升星上限欄讀出的。"
         "天空之城可升星，本抽取卻沒有技能列；畫面亦無技能按鈕，與表相符。"
     ))
     add("      <h3>生成物與贈禮技能</h3>")
@@ -2079,19 +2083,19 @@ def render_html(data: TablesData) -> str:
         "泡泡霜熊對應 id 3，需造型 322、等級 1。"
     ))
     add(f"      <h4>{H('美味史萊姆', terms)}（317）</h4>")
-    add(p_html("有兩組技能（<code>resetGroup</code> 3171 與 3172）："))
+    add(p_html("有兩組技能（編號 3171 與 3172）："))
     add("<ul>")
-    for rg, kind in ((3171, "贈送，skill_group=-1"), (3172, "自領，skill_group=1000")):
+    for rg, kind in ((3171, "贈送"), (3172, "自領")):
         rows = data.skills_by_reset.get(rg) or []
         add(li_html(f"{rg}（{kind}）："))
         for r in rows:
             add(li_html(
-                f"<code>{e(r.desc_key)}</code>（名稱 {official_term_html(r.name)}，每日 {r.reset_times} 次）："
+                f"名稱 {official_term_html(r.name)}，每日 {r.reset_times} 次："
                 f"{official_term_html(r.desc)}"
             ))
     add("</ul>")
     add(p_html(
-        "技能表的強化列名稱已指向「加倍美味史萊姆」（<code>skin_name_317_lv2</code> 存在；上列名稱欄以技能表 <code>name</code> 鍵為準）。"
+        "技能表的強化列名稱已指向「加倍美味史萊姆」（上列名稱欄以技能表名稱鍵為準；鍵名見資料說明）。"
         "升級用城堡設計圖（290），主表等級 2–6 消耗亦為 290×20，但 290／314 說明名單尚未列這座。"
     ))
     add(p_html(
@@ -2201,12 +2205,12 @@ def render_html(data: TablesData) -> str:
                 + note
             )
         if sid == 1007:
-            note = "；光環 5005 官方名為鳳焰裂地，此為 type 4 列的官方名，不是面板另鎖定" + note
+            note = "；光環 5005 官方名為鳳焰裂地，此為光環列的官方名，不是面板另鎖定" + note
         if sid == 1008:
             note = "；光環 5007 官方名為馴龍高手。名稱是「馴龍高手、鳳焰裂地」" + note
         suit_rows_html.append([
             official_term_html(sname),
-            str(s.get("quality")),
+            f" {s.get('quality')} ",
             H(castle_txt, terms),
             H("、".join(others) if others else EMPTY, terms) + note,
             "；".join(attr_bits),
@@ -2311,7 +2315,7 @@ def render_html(data: TablesData) -> str:
         "<strong>共鳴額外屬性（三檔皆已核到）。</strong>"
         "三檔的條件與數值仍依面板抄錄，並與上述字串對照，不以表列改寫已核對的面板數值。"
         "不要把這三檔逕指為創世紀或永恆紀的基礎擁有／使用屬性或滿星屬性。"
-        "面板條件寫的是「兩個城堡等級達到：」與金星顆數，那是第四版已核到的畫面，不是把表的 <code>level</code> 1／6／11 自行換算成星數。"
+        "面板條件寫的是「兩個城堡等級達到：」與金星顆數，那是第四版已核到的畫面，不是把表上等級 1／6／11 自行換算成星數。"
     ))
     add(p_html(
         "目前只開到共鳴等級 1（已擁有創世紀與永恆紀）。"
@@ -2319,9 +2323,9 @@ def render_html(data: TablesData) -> str:
         "因此等級 2（兩個城堡都要達到 1 星）與等級 3（都要達到 2 星）目前開不到。不要推斷永恆紀以後會不會開放升星。"
     ))
     res_panel = [
-        ["1", "「啟動兩個城堡造型」", "逆克制增傷 +1%、出征上限 +10", "所有士兵攻擊 +5%", EMPTY, "與 jbms_csj1 完全一致"],
-        ["2", "「兩個城堡等級達到：」1 顆金星（畫面為 1 金星＋1 灰星空位，讀成要 1 星，不要讀成 2 星）", "逆克制增傷 +1.5%、出征上限 +15", "所有士兵攻擊 +8%", EMPTY, "與 jbms_csj2 完全一致"],
-        ["3", "「兩個城堡等級達到：」2 顆金星", "逆克制增傷 +2.5%、出征上限 +25", "所有士兵攻擊 +10%", "面板正文：「永恆紀、創世紀領域範圍從11*11擴大至13*13（星紀元領域同時提升）」。jbms_csj3 同段未寫「永恆紀、創世紀」，以面板為準。「星紀元」照官方／面板原文，不自行解釋或推斷它是哪個造型。", "數值與領域幅度與 jbms_csj3 一致"],
+        ["1", "「啟動兩個城堡造型」", "逆克制增傷 +1%、出征上限 +10", "所有士兵攻擊 +5%", EMPTY, "與共鳴第 1 檔完全一致"],
+        ["2", "「兩個城堡等級達到：」1 顆金星（畫面為 1 金星＋1 灰星空位，讀成要 1 星，不要讀成 2 星）", "逆克制增傷 +1.5%、出征上限 +15", "所有士兵攻擊 +8%", EMPTY, "與共鳴第 2 檔完全一致"],
+        ["3", "「兩個城堡等級達到：」2 顆金星", "逆克制增傷 +2.5%、出征上限 +25", "所有士兵攻擊 +10%", "面板正文：「永恆紀、創世紀領域範圍從11*11擴大至13*13（星紀元領域同時提升）」。對照檔第 3 檔同段未寫「永恆紀、創世紀」，以面板為準。「星紀元」照官方／面板原文，不自行解釋或推斷它是哪個造型。", "數值與領域幅度與第 3 檔一致"],
     ]
     add(_tbl(["共鳴等級", "面板條件", "額外擁有", "額外使用", "領域範圍", "對照字串"], [[H(c, terms) for c in row] for row in res_panel], "cards", card_title="共鳴等級"))
     add(p_html(
@@ -2379,8 +2383,8 @@ def render_html(data: TablesData) -> str:
     t2 = data.effects_by_type.get(2) or []
     ids2 = sorted({ev.sid for ev in t2})
     add(p_html(
-        f"{len(t2)} 列、{len({ev.group for ev in t2})} 組（{ids2[0]}–{ids2[-1]} 之間缺表組 3009），皆 <code>level=1</code>。"
-        "官方 desc 寫「使用後可獲得城堡護盾造型」。文案已寫成百分比處，照錄，不把它反推成表內原值。"
+        f"{len(t2)} 列、{len({ev.group for ev in t2})} 組（{ids2[0]}–{ids2[-1]} 之間缺表組 3009），皆為等級 1。"
+        "官方說明寫「使用後可獲得城堡護盾造型」。文案已寫成百分比處，照錄，不把它反推成表內原值。"
     ))
     add(p_html(
         "<strong>護盾編號與名稱在果香帷幕之後錯開一號。</strong>"
@@ -2407,13 +2411,13 @@ def render_html(data: TablesData) -> str:
             f"範圍欄 {ev3013.raw.get('allianceShieldRange')}，"
             f"時間欄 {ev3013.raw.get('allianceShieldTime')}，"
             f"每日次數欄 {ev3013.raw.get('allianceShieldDailyMaxTimes')}。"
-            "官方 extra 寫「為 3 格範圍內盟友開啟護盾 1 小時，每日次數 {0}/{1} 次」。"
-            "官方「3 格」與表上 range=4 並列，不在這裡折成同一單位，仍需面板。"
+            "官方額外說明寫「為 3 格範圍內盟友開啟護盾 1 小時，每日次數 {0}/{1} 次」。"
+            "官方「3 格」與表上範圍欄為 4 並列，不在這裡折成同一單位，仍需面板。"
         ))
     add(p_html(
         "同系列另有名稱「抵禦斗篷」。"
-        "本表 type 2 沒有 id 7402 這一列，只是同系列字串，效果文案與一般護盾造型不同。"
-        "3015 官方 extra 用字為「部落士兵」（照錄官方字串，不改成部族）。"
+        "本表護盾沒有編號 7402 這一列，只是同系列字串，效果文案與一般護盾造型不同。"
+        "3015 官方額外說明用字為「部落士兵」（照錄官方字串，不改成部族）。"
     ))
     add("    </section>")
 
@@ -2422,9 +2426,9 @@ def render_html(data: TablesData) -> str:
     add("      <h2>遷城特效</h2>")
     t3 = data.effects_by_type.get(3) or []
     add(p_html(
-        f"{len(t3)} 列、{len({ev.group for ev in t3})} 組，缺表組 4010，皆 <code>level=1</code>。"
-        "官方 desc 寫「使用後可獲得城堡遷城特效」。這 11 列都有屬性，不是純遷城動畫。"
-        "4002 霸主遷城沒有 <code>attr_own</code>，只有 <code>attr_equip</code>。"
+        f"{len(t3)} 列、{len({ev.group for ev in t3})} 組，缺表組 4010，皆為等級 1。"
+        "官方說明寫「使用後可獲得城堡遷城特效」。這 11 列都有屬性，不是純遷城動畫。"
+        "4002 霸主遷城沒有擁有屬性，只有使用屬性。"
         "楓葉隨風的解鎖時間只照錄，檔內無時區。"
     ))
     tp_rows = []
@@ -2434,7 +2438,7 @@ def render_html(data: TablesData) -> str:
             fmt_raw_pairs(ev.own), fmt_raw_pairs(ev.equip),
             e(format_unlock_range(ev.unlocktime)) if not is_empty(ev.unlocktime) else "",
         ])
-    add(_tbl(["id", "名稱", "擁有屬性（原值）", "使用屬性（原值）", "備註"], tp_rows, "cards", card_title="名稱"))
+    add(_tbl(["編號", "名稱", "擁有屬性（原值）", "使用屬性（原值）", "備註"], tp_rows, "cards", card_title="名稱"))
     add("    </section>")
 
     # ----- 光環 -----
@@ -2443,21 +2447,21 @@ def render_html(data: TablesData) -> str:
     t4 = data.effects_by_type.get(4) or []
     add(p_html(
         f"{len(t4)} 列、{len({ev.group for ev in t4})} 組：5001 春光綻放、5002 水晶冠冕、5004 怪奇物語、5005 鳳焰裂地、5007 馴龍高手。"
-        "缺表組 5003、5006。官方 desc 寫「使用後可獲得城堡光環造型」。"
+        "缺表組 5003、5006。官方說明寫「使用後可獲得城堡光環造型」。"
         f"介面另有「{official_term_html(o.halo_own)}」「{official_term_html(o.halo_use)}」標籤。"
     ))
     add(p_html(
         "光環名稱是「馴龍高手、鳳焰裂地」。"
-        "字串 36007 是馴龍高手、36005 是鳳焰裂地；依套裝歸屬，5007 對馴龍高手、5005 對鳳焰裂地，與本表 type 4 的 <code>name</code>／<code>desc</code> 欄一致。"
+        "字串 36007 是馴龍高手、36005 是鳳焰裂地；依套裝歸屬，5007 對馴龍高手、5005 對鳳焰裂地，與本表光環列的名稱／說明欄一致。"
     ))
     add(p_html(
-        "春光綻放（組 5001）與怪奇物語光環（組 5004）各有三列，表 <code>level</code> 為 1、6、11，"
-        "官方名為 Lv.1／Lv.2／Lv.3（春光綻放第一列官方名沒有「Lv.1」前綴），<code>level_up_step=5</code>。"
+        "春光綻放（組 5001）與怪奇物語光環（組 5004）各有三列，表上等級為 1、6、11，"
+        "官方名為 Lv.1／Lv.2／Lv.3（春光綻放第一列官方名沒有「Lv.1」前綴），升級步進為 5。"
         "<strong>這是光環自己的升級列，不是城堡星級</strong>，也還沒用面板核對 Lv 與升級材料在畫面上怎麼顯示。"
         "不要發明光環等級的顯示規則。"
-        "水晶冠冕（5002）官方 desc 寫「VIP20級獲得」，但本列 <code>unlockvip=-1</code>。不要把它和主表 312 水晶聖城混為一談。"
-        "5005 鳳焰裂地本列掛的 desc 是 <code>world_effect_desc_36005_1</code>（沒有公會疊加句）；"
-        "另有一條未掛在本列的 <code>world_effect_desc_36005</code> 帶公會疊加句。以哪一條為準，表不能決定，二者一併記錄。"
+        "水晶冠冕（5002）官方說明寫「VIP20級獲得」，但本列解鎖 VIP 欄為 -1。不要把它和主表 312 水晶聖城混為一談。"
+        "5005 鳳焰裂地本列掛的說明沒有公會疊加句；"
+        "另有一條未掛在本列的說明帶公會疊加句。以哪一條為準，表不能決定，二者一併記錄。鍵名見資料說明。"
         "馴龍高手只有表上等級 1 一列，卻有升級步進 5；是否預留未列入的升級列，表沒有寫，不推測。"
         "字串另有閃電衝擊，以及一個缺號；本表光環沒有對應列，只記錄字串，不為缺號補表列。"
     ))
@@ -2510,12 +2514,12 @@ def render_html(data: TablesData) -> str:
     add('    <section id="wings">')
     add("      <h2>城堡翅膀</h2>")
     add(p_html(
-        f"{data.table_meta['wing_rows']} 列，皆 <code>level=1</code>。"
+        f"{data.table_meta['wing_rows']} 列，皆為等級 1。"
         "官方說明都沒有寫重複獲得轉鑽石。字串寫稀有翅膀可給全公會加屬性。"
-        "<strong>表內沒有指向某一 <code>world_skin</code> 組的外鍵。</strong>"
-        "兩列的 3D 材質路徑都寫 <code>M_yunzhicheng3D_*</code>；這只是資源路徑，不能拿來掛到某一座城堡。"
-        f"套裝介面字串 <code>world_skin_wing_suit</code>＝「{official_term_html(o.wing_suit)}」，"
-        "與這兩列翅膀的 <code>attr_own</code>／<code>attr_equip</code>／<code>property_alliance</code> 對不上（兩列都沒有 3029／4031／5027）。"
+        "<strong>表內沒有指向某一城堡造型組的外鍵。</strong>"
+        "兩列的 3D 材質路徑前綴相同；這只是資源路徑，不能拿來掛到某一座城堡。路徑原文見資料說明。"
+        f"套裝介面字串為「{official_term_html(o.wing_suit)}」，"
+        "與這兩列翅膀的擁有／使用／公會屬性對不上（兩列都沒有 3029／4031／5027）。"
         "羽翼典藏套裝獎勵仍是這三條逆克制屬性，不要和翅膀列本身的屬性混為一談。"
         "消耗欄寫成 1、沒有對應道具的含義，表沒有再說明；實際操作仍需面板。"
     ))
@@ -2530,7 +2534,7 @@ def render_html(data: TablesData) -> str:
             fmt_raw_pairs(parse_pairs(r.get("property_alliance"))) + f"（上限 {r.get('property_alliance_max_num')}）",
         ])
     add(_tbl(["編號", "官方名", "來源道具（編號）", "擁有屬性（原值）", "使用屬性（原值）", "公會屬性"], w_rows, "cards", card_title="官方名"))
-    add(p_html("套裝「羽翼典藏」要求翅膀 1｜2。id 2 的說明鍵是 <code>world_skin_wing_desc2</code>（鍵名少一條底線）。"))
+    add(p_html("套裝「羽翼典藏」要求翅膀 1｜2。2 號翅膀的說明鍵名少一條底線，見資料說明。"))
     add("    </section>")
 
     # ----- 相鄰 -----
@@ -2573,7 +2577,7 @@ def render_html(data: TablesData) -> str:
     add("      <h2>介面實例</h2>")
     add(p_html(
         "本節數值從遊戲「城堡造型」頁抄錄，是面板紀錄，"
-        "不在此把六座畫面全部改寫成表列，也不把表的 level 當成面板星數。"
+        "不在此把六座畫面全部改寫成表列，也不把表上等級當成面板星數。"
         "蛋糕城、飛翔號、美味史萊姆、夢幻摩天輪的表列與 0 星／滿 1 星對應，見「城堡造型主表」。"
         "其他城堡不要自行把表上等級當成面板星數。"
         "面板已顯示的百分比或點數，照畫面記錄，不把畫面數字反推成表內原值。"
@@ -2650,7 +2654,7 @@ def render_html(data: TablesData) -> str:
         "不要推斷以後會不會開放升星。因此共鳴等級 2（兩城都要 1 星）與等級 3（都要 2 星）目前開不到。"
         "同樣因版面太窄分拍兩張，合在一起才是完整屬性。共鳴等級 1 與創世紀相同（目前只開到這一檔）。"
         "本節仍按當時面板抄錄，不在此對主表改寫。"
-        "面板 0 星＝表的 level 1 是蛋糕城、飛翔號的對應，不是這座已用面板對過主表。"
+        "面板 0 星＝表上等級 1 是蛋糕城、飛翔號的對應，不是這座已用面板對過主表。"
     ))
     add(_tbl(
         ["欄位", "屬性（介面原文）", "備註"],
@@ -2718,7 +2722,7 @@ def render_html(data: TablesData) -> str:
     add("<ul>")
     add(li_html(
         "本頁已把 68 組的擁有／使用曲線寫入「城堡造型主表」（只有一列的也寫那一列）。"
-        "不能把表的 level 當成面板星數。0 星＝level 1 只鎖定四座，不是 68 組通例。"
+        "不能把表上等級當成面板星數。0 星＝表上等級 1 只鎖定四座，不是 68 組通例。"
         "已見面板的六座仍寫在「介面實例」。共鳴三檔已在面板驗證，見「共鳴」；仍不是創世紀或永恆紀的基礎擁有／使用屬性或滿星屬性。"
     ))
     add(li_html(
@@ -2740,6 +2744,18 @@ def render_html(data: TablesData) -> str:
     add('    <section id="notes">')
     add("      <h2>資料說明</h2>")
     add("<p>以下是整理用註記，查星數與屬性可略過。</p>")
+    add("<p>可見正文把研究鍵名收到這裡。"
+        "創世紀技能說明鍵是 <code>world_skin_skill_311</code>／<code>world_skin_skill_311_star5</code>／<code>world_skin_skill_311_star10</code>；"
+        "內部 <code>star5</code>＝畫面 1 顆可見星、<code>star10</code>＝2 顆可見星（滿星）。"
+        "夢幻摩天輪升級檔鍵是 <code>world_skin_skill_318_lv2</code>。"
+        "美味史萊姆兩組技能原欄 <code>resetGroup</code> 3171／3172，<code>skill_group</code> 為 -1（贈送）與 1000（自領）；強化列名稱鍵 <code>skin_name_317_lv2</code>。"
+        "共鳴對照檔鍵是 <code>jbms_csj1</code>／<code>jbms_csj2</code>／<code>jbms_csj3</code>。"
+        "擁有／使用屬性原名 <code>attr_own</code>／<code>attr_equip</code>，公會屬性 <code>property_alliance</code>。"
+        "遷城／翅膀「皆為等級 1」原欄 <code>level=1</code>。"
+        "光環升級步進原名 <code>level_up_step</code>，解鎖 VIP 欄原名 <code>unlockvip</code>。"
+        "鳳焰裂地說明鍵 <code>world_effect_desc_36005_1</code>／<code>world_effect_desc_36005</code>。"
+        "翅膀套裝介面鍵 <code>world_skin_wing_suit</code>；2 號說明鍵 <code>world_skin_wing_desc2</code>（少一條底線）。"
+        "翅膀 3D 材質路徑寫 <code>M_yunzhicheng3D_*</code>。護盾「皆為等級 1」原欄 <code>level=1</code>；官方額外說明原欄 <code>extra</code>；範圍欄原名 <code>range</code>。賢者之城隱藏欄原名 <code>hide</code>。</p>")
     add(p_html(
         "本輪可見正文移入：預設城堡的 sex／hide 欄（兩組五列、表上等級 1–5；其中一組為目錄預設，另一組名稱相同；"
         "level 1 的 hide 為 -1，level 2–5 為 1；兩組 sex 分別為 1 與 2）只抄表，不把這些欄寫成面板性別或顯示名稱。"

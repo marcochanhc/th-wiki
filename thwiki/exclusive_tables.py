@@ -312,14 +312,14 @@ def load_tables_data() -> TablesData:
                 # 升級消耗寫 11036，名稱與說明字串在 11029。
                 intro = intro or t("goods_desc_11029")
                 note = (
-                    "升級消耗欄的道具是 11036，字串表沒有 goods_name_11036／goods_desc_11036；"
-                    "官方名稱與說明寫在 goods_name_11029「諾亞金鈴碎片」、goods_desc_11029。"
-                    "本列介紹錄 11029 原文。專武依 use_hero 屬於森之少女（10036），不是牧羊人。"
+                    "升級消耗欄的道具是 11036，字串表沒有這件的名稱與說明；"
+                    "官方名稱與說明寫在 11029「諾亞金鈴碎片」及其說明。"
+                    "本列介紹錄 11029 原文。專武依所屬英雄屬於森之少女（10036），不是牧羊人。"
                 )
             elif hid == 15032:
                 note = (
-                    "碎片說明原文寫「解鎖老闆娘全新專屬裝備」。定義表 use_hero 是 15032，"
-                    "本列按 use_hero 歸在 15032，不與老闆娘合成同一人。"
+                    "碎片說明原文寫「解鎖老闆娘全新專屬裝備」。定義表所屬英雄是 15032，"
+                    "本列按所屬英雄歸在 15032，不與老闆娘合成同一人。"
                 )
             ff = tuple(component(ex["comp_id"]).get("fightforces") or component(ex["comp_id"]).get("fightforce") or [])
             label = roster_display_name(hid, name)
@@ -629,7 +629,7 @@ def render_html(data: TablesData) -> str:
         <li>資料出自遊戲資料表與官方字串，資料截至 {DATA_CUTOFF}（香港時間）。</li>
         <li>名稱、技能、光環與介面標籤都照官方字串。吟遊詩人專屬技能官方寫法是「{H('愛情蛊惑', terms)}」（蛊，不是蠱）；後續升級原文若寫「蠱」，仍照錄。發明家專武是「{H('思維火花', terms)}」，專屬技能是「{H('共鳴', terms)}」。</li>
         <li>屬性名稱依字串鍵寫成{H(a3, terms)}、{H(a4, terms)}、{H(a103, terms)}、{H(a104, terms)}。只錄原值，不把{H(a103, terms)}、{H(a104, terms)}自行 ÷100 寫成百分比；這條只用於專武屬性，不改變已鎖定的英雄天賦、造型顯示規則。{H('牧羊人', terms)}（10029）沒有專武列；{H('諾亞金鈴', terms)}依對應英雄屬於{H('森之少女', terms)}（10036）；{H('英雄絮語', terms)}屬於 15032。</li>
-        <li>不把突破季節、伺服器名單或介面字串「{e(t('exclusive_break_01'))}」自行標成未開放。本頁沒有社群備註，也沒有把猜測寫進正文。</li>
+        <li>不把突破季節、伺服器名單或介面字串「{e(t('exclusive_break_01'))}」自行標成未開放。本頁沒有社群備註，也沒有把猜測寫進正文。可見正文「所屬英雄」原欄名 <code>use_hero</code>。諾亞金鈴碎片官方名稱與說明鍵是 <code>goods_name_11029</code>／<code>goods_desc_11029</code>；升級消耗道具 11036 在字串表沒有 <code>goods_name_11036</code>／<code>goods_desc_11036</code>。</li>
       </ul>
     </section>
     """

@@ -908,7 +908,7 @@ def _alabel(data: TablesData, attr_id: int, terms: list[str] | None = None) -> s
 
 def _build_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     prefix_tbl = table(
-        ["level", "quality", "名稱前綴（後接「〔陣營〕戰士」）", "線 A id", "線 B id"],
+        ["等級", "品質", "名稱前綴（後接「〔陣營〕戰士」）", "線 A 編號", "線 B 編號"],
         [[H(c, terms) if j == 2 else c for j, c in enumerate(row)] for row in _prefix_rows()],
         mobile="cards",
         card_title="名稱前綴（後接「〔陣營〕戰士」）",
@@ -917,12 +917,12 @@ def _build_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         ["項目", "線 A（1001–1012 等）", "線 B（1901–1910 等，含神族）"],
         [
             [H("最高等級", terms), "12（天穹）", "10（傳奇）"],
-            ["士氣 morale", "205–800", "全為 0"],
-            ["correlate_building", "125／126／127（" + H("聯盟兵營", terms) + "／" + H("部族兵營", terms) + "／" + H("自然兵營", terms) + "）", "−1"],
-            ["season_get", e("2|999|20|{level}"), "無（None）"],
-            ["attr_3", e("[10057, 0]") + "（" + _alabel(data, 10057, terms) + "，值為 0）", "無"],
-            ["捐贈勳章、王國擊殺積分", "有正值", "donate_medal、擊殺積分皆為 −1"],
-            ["同階戰力 power、負重 load、移動 speed", "與線 B 相同", "與線 A 相同"],
+            ["士氣", "205–800", "全為 0"],
+            ["對應兵營", "125／126／127（" + H("聯盟兵營", terms) + "／" + H("部族兵營", terms) + "／" + H("自然兵營", terms) + "）", "−1"],
+            ["未命名資源欄（只照錄）", e("2|999|20|{等級}"), "無"],
+            ["附加屬性欄", e("[10057, 0]") + "（" + _alabel(data, 10057, terms) + "，值為 0）", "無"],
+            ["捐贈勳章、王國擊殺積分", "有正值", "捐贈勳章、擊殺積分皆為 −1"],
+            ["同階戰力、負重、移動", "與線 B 相同", "與線 A 相同"],
             ["中高階攻擊／生命", "較低（傳奇 40／770，天穹 50／900）", "較高（傳奇 113／1500）"],
         ],
         mobile="cards",
@@ -943,7 +943,7 @@ def _build_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     a_stat_tbl = table(stat_cols, stat_rows(1001, 12), mobile="sticky", card_title="名稱")
     b_stat_tbl = table(stat_cols, stat_rows(1901, 10), mobile="sticky", card_title="名稱")
     a_cost_tbl = table(
-        ["等級", "訓練時間", "木材", "石頭", "治療時間", "治療木材", "治療石頭", "lvup_time", "捐贈勳章"],
+        ["等級", "訓練時間", "木材", "石頭", "治療時間", "治療木材", "治療石頭", "升級時間", "捐贈勳章"],
         [[str(lv)] + [str(x) for x in troop_costs(data.troops[1000 + lv])] for lv in range(1, 13)],
         mobile="sticky", card_title="等級",
     )
@@ -961,8 +961,8 @@ def _build_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             str(a["atk"]), str(a["hp"]), str(a["morale"]), str(a["power"]), str(a["load"]), str(a["building_id"]),
         ])
     shine_tbl = table(
-        ["shine_lv", "聯盟 id", "部族 id", "自然 id", "攻擊", "生命", "士氣", "戰力", "負重", "聯盟 building_id"],
-        shine_rows, mobile="sticky", card_title="shine_lv",
+        ["光輝等級", "聯盟編號", "部族編號", "自然編號", "攻擊", "生命", "士氣", "戰力", "負重", "聯盟建築編號"],
+        shine_rows, mobile="sticky", card_title="光輝等級",
     )
     catalog_rows = []
     for g in list(range(5301, 5303)) + list(range(5401, 5408)) + list(range(5501, 5515)):
@@ -973,7 +973,7 @@ def _build_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             cost = "同左" if s.cost_id == s.name_id else str(s.cost_id)
             catalog_rows.append([str(g), H(s.name, terms), str(s.name_id), cost, str(s.quality), "有", H(s.clause, terms)])
     catalog_tbl = table(
-        ["group", "名稱", "名稱道具 id", "消耗道具 id（若不同）", "升級表品質", "有突破／榮譽", "道具說明（裝載句）"],
+        ["組別", "名稱", "名稱道具編號", "消耗道具編號（若不同）", "升級表品質", "有突破／榮譽", "道具說明（裝載句）"],
         catalog_rows, mobile="cards", card_title="名稱",
     )
 
@@ -991,7 +991,7 @@ def _build_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         ]
 
     upgrade_tbl = table(
-        ["組別", "升級屬性（id）", "1 級原值", "50 級原值", "1 級戰力", "50 級戰力", "1 級 exp", "50 級 exp"],
+        ["組別", "升級屬性（id）", "1 級原值", "50 級原值", "1 級戰力", "50 級戰力", "1 級經驗", "50 級經驗"],
         [
             up_row("5301、5302", 5301), up_row("5401–5407", 5403), up_row("5501–5505", 5501),
             up_row("5506 " + data.skins[5506].name, 5506),
@@ -1013,7 +1013,7 @@ def _build_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             str(i), str(amap[1052]), str(amap[10103]), str(amap[10104]),
             display_num_cell(row.get("display_num")), break_cost_cell(row, show_id=(i == 0)),
         ])
-    br5301_tbl = table(["階", "1052", "10103", "10104", "display_num", "消耗"], br5301_rows, mobile="sticky", card_title="階")
+    br5301_tbl = table(["階", "1052", "10103", "10104", "說明數字", "消耗"], br5301_rows, mobile="sticky", card_title="階")
 
     def faction_rows(group: int, extra: str) -> list[list[str]]:
         out = []
@@ -1042,7 +1042,7 @@ def _build_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         faction_rows(5512, "red"), mobile="sticky", card_title="階",
     )
     honor_attr_tbl = table(
-        ["組", "品質段", "等級", "attr_1", "戰力"],
+        ["組", "品質段", "等級", "屬性原值", "戰力"],
         [
             [H("5301、5302", terms), "3→4", "1–99／100–150", H("10104：2→198／200→300", terms), "100→9900／10000→15000"],
             [H("5403–5407", terms), "4→5", "1–99／100–150", H("10104：5→495／500→750", terms), "200→19800／20000→30000"],
@@ -1064,11 +1064,11 @@ def _build_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         row = next(r for r in data.skin_honors[g] if r["level"] == 100)
         parts = [f"{a}＝{v}" for a, v in (row.get("i_attrList") or [])]
         a2 = row.get("attr_2")
-        extra = f"（另 attr_2 {a2[0]}＝{a2[1]}）" if a2 else ""
+        extra = f"（另第二組屬性 {a2[0]}＝{a2[1]}）" if a2 else ""
         return "，".join(parts) + extra
 
     honor_i_tbl = table(
-        ["組", "升檔後 i_attr（原值）"],
+        ["組", "升檔後附加屬性（原值）"],
         [[H(f"{g} {data.skins[g].name}", terms), H(iattr_text(g), terms)] for g in SKIN_CATALOG],
         mobile="cards", card_title="組",
     )
@@ -1107,74 +1107,74 @@ def _break_prose_html(data: TablesData, terms: list[str]) -> str:
         p_html(
             f"<strong>{H('騎兵', terms)} 5302。</strong>說明：{desc(5302)}。"
             f"屬性 1076 {lab(1076)}、10103、10104。戰力與消耗個數與盾兵相同（消耗 id 2024502）。"
-            f"<code>display_num</code>：10／2／4、20／4／8、30／6／12、40／8／16、50／10／20，第 5、6 階仍為 50／10／20；"
+            f"說明數字：10／2／4、20／4／8、30／6／12、40／8／16、50／10／20，第 5、6 階仍為 50／10／20；"
             f"對應原值 1000／200／400 起，每階加 1000／200／400，第 6 階為 7000／1400／2800。"
         ),
         p_html(
             f"<strong>{H('熊皮勇士', terms)} 5403。</strong>說明：{desc(5403)}。"
             f"屬性 1100003 {lab(1100003)}、10103、10104。戰力 {powers(5403)}。"
             f"原值第 0 階 700／300／600，每階加 700／300／600，第 6 階 4900／2100／4200。"
-            f"<code>display_num</code> 第 0–5 階為 7／3／6 起依此遞增至 42／18／36，第 6 階仍為 42／18／36。"
+            f"說明數字 第 0–5 階為 7／3／6 起依此遞增至 42／18／36，第 6 階仍為 42／18／36。"
             f"消耗 id 2024543，個數 1／1／2／3／3／3／空。"
         ),
         p_html(
             f"<strong>{H('武士', terms)} 5404。</strong>說明：{desc(5404)}。"
-            f"屬性 1000105 {lab(1000105)}、10103、10104。原值、<code>display_num</code>、戰力、消耗個數與熊皮勇士相同（消耗 id 2024544）。"
+            f"屬性 1000105 {lab(1000105)}、10103、10104。原值、說明數字、戰力、消耗個數與熊皮勇士相同（消耗 id 2024544）。"
         ),
         p_html(
             f"<strong>{H('優雅侍者', terms)} 5405。</strong>說明：{desc(5405)}。"
-            f"屬性 1000104（<code>attribute_name_1000104</code> 為「{lab(1000104)}」）、10103、10104。"
+            f"屬性 1000104（官方名稱「{lab(1000104)}」）、10103、10104。"
             f"第 0 階原值 800／300／600，每階加 800／300／600，第 6 階 5600／2100／4200。"
-            f"<code>display_num</code> 第 0–5 階為 8／3／6 至 48／18／36，第 6 階為 42／18／36。"
+            f"說明數字 第 0–5 階為 8／3／6 至 48／18／36，第 6 階為 42／18／36。"
             f"戰力、消耗個數同上（消耗 id 2024545）。"
         ),
         p_html(
             f"<strong>{H('後勤隨從', terms)} 5406。</strong>說明：{desc(5406)}。"
-            f"屬性 1300105 {lab(1300105)}（<code>max=20000</code>、<code>is_max_show=1</code>）、10103、10104，以及再一筆 10104。"
+            f"屬性 1300105 {lab(1300105)}（上限欄 20000，且標了要顯示上限）、10103、10104，以及再一筆 10104。"
             f"第 0 階原值 100／300／600／400，每階加 100／300／600／400，第 6 階 700／2100／4200／2800。"
-            f"<code>display_num</code> 第 0–5 階為 1／3／6／4 至 6／18／36／24，第 6 階仍為 6／18／36／24。"
-            f"戰力、消耗個數同上（消耗 id 2024546）。1300105 的上限如何顯示，除 <code>max</code>／<code>is_max_show</code> 兩欄外，本頁不自行換算。"
+            f"說明數字 第 0–5 階為 1／3／6／4 至 6／18／36／24，第 6 階仍為 6／18／36／24。"
+            f"戰力、消耗個數同上（消耗 id 2024546）。1300105 的上限如何顯示，本頁不自行換算。"
         ),
         p_html(
             f"<strong>{H('鼓號隊', terms)} 5407。</strong>說明：{desc(5407)}。"
             f"屬性 1300106 {lab(1300106)}、10103、10104、10188 {lab(10188)}。"
             f"第 0 階原值 50／300／600／50，每階加 50／300／600／50，第 6 階 350／2100／4200／350。"
-            f"<code>display_num</code> 第 0–5 階為 0.5／3／6／0.5 至 3／18／36／3，第 6 階仍為 3／18／36／3。"
-            f"戰力、消耗個數同上（消耗 id 2024547）。集結士氣 1300106 的 <code>max=5000</code> 且 <code>is_max_show=1</code>，與畫面括號「最大 50%」的對照見後文已鎖定項。"
+            f"說明數字 第 0–5 階為 0.5／3／6／0.5 至 3／18／36／3，第 6 階仍為 3／18／36／3。"
+            f"戰力、消耗個數同上（消耗 id 2024547）。集結士氣 1300106 上限欄是 5000，且標了要顯示上限，與畫面括號「最大 50%」的對照見後文已鎖定項。"
         ),
         p_html(
             f"<strong>{H('榮耀近衛', terms)} 5501。</strong>說明：{desc(5501)}。"
             f"屬性 48 {lab(48)}、10103、10104。戰力 {powers(5501)}。"
             f"第 0 階原值 200／400／800，每階加 200／400／800，第 6 階 1400／2800／5600。"
-            f"<code>display_num</code> 第 0–5 階為 2／4／8 至 12／24／48，第 6 階仍為 12／24／48。"
+            f"說明數字 第 0–5 階為 2／4／8 至 12／24／48，第 6 階仍為 12／24／48。"
             f"消耗 id 2024551，個數 1／1／2／3／3／3／空。這裡的「守城時減傷」對到屬性 48；5512–5514 說明裡同樣寫「守城時減傷」，對到的是 1000119，不是同一條。"
         ),
         p_html(
             f"<strong>{H('重騎兵', terms)} 5502。</strong>說明：{desc(5502)}。"
             f"屬性 45 {lab(45)}、1076、10103、10104。第 0 階原值 160／1000／400／800，第 6 階 1120／7000／2800／5600。"
-            f"<code>display_num</code> 第 0–5 階為 1.6／10／4／8 至 9.6／60／24／48，第 6 階仍為 9.6／60／24／48。"
+            f"說明數字 第 0–5 階為 1.6／10／4／8 至 9.6／60／24／48，第 6 階仍為 9.6／60／24／48。"
             f"戰力、消耗個數與榮耀近衛相同（消耗 id 2024552）。"
         ),
         p_html(
             f"<strong>{H('攻城車', terms)} 5503。</strong>說明：{desc(5503)}。"
             f"屬性 1000106 {lab(1000106)}、1129、1114 {lab(1114)}、10103、10104。"
-            f"1129 的名稱鍵 <code>attribute_name_1129</code> 在字串表中不存在，本頁不編造名稱；它是 <code>type=1</code>、<code>show_type=1</code>。"
+            f"1129 沒有官方屬性名稱字串，本頁不編造名稱。"
             f"第 0 階原值 160／1000／1000／400／800，第 6 階 1120／7000／7000／2800／5600。"
-            f"<code>display_num</code> 第 0 階為 1.6／1000／10／4／8；第 5 階為 9.6／6000／60／24／48，第 6 階仍為 9.6／6000／60／24／48"
+            f"說明數字 第 0 階為 1.6／1000／10／4／8；第 5 階為 9.6／6000／60／24／48，第 6 階仍為 9.6／6000／60／24／48"
             f"（1129 的顯示字是「1000」「2000」這種原值，不是改寫成 10、20）。戰力、消耗個數同上（消耗 id 2024553）。"
         ),
         p_html(
             f"<strong>{H('無畏戰士', terms)} 5504。</strong>說明：{desc(5504)}。"
-            f"屬性 1131 {lab(1131)}、1037 {lab(1037)}（<code>type=1</code>、<code>show_type=1</code>）、10103、10104。"
+            f"屬性 1131 {lab(1131)}、1037 {lab(1037)}、10103、10104。"
             f"第 0 階原值 300／1／400／800，第 6 階 2100／7／2800／5600。"
-            f"<code>display_num</code> 第 0–5 階為 3／1／4／8 至 18／6／24／48，第 6 階仍為 18／6／24／48。"
+            f"說明數字 第 0–5 階為 3／1／4／8 至 18／6／24／48，第 6 階仍為 18／6／24／48。"
             f"戰力、消耗個數同上（消耗 id 2024554）。"
         ),
         p_html(
             f"<strong>{H('骸靈士兵', terms)} 5505。</strong>說明：{desc(5505)}。"
-            f"屬性 1300108 {lab(1300108)}（<code>max=10000</code>、<code>is_max_show=1</code>，<code>attribute_Id=1137</code>）、兩筆 10103、以及 10104。"
+            f"屬性 1300108 {lab(1300108)}（上限欄 10000，且標了要顯示上限；對應屬性編號 1137）、兩筆 10103、以及 10104。"
             f"第 0 階原值 200／100／400／800，第 6 階 1400／700／2800／5600。"
-            f"<code>display_num</code> 第 0–5 階為 2／1／4／8 至 12／6／24／48，第 6 階仍為 12／6／24／48。"
+            f"說明數字 第 0–5 階為 2／1／4／8 至 12／6／24／48，第 6 階仍為 12／6／24／48。"
             f"戰力、消耗個數同上（消耗 id 2024555）。"
         ),
     ]
@@ -1253,7 +1253,7 @@ def render_html(data: TablesData) -> str:
                 f"<li>品質欄只錄表上的數字（2–5）。養成說明若有「{H('藍色、紫色兵裝', terms)}」與「其他兵裝」的裝載規則，那是官方文案，不是替品質 3／4／5 改名。</li>"
     )
     add(
-        f"<li>官方用語是「{H('部族', terms)}」不是「部落」。種族名稱取 <code>unit_race_1</code>–<code>4</code>：1＝{H('聯盟', terms)}、2＝{H('部族', terms)}、3＝{H('自然', terms)}、4＝{H('神族', terms)}。"
+        f"<li>官方用語是「{H('部族', terms)}」不是「部落」。種族名稱：1＝{H('聯盟', terms)}、2＝{H('部族', terms)}、3＝{H('自然', terms)}、4＝{H('神族', terms)}。"
         f"影響力目錄把三營士兵寫成「{H('聯盟士兵', terms)}／{H(o.tribe_word, terms)}／{H('自然士兵', terms)}」（此處原文是「部落」不是「部族」），照錄並標明。</li>"
     )
     add("</ul>")
@@ -1261,32 +1261,32 @@ def render_html(data: TablesData) -> str:
     add('    <section id="lines">')
     add("      <h2>士兵兩條線</h2>")
     add(
-        "<p>主表 <code>troop.json</code> 76 筆。<code>race</code>：1＝"
+        "<p>士兵主表 76 筆。陣營：1＝"
         f"{H('聯盟', terms)}（22 筆）、2＝{H('部族', terms)}（22）、3＝{H('自然', terms)}（22）、4＝{H('神族', terms)}"
-        "（10，只在 B 線）。<code>quality</code> 為 2–5，<code>level</code> 為 1–12。<code>army_type</code> 皆為 <code>[1, 2, 3]</code>，本頁未對到這三個數字的含義。"
-        "<code>speed</code> 全表都是 100。<code>unit_ID</code> 全表都是 22002。<code>atk</code>／<code>hp</code> 就是屬性 3／4（"
+        "（10，只在 B 線）。品質為 2–5，等級為 1–12。兵種類型欄皆為 [1, 2, 3]，本頁未對到這三個數字的含義。"
+        "移動全表都是 100。單位編號全表都是 22002。攻擊／生命就是屬性 3／4（"
         f"{_alabel(data, 3, terms)}／{_alabel(data, 4, terms)}）。</p>"
     )
     add(
-        "<p>有中文名的士兵全部是「戰士」一系。線 B 的名稱、說明鍵與線 A 相同（例如 1910 的 <code>name</code> 也是 <code>troop_name_1010</code>）。"
+        "<p>有中文名的士兵全部是「戰士」一系。線 B 的名稱、說明與線 A 用同一套字串（例如 1910 的名稱也對到傳奇聯盟戰士那一條）。"
         f"三營名稱結構相同，只改「{H('聯盟', terms)}／{H('部族', terms)}／{H('自然', terms)}」：</p>"
     )
     add(tbl["prefix"])
     add(
-        f"<p>官方說明句式相同，例如「{H(official_text('troop_desc_1012'), terms)}」（<code>troop_desc_1012</code>）。"
-        f"{H(o.team_tips, terms)}（<code>UI_hero_team_tips</code>）。</p>"
+        f"<p>官方說明句式相同，例如「{H(official_text('troop_desc_1012'), terms)}」。"
+        f"{H(o.team_tips, terms)}。</p>"
     )
     add('      <h3 id="diff">兩條線的差別</h3>')
     add(tbl["diff"])
     add(
-        "<p>兵營建築名稱：<code>citybuilding_name_125</code>／<code>126</code>／<code>127</code> 為"
+        "<p>兵營建築名稱為"
         f"{H(o.buildings[125][0], terms)}、{H(o.buildings[126][0], terms)}、{H(o.buildings[127][0], terms)}。"
         f"說明分別是「{H(o.buildings[125][1], terms)}」「{H(o.buildings[126][1], terms)}」「{H(o.buildings[127][1], terms)}」。"
-        "兵營升級表到 80 級。線 A 的 1–9 級對到兵營 <code>building_id</code> 125000／125005／…／125040（即建築 0、5、10、…、40 級；部族、自然同規律，建築編號改 126、127）。"
-        "10–12 級（傳奇、天御、天穹）的 <code>building_id</code> 為 −1，仍寫 <code>correlate_building</code> 為對應兵營。"
+        "兵營升級表到 80 級。線 A 的 1–9 級對到兵營建築編號 125000／125005／…／125040（即建築 0、5、10、…、40 級；部族、自然同規律，建築編號改 126、127）。"
+        "10–12 級（傳奇、天御、天穹）的建築編號為 −1，仍寫對應兵營。"
         "表沒有另寫這三級的解鎖條件；本頁不把科技「士兵等級＋1」或其他欄位寫成解鎖式。</p>"
     )
-    add("<p><code>season_get</code> 的寫法是 <code>2|999|20|{level}</code>。資源 20 在 <code>top_resource.json</code> 有列，但 <code>strings_zh</code> 沒有 <code>top_resource_name_20</code>，本頁不編造資源名，也不把這一欄解釋成開放條件。</p>")
+    add("<p>線 A 表上另有一欄寫 2|999|20|{等級}。資源 20 沒有官方名，本頁不編造資源名，也不把這一欄解釋成開放條件。記法見資料說明。</p>")
     add('      <h3 id="stats">單兵數值</h3>')
     add("<p>同階、同線的攻擊、生命、士氣、戰力、負重，三個有中文名的陣營完全相同；B 線神族的攻擊、生命、戰力、負重也與同階 B 線一致。因此下面只各列一張表。</p>")
     add("<p>線 A（以聯盟為例；部族 20xx、自然 30xx 同值）：</p>")
@@ -1296,30 +1296,29 @@ def render_html(data: TablesData) -> str:
     add("<p>1 級時兩條線攻擊同為 3，線 B 生命較高（36 對 33）；2 級起線 A 生命一度較高，自 4 級起線 B 的攻擊與生命都明顯較高。戰力列全程相同。</p>")
     add('      <h3 id="costs">訓練與治療消耗</h3>')
     add(
-        "<p>消耗寫成 <code>999|4|數量</code>、<code>999|5|數量</code>，對應資源 4「"
-        f'{H(o.resources[4], terms)}」、資源 5「{H(o.resources[5], terms)}」（<code>top_resource_name_4</code>／<code>5</code>）。'
-        "<code>train_time</code>、<code>treat_time</code>、<code>lvup_time</code> 表上是整數，沒有寫單位，本頁不自行換算成秒。</p>"
+        "<p>消耗對應資源 4「"
+        f'{H(o.resources[4], terms)}」、資源 5「{H(o.resources[5], terms)}」。'
+        "訓練時間、治療時間、升級時間表上是整數，沒有寫單位，本頁不自行換算成秒。</p>"
     )
     add(
-        "<p>三個有中文名的陣營，在同一條線、同一等級的訓練／治療欄完全相同。神族（B 線 race 4）的木材、石頭數量與線 A 同階相同；"
-        "治療時間在 1–3、5–10 級也與線 A 相同，唯獨 4 級的 <code>treat_time</code> 是 40，線 A 同階是 30。"
-        "表上 1–5 級的 <code>train_time</code> 也與線 A／B 其他三營不同（150／210／270／360／450，對上同階的 75／150／225／300／400）；"
+        "<p>三個有中文名的陣營，在同一條線、同一等級的訓練／治療欄完全相同。神族（B 線陣營 4）的木材、石頭數量與線 A 同階相同；"
+        "治療時間在 1–3、5–10 級也與線 A 相同，唯獨 4 級的治療時間是 40，線 A 同階是 30。"
+        "表上 1–5 級的訓練時間也與線 A／B 其他三營不同（150／210／270／360／450，對上同階的 75／150／225／300／400）；"
         "6–10 級訓練時間與線 A 相同。B 線聯盟／部族／自然（1901–1910 等）從 5 級起，部分訓練與治療數量、以及各級治療時間，與線 A 不同。"
-        "線 B 仍沒有兵營與 <code>season_get</code>；這些欄位只是表上有值，不能據此把 B 線寫成兵營可訓練士兵。</p>"
+        "線 B 仍沒有兵營與上述未命名資源欄；這些欄位只是表上有值，不能據此把 B 線寫成兵營可訓練士兵。</p>"
     )
     add("<p>線 A（三營相同）：</p>")
     add(tbl["a_cost"])
     add("<p>線 B、聯盟／部族／自然（以 1901–1910 為例；捐贈勳章與王國擊殺積分為 −1）：</p>")
     add(tbl["b_cost"])
     add('      <h3 id="fight">戰鬥類型開關</h3>')
-    add("<p><code>fight_type.json</code> 72 種戰鬥類型。與士兵直接有關的開關是 <code>switch_troop_morale</code>、<code>switch_troop_carry</code>（表上為 1 或 −1）。本頁核對 41 筆 <code>switch_troop_morale=1</code>（含打田、競技場、掠奪、天梯、冠軍對決等常見 PvP，以及部分 PvE），其餘為 −1。開關打開後士氣壓制是否一定生效，表只給開關。</p>")
-    add(f"<p><code>switch_troop_carry</code> 在競技場、3v3 天梯賽、玩家間切磋、冠軍對決等為 −1，在打田、掠奪、遺蹟等為 1。冠軍對決說明寫「{H(o.duel, terms)}」（<code>champion_duel_info_desc_1_3</code>）。兵營建築與「可訓練」說明只對上線 A；這只說明「可訓練」的字面指向兵營那套，不能把 <code>switch_troop_carry=-1</code> 寫成改走 19xx。再掃過戰鬥類型與相關編成表，沒有欄位把某場戰鬥對到 19xx／29xx 那套 id。</p>")
+    add("<p>戰鬥類型表有 72 種。與士兵直接有關的開關是士氣開關、攜帶開關（表上為 1 或 −1）。本頁核對 41 筆士氣開關為 1（含打田、競技場、掠奪、天梯、冠軍對決等常見 PvP，以及部分 PvE），其餘為 −1。開關打開後士氣壓制是否一定生效，表只給開關。</p>")
+    add(f"<p>攜帶開關在競技場、3v3 天梯賽、玩家間切磋、冠軍對決等為 −1，在打田、掠奪、遺蹟等為 1。冠軍對決說明寫「{H(o.duel, terms)}」。兵營建築與「可訓練」說明只對上線 A；這只說明「可訓練」的字面指向兵營那套，不能把攜帶開關 −1 寫成改走 19xx。再掃過戰鬥類型與相關編成表，沒有欄位把某場戰鬥對到 19xx／29xx 那套 id。</p>")
     add('      <h3 id="divine">神族（只在 B 線）</h3>')
     add(
-        f"<p>4901–4910 的 <code>race=4</code>，字串 <code>unit_race_4</code> 為「{H('神族', terms)}」。"
-        "名稱鍵是 <code>troop_name_4001</code>–<code>troop_name_4010</code>（不是 4901），說明鍵 <code>troop_desc_4001</code>–<code>4010</code>，"
-        "<code>strings_zh</code> 都沒有對應文案，本頁不編造名稱。攻擊、生命、戰力、負重與同階 B 線其他三營相同，士氣為 0，沒有兵營。"
-        "這 10 筆是全表僅有 <code>map_soldier_scale</code> 不為 −1 的列：4901–4906 為 18，4907–4910 為 15。該欄含義未驗證。</p>"
+        f"<p>4901–4910 的陣營為 4，官方種族名為「{H('神族', terms)}」。"
+        "名稱與說明字串都沒有對應文案（名稱鍵編號是 4001–4010，不是 4901），本頁不編造名稱。攻擊、生命、戰力、負重與同階 B 線其他三營相同，士氣為 0，沒有兵營。"
+        "這 10 筆是全表僅有地圖士兵縮放欄不為 −1 的列：4901–4906 為 18，4907–4910 為 15。該欄含義未驗證。</p>"
     )
     add("    </section>")
     add('    <section id="formulas">')
@@ -1328,74 +1327,74 @@ def render_html(data: TablesData) -> str:
     add(f"<ul><li>{H(o.formulas['atk'], terms)}</li><li>{H(o.formulas['hp'], terms)}</li></ul>")
     add(
         "<p>面板兵種階級 XII／XI 是兵營那套（有 11、12 級）。戰報裡單個士兵攻擊／生命基礎值也用這套，不是 19xx。"
-        f"已核對的一例：審判官戰報攻擊基礎值 110＝建築 50（{H('天穹聯盟戰士', terms)} 1012）＋符文 21＋光輝建築 39（<code>shine_troop</code> 聯盟第 7 級攻擊）；"
+        f"已核對的一例：審判官戰報攻擊基礎值 110＝建築 50（{H('天穹聯盟戰士', terms)} 1012）＋符文 21＋光輝建築 39（光輝建築聯盟第 7 級攻擊）；"
         "生命基礎值 1508＝建築 900＋科技 10＋符文 64＋光輝建築 534（第 7 級生命）。建築與光輝兩項與表一致。光輝建築點數是加進單兵基礎值，與兵營基礎值相加，而不是改走 19xx。</p>"
     )
     add("<p>百分比來源加總與表頭一致；數量因顯示進位仍推不出唯一整數，維持未驗證。</p>")
-    add("<p>英雄攜帶士兵上限＝畫面上列出的來源點數相加；其中「等級」＝<code>hero_level.army_count</code>（品質 3–5 為 2×等級，品質 6 為 3×等級）。出征上限（1019 等）與容納士兵上限（1018 等）沒有出現在這份攜帶上限清單。戰鬥公式裡的「士兵數量」與這份攜帶上限是否同一整數，維持未驗證。</p>")
+    add("<p>英雄攜帶士兵上限＝畫面上列出的來源點數相加；其中「等級」來自英雄等級表的攜帶點數（品質 3–5 為 2×等級，品質 6 為 3×等級）。出征上限（1019 等）與容納士兵上限（1018 等）沒有出現在這份攜帶上限清單。戰鬥公式裡的「士兵數量」與這份攜帶上限是否同一整數，維持未驗證。</p>")
     add(
-        "<p>和「士兵攻擊百分比」名稱相近的屬性：科技、兵裝、裝飾、領主裝備、英雄天賦、公會科技等大量寫入的 <code>type=2</code> 屬性是 10103／10104「"
+        "<p>和「士兵攻擊百分比」名稱相近的屬性：科技、兵裝、裝飾、領主裝備、英雄天賦、公會科技等大量寫入的百分比類屬性是 10103／10104「"
         f"{H(attr_label(10103, data.attr_by), terms)}／{H(attr_label(10104, data.attr_by), terms)}」，以及分營的 13103／14103／15103（生命同理：13104／14104／15104）。"
-        "公式用語仍不能從表寫死只對 10103 一條。10105／10106 的屬性表 <code>name</code> 指向「"
+        "公式用語仍不能從表寫死只對 10103 一條。10105／10106 的屬性表名稱指向「"
         f"{H(table_name_label(10105, data.attr_by), terms)}／{H(table_name_label(10106, data.attr_by), terms)}」，"
         "本抽取沒有來源把數值寫進 10105／10106，不能當成這條百分比欄的候選。10003／10004「"
-        f"{H(attr_label(10003, data.attr_by), terms)}／{H(attr_label(10004, data.attr_by), terms)}」是 <code>type=1</code> 點數，本抽取幾乎沒有來源寫入。10103 與分營條如何疊加，表沒有說明。</p>"
+        f"{H(attr_label(10003, data.attr_by), terms)}／{H(attr_label(10004, data.attr_by), terms)}」是點數屬性，本抽取幾乎沒有來源寫入。10103 與分營條如何疊加，表沒有說明。</p>"
     )
     add("    </section>")
     add('    <section id="shine">')
     add("      <h2>光輝建築</h2>")
     add(
         f"<p>官方屬性來源分類 32 的名稱是「{H(o.categories[32][0], terms)}」，說明是「{H(o.categories[32][1], terms)}」"
-        "（<code>hero_detailed_stats_ui_shine</code>／<code>_dec</code>）。介面另有「"
-        f"{H(o.shine_tip, terms)}」（<code>UI_army_shine_attr_tip</code>）。本頁說的光輝士兵數值在 <code>shine_troop.json</code>，對到的是兵營建築的 <code>shine_lv</code>，不是改走 B 線。</p>"
+        "。介面另有「"
+        f"{H(o.shine_tip, terms)}」。本頁說的光輝士兵數值對到的是兵營建築的光輝等級，不是改走 B 線。</p>"
     )
-    add("<p><code>shine_troop.json</code> 24 筆：三個種族（1／2／3，對應三座兵營）各 8 級（<code>shine_lv</code> 1–8）。同階的攻擊、生命、士氣、戰力、負重三營完全相同。<code>attr_3</code> 同樣是 <code>[10057, 0]</code>。沒有種族 4（神族）列，也沒有獨立中文名稱鍵。</p>")
-    add("<p>兵營升級表（以聯盟兵營 125 為例；126／127 結構相同，建築 id 改前綴）：建築 40 級起出現 <code>shine_para1</code>；41–44 級 <code>shine_lv=0</code>；45 級起 <code>shine_lv=1</code>，之後每 5 級加一階，80 級 <code>shine_lv=8</code>。<code>shine_troop.building_id</code> 正好對上 45、50、55、60、65、70、75、80 級（聯盟為 125045–125080）。此段兵營 <code>shine_lv</code> 進度已對 <code>citybuilding_lvup.json</code> 與 <code>citybuilding_lvup_new.json</code> 的 125／126／127 列核過，兩表在這些列上一致；本頁不把整份建築升級表展開。</p>")
+    add("<p>光輝士兵表 24 筆：三個種族（1／2／3，對應三座兵營）各 8 級（光輝等級 1–8）。同階的攻擊、生命、士氣、戰力、負重三營完全相同。附加屬性欄同樣是 [10057, 0]。沒有種族 4（神族）列，也沒有獨立中文名稱。</p>")
+    add("<p>兵營升級表（以聯盟兵營 125 為例；126／127 結構相同，建築 id 改前綴）：建築 40 級起出現光輝參數欄；41–44 級光輝等級為 0；45 級起 光輝等級為 1，之後每 5 級加一階，80 級光輝等級為 8。光輝士兵表的建築編號正好對上 45、50、55、60、65、70、75、80 級（聯盟為 125045–125080）。此段兵營光輝等級進度已對兩份兵營升級表的 125／126／127 列核過，兩表在這些列上一致；本頁不把整份建築升級表展開。</p>")
     add(tbl["shine"])
-    add("<p>已鎖定：光輝聯盟 <code>shine_lv</code> 7、id 1490019 為攻擊 39、生命 534、士氣 500，戰報把這組點數加進單兵基礎值。</p>")
-    add(f"<p>另有建築「{H(o.buildings[169][0], terms)}」（<code>citybuilding_name_169</code>），說明是「{H(o.buildings[169][1], terms)}」。那是另一個建築與科技線，本頁不展開。</p>")
+    add("<p>已鎖定：光輝聯盟光輝等級 7、編號 1490019 為攻擊 39、生命 534、士氣 500，戰報把這組點數加進單兵基礎值。</p>")
+    add(f"<p>另有建築「{H(o.buildings[169][0], terms)}」，說明是「{H(o.buildings[169][1], terms)}」。那是另一個建築與科技線，本頁不展開。</p>")
     add("    </section>")
 
     add('    <section id="skins">')
     add("      <h2>兵裝</h2>")
     add(
-        f"<p>官方系統名是「{H(o.skin_system, terms)}」（<code>troop_skin</code>）。屬性來源分類 33「{H(o.categories[33][0], terms)}」、34「{H(o.categories[34][0], terms)}」。"
-        f"對應建築是{H(o.buildings[142][0], terms)}（<code>citybuilding_name_142</code>），說明為「{H(o.buildings[142][1], terms)}」。"
-        "升級前置寫在 <code>troop_skin_level.prebuilding_level</code>，都是建築 142 的指定等級。</p>"
+        f"<p>官方系統名是「{H(o.skin_system, terms)}」。屬性來源分類 33「{H(o.categories[33][0], terms)}」、34「{H(o.categories[34][0], terms)}」。"
+        f"對應建築是{H(o.buildings[142][0], terms)}，說明為「{H(o.buildings[142][1], terms)}」。"
+        "升級前置都是建築 142 的指定等級。</p>"
     )
-    add("<p>養成說明原文（<code>info_title_army_troop_skin_content1</code>）：</p>")
+    add("<p>養成說明原文：</p>")
     add("<ol>" + "".join(f"<li>{H(re.sub(r'^\\d+\\.', '', ln).strip(), terms)}</li>" for ln in o.skin_training) + "</ol>")
     add(
-        f"<p>資源 17 的名稱是「{H(o.resources[17], terms)}」（<code>top_resource_name_17</code>）。另有道具 1017「{H(o.honor_item_name, terms)}」，說明為「{H(o.honor_item_desc, terms)}」。"
-        "榮譽突破表的 <code>cost_1</code> 寫的是 <code>999|17|數量</code>，沒有寫入 1017；兩種寫法如何對上，表沒有說明，維持未驗證。</p>"
+        f"<p>資源 17 的名稱是「{H(o.resources[17], terms)}」。另有道具 1017「{H(o.honor_item_name, terms)}」，說明為「{H(o.honor_item_desc, terms)}」。"
+        "榮譽突破表第一欄消耗寫的是資源 17 的數量，沒有寫入 1017；兩種寫法如何對上，表沒有說明，維持未驗證。</p>"
     )
     add(
-        f"<p>影響力目錄（<code>influence_level.json</code>）在「士兵」下有「士兵強化 → {H(o.skin_system, terms)}」；同目錄把三營士兵寫成「"
+        f"<p>影響力目錄在「士兵」下有「士兵強化 → {H(o.skin_system, terms)}」；同目錄把三營士兵寫成「"
         f"{H('聯盟士兵', terms)}／{H(o.tribe_word, terms)}／{H('自然士兵', terms)}」（此處原文是「部落」不是「部族」）。</p>"
     )
     add('      <h3 id="catalog">名錄</h3>')
-    add("<p><code>troop_skin_level.json</code> 4,853 筆，有 23 個 <code>group</code>（5301、5302、5401–5407、5501–5514），每組 211 筆、等級 1–50。其中 21 組在突破表與榮譽突破表出現，並可對到道具名稱。<code>jump.json</code> 用 <code>goods_name_*</code> 對到其中 14 組（5301–5302、5403–5407、5501–5507）；5508–5514 沒有這類跳轉列，但仍有道具名稱、升級、突破與榮譽表。</p>")
-    add(f"<p>部分組的突破／榮譽消耗道具 id，與名稱所用的 <code>goods_name</code> id 不同（例如{H('熊皮勇士', terms)}名稱是 2024506，消耗寫 2024543，而後者沒有 <code>goods_name</code> 字串）。本頁同時記錄兩種 id，不臆測為何分開。</p>")
+    add("<p>升級表 4,853 筆，有 23 個組別（5301、5302、5401–5407、5501–5514），每組 211 筆、等級 1–50。其中 21 組在突破表與榮譽突破表出現，並可對到道具名稱。跳轉表用道具名對到其中 14 組（5301–5302、5403–5407、5501–5507）；5508–5514 沒有這類跳轉列，但仍有道具名稱、升級、突破與榮譽表。</p>")
+    add(f"<p>部分組的突破／榮譽消耗道具 id，與名稱所用的道具名稱編號不同（例如{H('熊皮勇士', terms)}名稱是 2024506，消耗寫 2024543，而後者沒有官方道具名稱字串）。本頁同時記錄兩種 id，不臆測為何分開。</p>")
     add(
-        f"<p>另有道具 2024503「{H(o.gunner_name, terms)}」，說明為「用於士兵兵裝解鎖或突破，{H(o.gunner_clause, terms)}」，但沒有對上任何 <code>group</code>，也不在 <code>jump</code> 的兵裝列。"
+        f"<p>另有道具 2024503「{H(o.gunner_name, terms)}」，說明為「用於士兵兵裝解鎖或突破，{H(o.gunner_clause, terms)}」，但沒有對上任何兵裝組，也不在跳轉表的兵裝列。"
         "5401、5402 兩組只有升級表（品質 4，曲線與 5403–5407 完全相同），沒有名稱字串、沒有跳轉、也沒有突破或榮譽列，本頁不編造名稱。</p>"
     )
-    add(f"<p><code>troop_skin_name501</code> 為「{H(o.leftover_name, terms)}」、<code>troop_skin_break_desc501</code> 為「{H(o.leftover_desc, terms)}」，沒有出現在上述 23 個 group 裡，本頁只記有這兩條字串，不把它寫進名錄。</p>")
+    add(f"<p>另有字串「{H(o.leftover_name, terms)}」與「{H(o.leftover_desc, terms)}」，沒有出現在上述 23 個組別裡，本頁只記有這兩條字串，不把它寫進名錄。</p>")
     add(f"<p>道具說明裡，「{H('可同時被多隊裝載', terms)}」或「{H('只可同時被一隊裝載', terms)}」與養成說明第 5 點一致：下列品質 3、4 的具名兵裝寫可多隊；品質 5 的具名兵裝寫只可一隊。</p>")
     add(tbl["catalog"])
     add("<p>各具名兵裝的道具說明前段（解鎖／突破句之前）照錄於下，不作評價：" + _fronts_html(data, terms) + "</p>")
-    add('      <h3 id="upgrade">升級（<code>troop_skin_level</code>）</h3>')
-    add("<p>每組 211 筆：等級 1–16 各 1 列（<code>level_small=-1</code>）；17 級起出現 <code>level_small</code> 分列，筆數隨等級增加，至 44–49 級各 10 列（<code>level_small</code> 0–9）；50 級只有 <code>level_small=0</code> 一列。<code>level_small</code> 在介面上叫什麼，表沒有名稱，只記欄位。</p>")
-    add("<p><code>unlock_lv</code> 為 0–6，與兵裝研究所等級前置成對出現（例：1–9 級 <code>unlock_lv=0</code>、前置 <code>[142, 1]</code>；10–19 級開始要 142 的 10 級；50 級 <code>unlock_lv=6</code>、前置 <code>[142, 50]</code>）。升級消耗欄是 <code>exp</code>（整數），表沒有另寫資源 id；養成說明寫「消耗勳章可以升級兵裝」。</p>")
-    add("<p>升級屬性按品質帶分成幾組曲線（同品質、同屬性組合的組，1–50 級含 <code>level_small</code> 的攻擊／生命／戰力／<code>exp</code> 完全相同）：</p>")
+    add('      <h3 id="upgrade">升級</h3>')
+    add("<p>每組 211 筆：等級 1–16 各 1 列（細分號為 -1）；17 級起出現細分列，筆數隨等級增加，至 44–49 級各 10 列（細分號 0–9）；50 級只有細分號 0 一列。細分列在介面上叫什麼，表沒有名稱，只記欄位。</p>")
+    add("<p>解鎖等級欄為 0–6，與兵裝研究所等級前置成對出現（例：1–9 級解鎖等級 0、前置建築 142 的 1 級；10–19 級開始要 142 的 10 級；50 級解鎖等級 6、前置建築 142 的 50 級）。升級消耗欄是整數經驗值，表沒有另寫資源編號；養成說明寫「消耗勳章可以升級兵裝」。</p>")
+    add("<p>升級屬性按品質帶分成幾組曲線（同品質、同屬性組合的組，1–50 級含細分列的攻擊／生命／戰力／經驗值完全相同）：</p>")
     add(tbl["upgrade"])
     add(f"<p>5509–5514 的第三項從 1 級就有，收到 50 級為 400。這第三項與突破表裡 5512–5514 的「{H('守城時減傷', terms)}」（屬性 1000119）不是同一條，不要混讀。</p>")
-    add('      <h3 id="break">突破（<code>troop_skin_break</code>）</h3>')
-    add("<p>21 組、每組 7 階（<code>level</code> 0–6），共 147 筆。第 0–5 階的 <code>skin_lv_min</code>／<code>skin_lv_max</code> 依序為 10、20、30、40、45、50，<code>castle_lv_min</code> 為 10，消耗為同種兵裝 1／1／2／3／3／3 個。第 6 階 <code>skin_lv</code> 仍為 50，<code>castle_lv_min</code> 為 −1，<code>cost</code> 為空。本頁只記欄位，不把第 6 階寫成「自動升」或其他未見於表的規則。</p>")
-    add("<p>突破說明取 <code>troop_skin_break_desc{group}</code>。部分組另有 <code>display_num</code> 字串陣列，對應說明裡的 <code>{0}</code>、<code>{1}</code>…占位符，本頁照錄該欄，不自行用原值換算去改寫它。要注意：多組在第 5、6 階的 <code>display_num</code> 不再隨 <code>attrList</code> 增加，或與「原值÷100」不一致（例如盾兵第 4 階起 <code>display_num</code> 停在 30／10／20，但 <code>attrList</code> 續增；優雅侍者第 6 階 <code>display_num</code> 為 42／18／36，與第 5 階的 48／18／36 以及 <code>attrList</code> 都不相同）。沒有 <code>display_num</code> 的組只記原值。下文「官方說明」是該組文案模板，數字以表為準。</p>")
+    add('      <h3 id="break">突破</h3>')
+    add("<p>21 組、每組 7 階（第 0–6 階），共 147 筆。第 0–5 階的士兵等級上下限依序為 10、20、30、40、45、50，城堡最低等級為 10，消耗為同種兵裝 1／1／2／3／3／3 個。第 6 階士兵等級仍為 50，城堡最低等級為 −1，消耗為空。本頁只記欄位，不把第 6 階寫成「自動升」或其他未見於表的規則。</p>")
+    add("<p>突破說明取各組官方文案。部分組另有說明數字，對應說明裡的 {0}、{1}…占位符，本頁照錄該欄，不自行用原值換算去改寫它。要注意：多組在第 5、6 階的說明數字不再隨屬性原值增加，或與「原值÷100」不一致（例如盾兵第 4 階起說明數字停在 30／10／20，但屬性原值續增；優雅侍者第 6 階說明數字為 42／18／36，與第 5 階的 48／18／36 以及屬性原值都不相同）。沒有說明數字的組只記原值。下文「官方說明」是該組文案模板，數字以表為準。</p>")
     add(
-        "<p>下列各表「屬性」欄記 <code>attrList</code> 原值，屬性名取 <code>attribute_name_{id}</code>。10188 沒有 <code>attribute_name_10188</code>，屬性表 <code>name</code> 指向「"
-        f'{H("士兵士氣", terms)}」，照這一名稱記，並標 id 10188（<code>type=2</code>、<code>show_type=2</code>）。</p>'
+        "<p>下列各表「屬性」欄記屬性原值，屬性名取官方屬性名稱。10188 沒有官方屬性名稱字串，屬性表名稱指向「"
+        f'{H("士兵士氣", terms)}」，照這一名稱記，並標編號 10188。</p>'
     )
     add(
         f"<p><strong>{H('盾兵', terms)} 5301。</strong>官方說明：{H(data.skins[5301].break_desc, terms)}。"
@@ -1405,7 +1404,7 @@ def render_html(data: TablesData) -> str:
     add(_break_prose_html(data, terms))
     add(
         f"<p><strong>{H(data.skins[5506].name, terms)} 5506、{H(data.skins[5507].name, terms)} 5507、{H(data.skins[5508].name, terms)} 5508。</strong>"
-        f"三組說明結構相同，只改陣營。5507 原文：{H(data.skins[5507].break_desc, terms)}。5506、5508 把「聯盟」換成「自然」「部族」。沒有 <code>display_num</code>。"
+        f"三組說明結構相同，只改陣營。5507 原文：{H(data.skins[5507].break_desc, terms)}。5506、5508 把「聯盟」換成「自然」「部族」。沒有說明數字欄。"
         f"戰力 {_slash_powers(data.skin_breaks[5507])}。消耗個數 1／1／2／3／3／3／空。</p>"
     )
     add(
@@ -1415,7 +1414,7 @@ def render_html(data: TablesData) -> str:
     add(tbl["br5507"])
     add(
         f"<p><strong>{H(data.skins[5509].name, terms)} 5509、{H(data.skins[5510].name, terms)} 5510、{H(data.skins[5511].name, terms)} 5511。</strong>"
-        "說明為：本隊〔陣營〕士兵攻擊提升{0}%，〔陣營〕士兵生命提升{1}%，〔陣營〕逆克制增傷提升{2}%。沒有 <code>display_num</code>。"
+        "說明為：本隊〔陣營〕士兵攻擊提升{0}%，〔陣營〕士兵生命提升{1}%，〔陣營〕逆克制增傷提升{2}%。沒有說明數字欄。"
         f"戰力 {_slash_powers(data.skin_breaks[5509])}。消耗個數 1／1／2／3／3／3／空。</p>"
     )
     add("<p>5509：13103／13104／3029，消耗 2024559。5510：14103／14104／4031，消耗 2024560。5511：15103／15104／5027，消耗 2024561。</p>")
@@ -1423,31 +1422,31 @@ def render_html(data: TablesData) -> str:
     add(
         f"<p><strong>{H(data.skins[5512].name, terms)} 5512、{H(data.skins[5513].name, terms)} 5513、{H(data.skins[5514].name, terms)} 5514。</strong>"
         f"說明：本隊〔陣營〕士兵攻擊提升{{0}}%，〔陣營〕士兵生命提升{{1}}%，守城時減傷提升{{2}}%。屬性第三項是 1000119 {H(attr_label(1000119, data.attr_by), terms)}"
-        "（不是升級表上的 3019／4019／5019）。沒有 <code>display_num</code>。戰力與消耗個數與山羊騎士組相同。</p>"
+        "（不是升級表上的 3019／4019／5019）。沒有說明數字欄。戰力與消耗個數與山羊騎士組相同。</p>"
     )
     add("<p>5512：13103／13104，消耗 2024562。5513：14103／14104，消耗 2024563。5514：15103／15104，消耗 2024564。</p>")
     add(tbl["br5512"])
-    add('      <h3 id="honor">榮譽突破（<code>troop_skin_honor_break</code>）</h3>')
+    add('      <h3 id="honor">榮譽突破</h3>')
     add(
-        f"<p>21 組、每組 150 級（<code>level</code> 1–150），共 3,150 筆。介面文案有「{H(o.honor_forbid, terms)}」「{H(o.honor_unlock, terms)}」。"
-        "表上的 <code>quality</code> 在前 99 級等於該兵裝升級表的品質（3／4／5），100–150 級升一檔（4／5／6）。"
-        "<code>i_attr</code>（表欄 <code>i_attrList</code>）只出現在升檔後的 100–150 級，同一組這 51 級的 <code>i_attr</code> 固定不變。"
-        "<code>attr_1</code> 每級遞增，多數組是士兵生命（10104）或對應分營士兵生命（13104／14104／15104）。</p>"
+        f"<p>21 組、每組 150 級（第 1–150 級），共 3,150 筆。介面文案有「{H(o.honor_forbid, terms)}」「{H(o.honor_unlock, terms)}」。"
+        "表上的品質欄在前 99 級等於該兵裝升級表的品質（3／4／5），100–150 級升一檔（4／5／6）。"
+        "升檔後附加屬性只出現在 100–150 級，同一組這 51 級的附加屬性固定不變。"
+        "屬性原值每級遞增，多數組是士兵生命（10104）或對應分營士兵生命（13104／14104／15104）。</p>"
     )
     add(
-        f"<p>消耗：<code>cost_1</code> 為 <code>999|17|數量</code>（資源 17「{H(o.resources[17], terms)}」），<code>cost_2</code> 為同種兵裝。"
+        f"<p>消耗：第一欄是資源 17「{H(o.resources[17], terms)}」×數量，第二欄是同種兵裝。"
         f"品質 3 組（{H('盾兵', terms)}、{H('騎兵', terms)}）勳章 12,500、兵裝 25；品質 4 組多數是勳章 25,000、兵裝 5（{H('鼓號隊', terms)}"
-        "在品質 4 的 2–49 級勳章為 12,500，第 1 級與 50–99 級及品質 5 仍為 25,000）；品質 5 組在 1–99 級是勳章 50,000、兵裝 1，100–150 級兵裝改為 2。第 150 級 <code>cost</code> 為空。</p>"
+        "在品質 4 的 2–49 級勳章為 12,500，第 1 級與 50–99 級及品質 5 仍為 25,000）；品質 5 組在 1–99 級是勳章 50,000、兵裝 1，100–150 級兵裝改為 2。第 150 級消耗為空。</p>"
     )
-    add("<p><code>attr_1</code> 與戰力（該品質段首尾）：</p>")
+    add("<p>屬性原值與戰力（該品質段首尾）：</p>")
     add(tbl["honor_attr"])
-    add("<p>升檔後固定 <code>i_attr</code>（100–150 級；寫成 0 的分項也照錄）。5509–5511 另有 <code>attr_2</code>（逆克制增傷 100）；5512–5514 的 <code>attr_2</code> 是 3019／4019／5019 各 100，與 <code>i_attr</code> 裡的 1000119 不是同一條：</p>")
+    add("<p>升檔後固定附加屬性（100–150 級；寫成 0 的分項也照錄）。5509–5511 另有第二組屬性（逆克制增傷 100）；5512–5514 的第二組屬性是 3019／4019／5019 各 100，與附加屬性裡的 1000119 不是同一條：</p>")
     add(tbl["honor_i"])
     add('      <h3 id="locked">已鎖定的聯盟兵裝面板對照</h3>')
-    add("<p>以下只鎖定這一組面板數字，不推廣到其他兵裝或其他 <code>show_type=2</code> 屬性。</p>")
+    add("<p>以下只鎖定這一組面板數字，不推廣到其他兵裝或其他百分比類屬性。</p>")
     add(
-        f"<p>聯盟兵裝突破第 6 階（group 5507，{H('甜點騎士', terms)}）的原值：13103＝2800、13104＝5600、10188＝350、1300106＝350、21024＝1400。"
-        "榮譽突破品質 6 的固定 <code>i_attr</code>：21024＝280、10188＝80、1300106＝80（13103／13104 在此列為 0）。兩者相加後，對上面板：</p>"
+        f"<p>聯盟兵裝突破第 6 階（組 5507，{H('甜點騎士', terms)}）的原值：13103＝2800、13104＝5600、10188＝350、1300106＝350、21024＝1400。"
+        "榮譽突破品質 6 的固定附加屬性：21024＝280、10188＝80、1300106＝80（13103／13104 在此列為 0）。兩者相加後，對上面板：</p>"
     )
     add("<ul>")
     add(f"<li>{H('士兵士氣', terms)}／{H('集結士氣', terms)} 4.30%（350＋80）</li>")
@@ -1455,16 +1454,16 @@ def render_html(data: TablesData) -> str:
     add(f"<li>{H('聯盟士兵攻擊', terms)} 28%（2800）</li>")
     add(f"<li>{H('聯盟士兵生命', terms)}裡，標成「{H('兵裝突破', terms)}」的那一部分 56%（5600）</li>")
     add("</ul>")
-    add("<p>集結士氣官方兵裝文案有「不可疊加」。屬性 1300106 的 <code>max=5000</code> 且 <code>is_max_show=1</code>，對上畫面括號「最大 50%」。</p>")
-    add("<p>榮譽表 <code>attr_1</code> 在聯盟士兵生命還有約 10%–15%（品質 6 時 13104 為 1000–1500），但面板「兵裝突破」生命正好是 56%，這筆沒有出現在該行，維持未驗證。</p>")
+    add("<p>集結士氣官方兵裝文案有「不可疊加」。屬性 1300106 上限欄是 5000，且標了要顯示上限，對上畫面括號「最大 50%」。</p>")
+    add("<p>榮譽表的屬性原值欄在聯盟士兵生命還有約 10%–15%（品質 6 時 13104 為 1000–1500），但面板「兵裝突破」生命正好是 56%，這筆沒有出現在該行，維持未驗證。</p>")
     add('      <h3 id="march">行軍造型（面板有提到，不是本篇主體）</h3>')
     add(
         f"<p>同一張聯盟士兵生命面板，另 20% 標示來自行軍造型。屬性來源分類 50 的名稱就是「{H(o.march_name, terms)}」，說明為「{H(o.march_desc, terms)}」。"
-        "要對上這 20%，需要唯一的 <code>13104|2000</code> 表列；本抽取在行軍／世界造型相關表裡沒有 13104。不要把這 20% 強行對成：</p>"
+        "要對上這 20%，需要唯一的 13104＝2000 表列；本抽取在行軍／世界造型相關表裡沒有 13104。不要把這 20% 強行對成：</p>"
     )
     add("<ul>")
-    add(f"<li>{H(o.shield_name, terms)}（那是建築 121「{H(o.shield_desc, terms)}」，不是一筆 <code>13104|2000</code> 或 <code>10104|2000</code> 的行軍造型列）</li>")
-    add("<li>裝飾物 DIY 裡恰好寫了 <code>13104|2000</code> 的列（<code>citybuilding_DIY_property</code> 有多筆 13104，其中 11150107、15550304 的值是 2000，來源分類是裝飾物，不是行軍造型）</li>")
+    add(f"<li>{H(o.shield_name, terms)}（那是建築 121「{H(o.shield_desc, terms)}」，不是一筆 13104＝2000 或 10104＝2000 的行軍造型列）</li>")
+    add("<li>裝飾物 DIY 裡恰好寫了 13104＝2000 的列（其中 11150107、15550304 的值是 2000，來源分類是裝飾物，不是行軍造型）</li>")
     add("</ul>")
     add(
         "<p>因此：面板有這 20%，表上沒有唯一對得上的行軍造型列，維持未驗證。行軍造型目錄本身見城堡／世界造型相關篇，不在本篇展開；也不把已發佈的"
@@ -1475,37 +1474,37 @@ def render_html(data: TablesData) -> str:
     add("      <h2>士氣</h2>")
     add("<p>官方介面字串已經說明規則，但沒有把數字寫進對照表：</p>")
     add("<ul>")
-    add(f"<li><code>morale_002</code>：{H(official_text('morale_002'), terms)}</li>")
-    add(f"<li><code>morale_003</code>：{H(official_text('morale_003'), terms)}</li>")
-    add(f"<li><code>morale_004</code>：{H(official_text('morale_004'), terms)}</li>")
-    add(f"<li><code>morale_005</code>／<code>006</code>：{H(official_text('morale_005'), terms)}／{H(official_text('morale_006'), terms)}</li>")
+    add(f"<li>{H(official_text('morale_002'), terms)}</li>")
+    add(f"<li>{H(official_text('morale_003'), terms)}</li>")
+    add(f"<li>{H(official_text('morale_004'), terms)}</li>")
+    add(f"<li>{H(official_text('morale_005'), terms)}／{H(official_text('morale_006'), terms)}</li>")
     add("</ul>")
     add("<p>因此還不能寫出「x 倍士氣對應 y 倍傷害」的數列。戰報「士氣影響」的工作假設在戰鬥公式的結算草稿，本頁不把那套假設抄進來當已驗證公式。官方另有傷害上限「最多 300%」的說法，與戰力係數上限 2.0 不是同一條。</p>")
     add(
         f"<p>與士氣有關的屬性：88 {H(attr_label(88, data.attr_by), terms)}、10088 {H(attr_label(10088, data.attr_by), terms)}、16000 {H(attr_label(16000, data.attr_by), terms)}"
-        f"（皆 <code>type=1</code>）；16001 {H(attr_label(16001, data.attr_by), terms)}（<code>type=2</code>）；另有 1136 {H(attr_label(1136, data.attr_by), terms)}、1137 {H(attr_label(1137, data.attr_by), terms)}、"
-        f"1130 {H(attr_label(1130, data.attr_by), terms)}、1131 {H(attr_label(1131, data.attr_by), terms)}；以及兵裝用的 10188（名稱同「{H('士兵士氣', terms)}」，<code>type=2</code>）、"
+        f"（皆點數屬性）；16001 {H(attr_label(16001, data.attr_by), terms)}（百分比類屬性）；另有 1136 {H(attr_label(1136, data.attr_by), terms)}、1137 {H(attr_label(1137, data.attr_by), terms)}、"
+        f"1130 {H(attr_label(1130, data.attr_by), terms)}、1131 {H(attr_label(1131, data.attr_by), terms)}；以及兵裝用的 10188（名稱同「{H('士兵士氣', terms)}」）、"
         f"1300106 {H(attr_label(1300106, data.attr_by), terms)}、1300108 {H(attr_label(1300108, data.attr_by), terms)}。16001 如何疊進上述 {{1}} 倍傷害，表沒有說明。</p>"
     )
-    add("<p>士兵表上，線 A 的 <code>troop.morale</code> 為 205–800；光輝士兵為 100、200、300、350、400、450、500、550。線 B 的 <code>morale</code> 為 0。<code>switch_troop_morale</code> 見上文戰鬥類型一節。關卡技能 <code>troop_morale_skill_01</code> 不可拿來當通用 PvP 士氣表。</p>")
+    add("<p>士兵表上，線 A 的士氣欄為 205–800；光輝士兵為 100、200、300、350、400、450、500、550。線 B 的士氣欄為 0。戰鬥類型的士氣開關見上文戰鬥類型一節。關卡技能不可拿來當通用 PvP 士氣表。</p>")
     add("    </section>")
     add('    <section id="models">')
     add("      <h2>部隊外觀編號（不是兵裝）</h2>")
-    add("<p><code>troop_skin.json</code> 155 筆，欄位只有 <code>id</code>、<code>skin_id</code>、<code>skill_ID</code>、<code>spine_skin</code>，這是士兵模型／外觀編號，不是上文的兵裝圖鑑。<code>troop.json</code> 的 <code>skin_ID</code> 指向這裡（例如 1001 與 1901 都是 10011–10014）。<code>skill_ID</code> 只有 1001、1002、1003、1004 四種。本頁不把這張表當成兵裝名錄，也不展開模型資源。</p>")
+    add("<p>部隊外觀編號表 155 筆，欄位只有編號、外觀編號、技能編號與模型資源名，這是士兵模型／外觀編號，不是上文的兵裝圖鑑。士兵主表的外觀編號指向這裡（例如 1001 與 1901 都是 10011–10014）。技能編號只有 1001、1002、1003、1004 四種。本頁不把這張表當成兵裝名錄，也不展開模型資源。</p>")
     add("    </section>")
     add('    <section id="out-of-scope">')
     add("      <h2>本頁未列入</h2>")
     add("<ul>")
-    add("<li>士兵捐贈上限表（<code>troop_donate.json</code> 243 筆，按種族與兵營等級給 <code>limit</code>／賽季與伺服器標記上限）。</li>")
+    add("<li>士兵捐贈上限表（243 筆，按種族與兵營等級給上限／賽季與伺服器標記上限）。</li>")
     add("<li>光輝研究所與光輝科技的研究線。</li>")
     add("<li>行軍造型、城堡／世界造型、裝飾物 DIY 的完整名錄（只在士兵生命面板提到行軍造型 20% 時，說明沒有唯一表列）。</li>")
-    add("<li>訓練時間、治療時間、<code>lvup_time</code> 的單位換算，以及實際訓練／治療介面是否讀線 B 的消耗欄。</li>")
-    add("<li>10–12 級士兵（傳奇、天御、天穹）在 <code>building_id=-1</code> 之後的確切解鎖條件。</li>")
-    add("<li><code>season_get</code>（<code>2|999|20|{level}</code>）與資源 20 的含義。</li>")
-    add("<li><code>army_type</code> <code>[1, 2, 3]</code>、<code>map_soldier_scale</code>、屬性 10057（值為 0）的實際作用。</li>")
+    add("<li>訓練時間、治療時間、升級時間的單位換算，以及實際訓練／治療介面是否讀線 B 的消耗欄。</li>")
+    add("<li>10–12 級士兵（傳奇、天御、天穹）在建築編號為 −1 之後的確切解鎖條件。</li>")
+    add("<li>線 A 未命名資源欄與資源 20 的含義。</li>")
+    add("<li>兵種類型欄 [1, 2, 3]、地圖士兵縮放欄、屬性 10057（值為 0）的實際作用。</li>")
     add("<li>英雄攻擊／生命轉化率是否作用於士兵傷害。</li>")
     add("<li>士氣壓制的 x→y 數列、16001 的疊加方式，以及戰報「士氣影響」是否等於實際傷害倍率。</li>")
-    add("<li>兵裝 <code>exp</code> 與勳章、榮譽道具 1017 與資源 17 的兌換關係；<code>level_small</code>、突破第 6 階空消耗在客戶端的具體顯示。</li>")
+    add("<li>兵裝經驗值與勳章、榮譽道具 1017 與資源 17 的兌換關係；細分列、突破第 6 階空消耗在客戶端的具體顯示。</li>")
     add(f"<li>{H(o.gunner_name, terms)}（2024503）以及只有升級表的 5401、5402 在客戶端是否出現。</li>")
     add("<li>士兵與英雄技能、站位、陣容的搭配模擬，以及強弱評定。</li>")
     add("</ul>")
@@ -1515,6 +1514,20 @@ def render_html(data: TablesData) -> str:
     add("<ul>")
     add(
         "<li>以下是整理用註記，查名稱與數值可略過。</li>"
+        "<li>可見正文把檔名與欄位名收到這裡。士兵主表是 <code>troop.json</code>（76 筆）；"
+        "戰鬥類型表是 <code>fight_type.json</code>（72 筆），士氣／攜帶開關原名 <code>switch_troop_morale</code>／<code>switch_troop_carry</code>；"
+        "光輝士兵表是 <code>shine_troop.json</code>，光輝等級原名 <code>shine_lv</code>；"
+        "兵營升級進度對過 <code>citybuilding_lvup.json</code> 與 <code>citybuilding_lvup_new.json</code>；"
+        "影響力目錄出自 <code>influence_level.json</code>。"
+        "升級表是 <code>troop_skin_level.json</code>，突破／榮譽突破是 <code>troop_skin_break.json</code>／<code>troop_skin_honor_break.json</code>，"
+        "跳轉表是 <code>jump.json</code>；部隊外觀編號表是 <code>troop_skin.json</code>；捐贈上限表是 <code>troop_donate.json</code>。"
+        "線 A 未命名資源欄原名 <code>season_get</code>，原值 <code>2|999|20|{level}</code>；資源 20 在 <code>top_resource.json</code> 有列，但沒有 <code>top_resource_name_20</code>，不編造名稱，也不解釋成開放條件。"
+        "訓練／治療消耗原值是 <code>999|4|數量</code>、<code>999|5|數量</code>（資源 4 木材、資源 5 石頭）。"
+        "屬性名優先用 <code>attribute_name_{id}</code>。10188 沒有 <code>attribute_name_10188</code>，屬性表 <code>name</code> 指向「士兵士氣」，"
+        "並標 <code>type=2</code>、<code>show_type=2</code>。1129 同樣沒有官方屬性名稱字串（<code>type=1</code>、<code>show_type=1</code>）。"
+        "突破說明數字原名 <code>display_num</code>，屬性原值原名 <code>attrList</code>／榮譽表 <code>attr_1</code>；榮譽升檔後附加屬性原名 <code>i_attrList</code>；第二組屬性原名 <code>attr_2</code>。兵裝升級細分列原名 <code>level_small</code>，解鎖等級原名 <code>unlock_lv</code>，升級消耗原名 <code>exp</code>，士兵等級上下限原名 <code>skin_lv_min</code>／<code>skin_lv_max</code>／<code>skin_lv</code>，城堡最低等級原名 <code>castle_lv_min</code>。榮譽／突破消耗欄原名 <code>cost_1</code>、<code>cost_2</code>、<code>cost</code>；資源 17 第一欄原值記法 <code>999|17|數量</code>，名稱鍵 <code>top_resource_name_17</code>。屬性上限欄原名 <code>max</code>，是否顯示上限原名 <code>is_max_show</code>。英雄攜帶點數原名 <code>hero_level.army_count</code>。光輝參數欄原名 <code>shine_para1</code>。士氣介面字串鍵是 <code>morale_002</code>–<code>morale_006</code>；線 A 士氣欄原名 <code>troop.morale</code>；關卡技能鍵 <code>troop_morale_skill_01</code>。裝飾物 DIY 屬性表原名 <code>citybuilding_DIY_property</code>，其中 11150107、15550304 寫了 <code>13104|2000</code>。"
+        "種族名稱鍵是 <code>unit_race_1</code>–<code>4</code>。神族名稱／說明鍵是 <code>troop_name_4001</code>–<code>4010</code>、<code>troop_desc_4001</code>–<code>4010</code>。"
+        "可見升級表「1 級經驗」「50 級經驗」原名 1 級 exp／50 級 exp；組別編號如 5301 仍照錄為編號。</li>"
     )
     add(
         "<li>士兵有兩條 id 線，不要混用。線 A：1001–1012、2001–2012、3001–3012（有 11、12 級）。"
@@ -1554,19 +1567,19 @@ def render_troop_page(data: TablesData | None = None) -> str:
 
 def _build_md_tables(data: TablesData) -> dict[str, str]:
     prefix = md_table(
-        ["level", "quality", "名稱前綴（後接「〔陣營〕戰士」）", "線 A id", "線 B id"],
+        ["等級", "品質", "名稱前綴（後接「〔陣營〕戰士」）", "線 A 編號", "線 B 編號"],
         _prefix_rows(),
     )
     diff = md_table(
         ["項目", "線 A（1001–1012 等）", "線 B（1901–1910 等，含神族）"],
         [
             ["最高等級", "12（天穹）", "10（傳奇）"],
-            ["士氣 morale", "205–800", "全為 0"],
+            ["士氣", "205–800", "全為 0"],
             ["correlate_building", "125／126／127（聯盟兵營／部族兵營／自然兵營）", "−1"],
             ["season_get", "2|999|20|{level}", "無（None）"],
             ["attr_3", "[10057, 0]（" + attr_label(10057, data.attr_by) + "，值為 0）", "無"],
-            ["捐贈勳章、王國擊殺積分", "有正值", "donate_medal、擊殺積分皆為 −1"],
-            ["同階戰力 power、負重 load、移動 speed", "與線 B 相同", "與線 A 相同"],
+            ["捐贈勳章、王國擊殺積分", "有正值", "捐贈勳章、擊殺積分皆為 −1"],
+            ["同階戰力、負重、移動", "與線 B 相同", "與線 A 相同"],
             ["中高階攻擊／生命", "較低（傳奇 40／770，天穹 50／900）", "較高（傳奇 113／1500）"],
         ],
     )
@@ -1585,7 +1598,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
     a_stat = md_table(cols, stat_rows(1001, 12))
     b_stat = md_table(cols, stat_rows(1901, 10))
     a_cost = md_table(
-        ["等級", "訓練時間", "木材", "石頭", "治療時間", "治療木材", "治療石頭", "lvup_time", "捐贈勳章"],
+        ["等級", "訓練時間", "木材", "石頭", "治療時間", "治療木材", "治療石頭", "升級時間", "捐贈勳章"],
         [[str(lv)] + [str(x) for x in troop_costs(data.troops[1000 + lv])] for lv in range(1, 13)],
     )
     b_cost = md_table(
@@ -1601,7 +1614,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
             str(a["atk"]), str(a["hp"]), str(a["morale"]), str(a["power"]), str(a["load"]), str(a["building_id"]),
         ])
     shine = md_table(
-        ["shine_lv", "聯盟 id", "部族 id", "自然 id", "攻擊", "生命", "士氣", "戰力", "負重", "聯盟 building_id"],
+        ["光輝等級", "聯盟編號", "部族編號", "自然編號", "攻擊", "生命", "士氣", "戰力", "負重", "聯盟建築編號"],
         shine_rows,
     )
     catalog_rows = []
@@ -1613,7 +1626,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
             cost = "同左" if s.cost_id == s.name_id else str(s.cost_id)
             catalog_rows.append([str(g), s.name, str(s.name_id), cost, str(s.quality), "有", s.clause])
     catalog = md_table(
-        ["group", "名稱", "名稱道具 id", "消耗道具 id（若不同）", "升級表品質", "有突破／榮譽", "道具說明（裝載句）"],
+        ["組別", "名稱", "名稱道具編號", "消耗道具編號（若不同）", "升級表品質", "有突破／榮譽", "道具說明（裝載句）"],
         catalog_rows,
     )
 
@@ -1681,7 +1694,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
         faction_rows(5512, "red"),
     )
     honor_attr = md_table(
-        ["組", "品質段", "等級", "attr_1", "戰力"],
+        ["組", "品質段", "等級", "屬性原值", "戰力"],
         [
             ["5301、5302", "3→4", "1–99／100–150", "10104：2→198／200→300", "100→9900／10000→15000"],
             ["5403–5407", "4→5", "1–99／100–150", "10104：5→495／500→750", "200→19800／20000→30000"],
@@ -1702,11 +1715,11 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
         row = next(r for r in data.skin_honors[g] if r["level"] == 100)
         parts = [f"{a}＝{v}" for a, v in (row.get("i_attrList") or [])]
         a2 = row.get("attr_2")
-        extra = f"（另 attr_2 {a2[0]}＝{a2[1]}）" if a2 else ""
+        extra = f"（另第二組屬性 {a2[0]}＝{a2[1]}）" if a2 else ""
         return "，".join(parts) + extra
 
     honor_i = md_table(
-        ["組", "升檔後 i_attr（原值）"],
+        ["組", "升檔後附加屬性（原值）"],
         [[f"{g} {data.skins[g].name}", iattr_text(g)] for g in SKIN_CATALOG],
     )
     return {

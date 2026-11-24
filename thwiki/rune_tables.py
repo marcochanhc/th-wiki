@@ -851,7 +851,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     out: dict[str, str] = {}
 
     # 1. 隊列符文名錄
-    cols = ["type", "名稱", "說明", "寫入屬性", "1 級數值", "10 級數值"]
+    cols = ["類型", "名稱", "說明", "寫入屬性", "1 級數值", "10 級數值"]
     rows = []
     for tt in o.team_types:
         typ = tt.typ
@@ -905,7 +905,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         "破甲：分營隊列攻擊", "破甲：突破防禦（64）",
         "厚甲：分營隊列生命", "厚甲：防禦（22）",
         "絕對強擊（攻擊與生命同值）",
-        "power", "base_power",
+        "戰力", "基礎戰力",
     ]
     # 表頭含官方屬性名時，用 html 並讓 highlight 包整名。短欄名用純文字即可。
     cols_html = [
@@ -916,7 +916,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         H("厚甲符文", terms) + "：分營隊列生命",
         H("厚甲符文", terms) + "：" + H("防禦", terms) + "（22）",
         H("絕對強擊符文", terms) + "（攻擊與生命同值）",
-        "power", "base_power",
+        "戰力", "基礎戰力",
     ]
     rows = []
     for i, lev in enumerate(range(1, 11)):
@@ -936,7 +936,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     out["team_curve"] = table(cols_html, rows, mobile="sticky")
 
     # 3. 編號示例
-    cols = ["type", "種族 race", "陣營", "1 級編號", "10 級編號", "1 級攻擊／生命屬性編號"]
+    cols = ["類型", "種族編號", "陣營", "1 級編號", "10 級編號", "1 級攻擊／生命屬性編號"]
     rows = []
     for typ in range(1, 6):
         for race in range(1, 4):
@@ -996,15 +996,15 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     out["player_names"] = table(cols, rows, mobile="cards", card_title="名稱")
 
     # 6. 依寫入屬性對照
-    cols = ["type", "編號區間", "寫入欄位", "寫入屬性（表內原值）", "依寫入屬性對照，不是表內名稱欄"]
+    cols = ["類型", "編號區間", "寫入欄位", "寫入屬性（表內原值）", "依寫入屬性對照，不是表內名稱欄"]
     rows = []
     descriptions = {
-        1: "para 為 4，高級加 104。像英雄生命。",
-        2: "para 為 10004，其後加 1019，再加 10104。像士兵生命。",
-        3: "用 sp_para1／sp_para2，不用 para。寫入 4 與 20006。像秘寶。",
-        4: "para 為 3，高級加 103。像英雄強擊。編號前綴是 706，與 type 號不一致。",
-        5: "para 為 10003，其後加 1019，再加 10103。像士兵強擊。編號前綴是 705。",
-        6: "para 為 22 與 64，高級加 1019。像隊列強擊。編號前綴是 704，與 type 號不一致。",
+        1: "參數欄為 4，高級加 104。像英雄生命。",
+        2: "參數欄為 10004，其後加 1019，再加 10104。像士兵生命。",
+        3: "用特殊參數 1／2，不用參數欄。寫入 4 與 20006。像秘寶。",
+        4: "參數欄為 3，高級加 103。像英雄強擊。編號前綴是 706，與種類編號不一致。",
+        5: "參數欄為 10003，其後加 1019，再加 10103。像士兵強擊。編號前綴是 705。",
+        6: "參數欄為 22 與 64，高級加 1019。像隊列強擊。編號前綴是 704，與種類編號不一致。",
     }
     for typ in range(1, 7):
         meta = PLAYER_TYPE_META[typ]
@@ -1020,17 +1020,17 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         rows.append([
             str(typ),
             e(f"{lo}–{hi}（前綴 {meta['prefix']}）"),
-            e(meta["fields"]),
+            e({"para": "參數欄", "sp_para1／sp_para2": "特殊參數 1／特殊參數 2"}.get(meta["fields"], meta["fields"])),
             writ,
             e(descriptions[typ]),
         ])
-    out["player_map"] = table(cols, rows, mobile="cards", card_title="type")
+    out["player_map"] = table(cols, rows, mobile="cards", card_title="類型")
 
     # 7. player_rune 共用曲線
     cols = [
-        "等級", "品質", "合成所需枚數", "base_power",
-        "refine_exp", "refine_need", "refine_power",
-        "refine_percent", "refine_percent_power",
+        "等級", "品質", "合成所需枚數", "基礎戰力",
+        "精煉經驗", "精煉需求", "精煉戰力",
+        "精煉百分比欄", "精煉百分比戰力",
     ]
     rows = []
     sample = data.player_by_type[1]
@@ -1050,11 +1050,11 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         if typ == 3:
             cols_t = [
                 "等級", "編號",
-                "sp_para1 " + attr_label_html(attrs[4], terms),
-                "sp_para1 " + attr_label_html(attrs[20006], terms),
-                "sp_para2 " + attr_label_html(attrs[4], terms),
-                "sp_para2 " + attr_label_html(attrs[20006], terms),
-                "base_power",
+                "特殊參數 1 " + attr_label_html(attrs[4], terms),
+                "特殊參數 1 " + attr_label_html(attrs[20006], terms),
+                "特殊參數 2 " + attr_label_html(attrs[4], terms),
+                "特殊參數 2 " + attr_label_html(attrs[20006], terms),
+                "基礎戰力",
             ]
             body = []
             for p in rows_t:
@@ -1071,7 +1071,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             for aid, _ in p.para:
                 if aid not in seen:
                     seen.append(aid)
-        cols_t = ["等級", "編號"] + [attr_label_html(attrs[aid], terms) for aid in seen] + ["base_power"]
+        cols_t = ["等級", "編號"] + [attr_label_html(attrs[aid], terms) for aid in seen] + ["基礎戰力"]
         body = []
         for p in rows_t:
             body.append(
@@ -1090,8 +1090,8 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         if typ == 3:
             cols_t = [
                 "等級",
-                "refine_sp_para1",
-                "refine_percent_sp_para2（對應 20／40／60／80／100）",
+                "精煉特殊參數 1",
+                "精煉百分比特殊參數 2（對應 20／40／60／80／100）",
             ]
             body = []
             for p in rows_t:
@@ -1106,8 +1106,8 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             return table(cols_t, body, mobile="sticky")
         cols_t = [
             "等級",
-            "refine_para",
-            "refine_percent_para（對應 20／40／60／80／100）",
+            "精煉參數",
+            "精煉百分比參數（對應 20／40／60／80／100）",
         ]
         body = []
         for p in rows_t:
@@ -1125,24 +1125,24 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         out[f"player_refine_{typ}"] = type_refine_table(typ)
 
     # 20. 屬性編號
-    cols = ["屬性 id", "官方名稱（attribute_name_{id}）", "type", "show_type", "is_race", "name 欄", "備註"]
+    cols = ["屬性編號", "官方名稱", "類型", "顯示類型", "分營欄", "名稱欄", "備註"]
     rows = []
     notes = {
-        3: "name 欄指向 attribute_name_103，本頁用 attribute_name_3「攻擊」。",
-        4: "name 欄指向 attribute_name_104，本頁用 attribute_name_4「生命值」。",
+        3: "名稱欄指向 103 的名稱鍵，本頁用編號 3 的官方名稱「攻擊」。",
+        4: "名稱欄指向 104 的名稱鍵，本頁用編號 4 的官方名稱「生命值」。",
         62: "不分營的隊列攻擊。隊列符文寫的是 3062 等分營編號，不與 62 寫成同一條公式。",
         63: "不分營的隊列生命。不與 3063 等寫成同一條公式。",
-        103: "show_type=2，只記原值，不換算成百分比。",
-        104: "show_type=2，只記原值，不換算成百分比。",
-        10103: "show_type=2，只記原值。",
-        10104: "show_type=2，只記原值。",
-        3062: "type=2、show_type=2、is_race=1，只記原值。",
-        3063: "type=2、show_type=2、is_race=1，只記原值。",
-        4062: "type=2、show_type=2、is_race=1，只記原值。",
-        4063: "type=2、show_type=2、is_race=1，只記原值。",
-        5062: "type=2、show_type=2、is_race=1，只記原值。",
-        5063: "type=2、show_type=2、is_race=1，只記原值。",
-        20006: "四份字串包都沒有 attribute_name_20006。name 欄指向 attribute_name_20004（「秘寶生命」），不作本頁正式屬性名。",
+        103: "顯示類型為 2，只記原值，不換算成百分比。",
+        104: "顯示類型為 2，只記原值，不換算成百分比。",
+        10103: "顯示類型為 2，只記原值。",
+        10104: "顯示類型為 2，只記原值。",
+        3062: "類型 2、顯示類型 2、分營欄 1，只記原值。",
+        3063: "類型 2、顯示類型 2、分營欄 1，只記原值。",
+        4062: "類型 2、顯示類型 2、分營欄 1，只記原值。",
+        4063: "類型 2、顯示類型 2、分營欄 1，只記原值。",
+        5062: "類型 2、顯示類型 2、分營欄 1，只記原值。",
+        5063: "類型 2、顯示類型 2、分營欄 1，只記原值。",
+        20006: "四份字串包都沒有這個編號的名稱鍵。名稱欄指向 20004（「秘寶生命」），不作本頁正式屬性名。",
     }
     for aid in USED_ATTR_IDS:
         info = attrs[aid]
@@ -1156,7 +1156,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             e(info.name_col or EMPTY),
             e(notes.get(aid, "只記表內原值。" if info.show_type == 2 else "只記表內原值。")),
         ])
-    out["attr_ref"] = table(cols, rows, mobile="cards", card_title="屬性 id")
+    out["attr_ref"] = table(cols, rows, mobile="cards", card_title="屬性編號")
     return out
 
 
@@ -1385,7 +1385,7 @@ def render_html(data: TablesData) -> str:
         f"「{H(o.refine_choose_tip, terms)}」、「{H(o.refine_exp_full, terms)}」、"
         f"「{H(o.refine_max, terms)}」、「{H(o.refine_result, terms)}」。"
     ))
-    add("<h3>共用曲線（六個 type 相同）</h3>")
+    add("<h3>共用曲線（六個種類相同）</h3>")
     add(tbl["player_shared"])
     for typ in range(1, 7):
         meta = PLAYER_TYPE_META[typ]
@@ -1398,13 +1398,13 @@ def render_html(data: TablesData) -> str:
     add('    <section id="out-of-scope">')
     add("      <h2>本頁未列入</h2>")
     add("<ul>")
-    add("<li>羈絆 queue 從 2 起、沒有 1 與 10 的含義。</li>")
+    add("<li>羈絆隊列欄從 2 起、沒有 1 與 10 的含義。</li>")
     add("<li>分營隊列攻擊／生命（3062 等）與不分營 62／63 如何疊加，以及如何進入戰鬥結算。</li>")
     add("<li>後續資料包名稱與說明不一致的原因；也不把這組名稱派給隊列符文，或按種類編號直接對成那組名稱的第 N 條。</li>")
     add("<li>精煉經驗與材料／道具的對應（表沒指明）。</li>")
     add("<li>插槽數為五或六的裁斷。</li>")
     add("<li>強弱評定與搭配模擬。</li>")
-    add("<li><code>kvk_totem</code>，以及帕魯、守護魔獸、精靈、魚缸、蝴蝶、乙太牧場、科技、裝飾物。</li>")
+    add("<li>另一張圖騰表（檔名見資料說明），以及帕魯、守護魔獸、精靈、魚缸、蝴蝶、乙太牧場、科技、裝飾物。</li>")
     add("</ul>")
     add("    </section>")
 
@@ -1444,10 +1444,10 @@ def render_html(data: TablesData) -> str:
         "不把 3062 等與不分營的 62／63 寫成同一條公式。"
         "隊列符文的 type 1–5，只使用 <code>team_rune_name_1</code>–<code>5</code> 與 <code>team_rune_desc_1</code>–<code>5</code>。"
         "絕不用 <code>team_rune_name_001</code>–<code>006</code> 或 <code>UI_player_rune_01</code>–<code>06</code> 來標 <code>team_rune</code> 的 type。"
-        "<code>kvk_totem</code> 不在本頁展開。</li>")
+        "<code>kvk_totem</code> 不在本頁展開。"        "可見表頭「類型／戰力／基礎戰力／精煉經驗／精煉需求／精煉戰力／精煉百分比欄／精煉百分比戰力／精煉參數／精煉特殊參數／特殊參數 1／2／屬性編號／顯示類型／分營欄／名稱欄／種族編號」對應原欄名 <code>type</code>、<code>power</code>、<code>base_power</code>、<code>refine_exp</code>、<code>refine_need</code>、<code>refine_power</code>、<code>refine_percent</code>、<code>refine_percent_power</code>、<code>refine_para</code>、<code>refine_sp_para1</code>、<code>sp_para1</code>／<code>sp_para2</code>、<code>id</code>、<code>show_type</code>、<code>is_race</code>、<code>name</code>、<code>race</code>。寫入欄位「參數欄」原名 <code>para</code>。可見「羈絆隊列欄」原名 <code>queue</code>。</li>")
     add(f"<li>{_data_notes(data)}</li>")
     add("<li>待補：attribute_name_20006 缺失時客戶端實際顯示什麼；"
-        "精煉經驗與材料的對應；羈絆 queue 欄的含義；"
+        "精煉經驗與材料的對應；羈絆隊列欄的含義；"
         "分營與不分營隊列攻擊／生命的疊加方式；"
         "以及 name_001–006 與說明不一致的原因。</li>")
     add("</ul>")

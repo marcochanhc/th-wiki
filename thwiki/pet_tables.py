@@ -161,6 +161,23 @@ def format_cost(raw) -> str:
     return str(raw)
 
 
+def format_essence_cost(raw, essence_name: str) -> str:
+    """Turn 2|289|n into 寵物精華 ×n. Other shapes stay as recorded."""
+    if raw in (None, "", [], -1):
+        return EMPTY
+    text = format_cost(raw)
+    if text == EMPTY:
+        return EMPTY
+    parts = []
+    for bit in text.split("、"):
+        segs = bit.split("|")
+        if len(segs) == 3 and segs[0] == "2" and segs[1] == "289":
+            parts.append(f"{essence_name} ×{segs[2]}")
+        else:
+            parts.append(bit)
+    return "、".join(parts)
+
+
 def format_unlocktime(raw) -> str:
     if raw in (None, "", -1):
         return EMPTY
@@ -1457,13 +1474,26 @@ def _morph_plain(pet: PetInfo) -> str:
     return "；".join(parts)
 
 
+def _morph_visible(pet: PetInfo) -> str:
+    later = [m for m in pet.morphs if m.break_level != pet.origin_break]
+    if not later:
+        return EMPTY
+    if pet.name_constant and any(m.skin_changed for m in later):
+        skins = "、".join(str(m.skin_id) for m in pet.morphs)
+        return f"皮膚編號會變（{skins}），顯示名不變"
+    parts = []
+    for m in later:
+        parts.append(f"{m.break_level} 階品質 {m.quality}：{m.name}（皮膚 {m.skin_id}）")
+    return "；".join(parts)
+
+
 def _skill_block_plain(pet: PetInfo, which: str) -> str:
     brow = pet.breaks[0] if which == "origin" else pet.breaks[-1]
     label = f"{brow.break_level} 階"
     chunks = [label]
     for skill, lv in zip(pet.skills, brow.skill_levels):
         name = skill.name if skill.name else "（名稱鍵在字串表沒有內容，不編造技能名）"
-        head = f"{name}（{skill.sid}，名稱鍵 {skill.name_key}，等級 {lv}／{skill.maxlv}）"
+        head = f"{name}（{skill.sid}，等級 {lv}／{skill.maxlv}）"
         if skill.name_key == "hero_skill_name_84017033":
             head += "（鍵名照表為 84017033）"
         if skill.name_key in ("hero_skill_name_8401203", "hero_skill_name_8401103") and skill.sid in (8401103, 8401203):
@@ -1486,7 +1516,7 @@ def _skill_block_html(pet: PetInfo, which: str, terms: list[str]) -> str:
             note = e("（鍵名照表為 84017033）")
         if skill.name_key in ("hero_skill_name_8401203", "hero_skill_name_8401103") and skill.sid in (8401103, 8401203):
             note = e("（名稱鍵與寵物編號交叉，照表登錄）")
-        head = f"{name}（{e(str(skill.sid))}，名稱鍵 <code>{e(skill.name_key)}</code>，等級 {e(str(lv))}／{e(str(skill.maxlv))}）{note}"
+        head = f"{name}（{e(str(skill.sid))}，等級 {e(str(lv))}／{e(str(skill.maxlv))}）{note}"
         lines = "<br>".join(H(line, terms) for line in skill_lines(skill, lv))
         parts.append(f"{head}<br>{lines}")
     return "<br>".join(parts)
@@ -1503,6 +1533,14 @@ def _fmt_para2(raw, attrs: dict[int, int]) -> str:
 
 def _build_html_tables(data: TablesData, terms: list[str]) -> dict:
     o = data.official
+    def _park_note_visible(note: str) -> str:
+        return (
+            note.replace("string_para2 為空", "字串參數 2 為空")
+            .replace("para1 改為", "參數欄 1 改為")
+            .replace("para2 改為", "參數欄 2 改為")
+            .replace("（cost1／cost2 為空）", "（第一、第二消耗欄為空）")
+        )
+
     park_rows = []
     for r in data.park:
         park_rows.append([
@@ -1511,10 +1549,10 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict:
             str(r.para2),
             e(_fmt_para2(r.string_para2, r.attrs)),
             str(r.fightforce),
-            H(r.note, terms) if r.note else EMPTY,
+            H(_park_note_visible(r.note), terms) if r.note else EMPTY,
         ])
     park = table(
-        ["樂園等級", "para1", "para2", "string_para2（id｜原值）", "戰力", "備註"],
+        ["樂園等級", "參數欄 1", "參數欄 2", "字串參數 2（編號｜原值）", "戰力", "備註"],
         park_rows,
         mobile="sticky",
         card_title="樂園等級",
@@ -1542,16 +1580,15 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict:
 
     cat_rows = []
     for p in data.pets:
-        later = _morph_plain(p)
+        later = _morph_visible(p)
         cat_rows.append([
             H(p.base_name, terms),
             str(p.pid),
-            e(p.base_name_key),
             str(p.base_skin),
             H(later, terms) if later != EMPTY else EMPTY,
         ])
     catalog = table(
-        ["基礎名", "寵物 id", "基礎名稱鍵", "基礎皮膚", "後續型態（皮膚或顯示名有變化的階段）"],
+        ["基礎名", "寵物編號", "基礎皮膚", "後續型態（皮膚或顯示名有變化的階段）"],
         cat_rows,
         mobile="cards",
         card_title="基礎名",
@@ -1643,20 +1680,20 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict:
                 slv,
                 f"{r.pet_lv_min}–{r.pet_lv_max}",
                 e(format_cost(r.cost)),
-                e(format_cost(r.extra_cost)),
+                e(format_essence_cost(r.extra_cost, o.essence_name)),
             ]
             if include_attr:
                 cells.append("、".join(f"{k}｜{v}" for k, v in r.attr_role.items()))
             if r.season_limit not in (None, "", 0, -1) or r.season_limit_new not in (None, "", [], -1):
-                cells.append(e(f"season_limit={r.season_limit}；season_limit_new={r.season_limit_new}"))
+                cells.append(e(f"{r.season_limit}；{r.season_limit_new}（只照錄）"))
             else:
                 cells.append(EMPTY)
             rows.append(cells)
         return rows
 
-    headers_830 = ["突破階", "轉化率", "品質", "技能等級", "等級上下限", "消耗（照錄）", "extra_cost", "attr_role 原值", "season（只照錄）"]
+    headers_830 = ["突破階", "轉化率", "品質", "技能等級", "等級上下限", "消耗（照錄）", "額外消耗", "角色屬性原值", "賽季欄（只照錄）"]
     br830 = table(headers_830, break_rows_for(slime, True), mobile="sticky", card_title="突破階")
-    headers_840c = ["突破階", "轉化率", "品質", "技能等級", "等級上下限", "消耗（840a，照錄）", "extra_cost", "season（只照錄）"]
+    headers_840c = ["突破階", "轉化率", "品質", "技能等級", "等級上下限", "消耗（840a，照錄）", "額外消耗", "賽季欄（只照錄）"]
     # 840a without attr (attrs differ by group)
     br840a = table(
         headers_840c,
@@ -1665,7 +1702,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict:
         card_title="突破階",
     )
     dada = next(p for p in data.pets if p.pid == 840017)
-    headers_840b = ["突破階", "轉化率", "品質", "技能等級", "等級上下限", "消耗（火花／達達，照錄）", "extra_cost", "season（只照錄）"]
+    headers_840b = ["突破階", "轉化率", "品質", "技能等級", "等級上下限", "消耗（火花／達達，照錄）", "額外消耗", "賽季欄（只照錄）"]
     br840b = table(
         headers_840b,
         [row[:7] + [row[-1]] for row in break_rows_for(dada, False)],
@@ -1699,7 +1736,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict:
     skills = {}
     for p in data.pets:
         rows = [
-            [e(f"{p.origin_break} 階（origin_break）"), _skill_block_html(p, "origin", terms)],
+            [e(f"{p.origin_break} 階（起始突破階）"), _skill_block_html(p, "origin", terms)],
             [e(f"{p.break_max} 階（滿突破）"), _skill_block_html(p, "max", terms)],
         ]
         skills[p.pid] = table(
@@ -1723,7 +1760,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict:
     )
 
     honor = table(
-        ["品質", "屬性", "戰力", "need_chip（各段含義未標，不解讀）"],
+        ["品質", "屬性", "戰力", "碎片欄（各段含義未標，不解讀）"],
         [[
             str(r.quality),
             f"{_alabel(r.attr_name, r.attr_id, terms)} {r.attr_value}",
@@ -1753,7 +1790,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict:
 
     inc_rows = []
     for r in data.incubate:
-        name = H(r.egg_name, terms) if r.egg_name else e("（不在 pet_detail，不編造蛋名）")
+        name = H(r.egg_name, terms) if r.egg_name else e("（不在寵物定義表，不編造蛋名）")
         desc = H(r.egg_desc, terms) if r.egg_desc else EMPTY
         inc_rows.append([
             str(r.iid),
@@ -1769,23 +1806,22 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict:
             desc,
         ])
     incubate = table(
-        ["id", "在 pet_detail", "消耗", "時間（秒）", "pet_reward", "is_guaranteed", "guaranteed_pet_id", "probability_time", "guaranteed_reward", "蛋短名", "蛋說明"],
+        ["編號", "在寵物定義表", "消耗", "時間（秒）", "孵出結果", "是否保底", "保底寵物編號", "保底次數", "保底獎勵", "蛋短名", "蛋說明"],
         inc_rows,
         mobile="cards",
-        card_title="id",
+        card_title="編號",
     )
 
     task_rows = []
     for r in data.egg_tasks:
         task_rows.append([
-            str(r["id"]),
-            H(r["name"], terms),
-            e(str(r["name_key"])),
-            e(str(r["time"])),
-            e(str(r["disappear_time"])),
+            e(f"{r['id']} "),
+            H(r["name"], terms) + " ",
+            e(f"{r['time']} "),
+            e(f"{r['disappear_time']} "),
         ])
     egg_tasks = table(
-        ["id", "名稱", "名稱鍵", "time", "disappear_time"],
+        ["編號", "名稱", "時間", "消失時間"],
         task_rows,
         mobile="sticky",
         card_title="名稱",
@@ -1978,16 +2014,16 @@ def render_html(data: TablesData) -> str:
     add('    <section id="rules">')
     add("      <h2>系統規則（官方字串）</h2>")
     add(p_html(
-        f"轉化公式（<code>pet_function_attr_tips_1</code>／<code>_2</code>，不是戰鬥傷害公式）原文："
+        "轉化公式（不是戰鬥傷害公式）原文："
     ))
     add(f"<blockquote>{highlight_lines(o.formula_1, terms)}</blockquote>")
-    add(p_html("上陣後的對照文案（<code>pet_function_attr_tips_2</code>）原文："))
+    add(p_html("上陣後的對照文案原文："))
     add(f"<blockquote>{highlight_lines(o.formula_2, terms)}</blockquote>")
-    add(p_html(f"養成說明（<code>pet_info_tips_2</code>）："))
+    add(p_html("養成說明："))
     add(f"<blockquote>{highlight_lines(o.tips['pet_info_tips_2'], terms)}</blockquote>")
-    add(p_html(f"上陣說明（<code>pet_info_tips_3</code>）："))
+    add(p_html("上陣說明："))
     add(f"<blockquote>{highlight_lines(o.tips['pet_info_tips_3'], terms)}</blockquote>")
-    add(p_html(f"戰鬥與轉化說明（<code>pet_attr_info_tips</code>）："))
+    add(p_html("戰鬥與轉化說明："))
     add(f"<blockquote>{highlight_lines(o.tips['pet_attr_info_tips'], terms)}</blockquote>")
     add("    </section>")
 
@@ -2004,17 +2040,16 @@ def render_html(data: TablesData) -> str:
         f"「{H(o.park_des_keys['attribute_name_1191'], terms)}」（1191）。"
     ))
     add(p_html(
-        "<code>para1</code> 在 0–10 級為 1、11–30 級為 2、31–40 級為 3；"
-        "<code>para2</code> 在 0–34 級為 1、35–40 級為 2。"
+        "參數欄 1 在 0–10 級為 1、11–30 級為 2、31–40 級為 3；"
+        "參數欄 2 在 0–34 級為 1、35–40 級為 2。"
         "表沒有把這兩欄逐一標上「孵化欄位／搜尋等級／縮短時間」，本頁只錄數值，不自行指定為哪一欄。"
         f"另一欄從 1 級起有屬性 1133（字串表沒有對應官方屬性名；屬性表內部名稱對應「{H(o.attr_1133_name, terms)}」，與升級說明第三項相同，本頁不自行斷定界面一定用這個名稱顯示），"
         "數值隨等級增加（1 級 100、40 級 4000），並逐步寫上 1192／1191（1192 自 10 級、1191 自 20 級；40 級 1191 為 2）。"
     ))
     add(p_html(
-        f"消耗方面，0–39 級的 <code>cost1</code>／<code>cost2</code> 為類型 999、資源 4／5"
+        f"消耗方面，0–39 級的第一、第二欄消耗為類型 999、資源 4／5"
         f"（頂欄名稱為{H(o.wood, terms)}／{H(o.stone, terms)}），兩張升級表這兩欄相同；40 級沒有再升級消耗。"
-        "<code>cost3</code> 與 <code>buildTime</code> 在 <code>citybuilding_lvup</code> 與 "
-        "<code>citybuilding_lvup_new</code> 並不完全相同（10 級起時間不同，18 級起後者才有 999｜6 的 cost3），"
+        "第三欄消耗與升級時間在兩張建築升級表並不完全相同（10 級起時間不同，18 級起後者才有類型 999、中段 6 的第三欄消耗；類型 999 與中段 6 沒有官方資源名，不編造），"
         "本頁不把這兩欄寫成單一數值。戰力 0 級為 0、1 級為 300、20 級為 10,950、40 級為 140,550。"
     ))
     add(tbl["park"])
@@ -2023,9 +2058,9 @@ def render_html(data: TablesData) -> str:
     add('    <section id="catalog">')
     add("      <h2>名錄與型態名稱</h2>")
     add(p_html(
-        "顯示名取自該突破階段的皮膚 <code>name</code> 鍵。830xxx 從突破 0 開始，840xxx 從突破 5 開始（與 "
-        "<code>origin_break=5</code> 一致）。下表「基礎名」是各隻第一筆突破列的顯示名；「後續型態」只列皮膚或顯示名有變化的階段。"
-        f"<code>group_id</code> 的百位與榮譽加成一致：1＝{H('聯盟', terms)}、2＝{H('部族', terms)}、3＝{H('自然', terms)}；"
+        "顯示名取自該突破階段的皮膚名稱鍵。830xxx 從突破 0 開始，840xxx 從突破 5 開始（與 "
+        "起始突破階 5 一致）。下表「基礎名」是各隻第一筆突破列的顯示名；「後續型態」只列皮膚或顯示名有變化的階段。"
+        f"陣營組編號的百位與榮譽加成一致：1＝{H('聯盟', terms)}、2＝{H('部族', terms)}、3＝{H('自然', terms)}；"
         "112／212／312 是前三隻，榮譽數值為同級的一半；401 只有達達，榮譽加的是英雄生命（104），不是陣營英雄屬性。"
     ))
     add(tbl["catalog"])
@@ -2056,7 +2091,7 @@ def render_html(data: TablesData) -> str:
         "消耗欄只寫數字，沒有道具 id。"
         f"道具 284「{H(o.food_name, terms)}」說明為「{H(o.food_desc, terms)}」，"
         f"289「{H(o.essence_name, terms)}」說明為「{H(o.essence_desc, terms)}」；"
-        "本頁不把升級表這個數字自行斷定成只扣口糧或口糧加精華。<code>build_level_limit</code> 全表為 1。"
+        "本頁不把升級表這個數字自行斷定成只扣口糧或口糧加精華。建築等級條件欄全表為 1。"
         f"另外，升級表有獨立的額外消耗欄，消耗的是{H(o.essence_name, terms)}："
         "830xxx 自 61 級至 90 級、840xxx 自 91 級至 120 級出現。第 21 章升級節未列出此欄，本頁按表補上。"
     ))
@@ -2081,7 +2116,7 @@ def render_html(data: TablesData) -> str:
     add('    <section id="break">')
     add("      <h2>突破與轉化率</h2>")
     add(p_html(
-        f"突破會提高 <code>conversion_rate</code>（官方稱{H(o.attr_percent, terms)}）、"
+        f"突破會提高轉化率（官方稱{H(o.attr_percent, terms)}）、"
         f"{H(o.attr_break_all, terms)}（界面字串同樣是「{H(o.attr_break_all, terms)}」）、"
         "等級上下限，並解鎖或提升技能。"
         f"材料說明：「{H(o.title020, terms)}」。"
@@ -2094,7 +2129,7 @@ def render_html(data: TablesData) -> str:
         "830001–830003 的突破中間值（消耗、轉化率、品質、技能等級、103／104）三隻相同，18 列（0–17 階）。"
         "轉化率 0 階 2000，17 階 8800。0 階全英雄加成是英雄攻擊 50、英雄生命 50，之後每階各 +50，17 階為 900／900。"
         "技能 1 在 0 階為 1 級，2 階升至 2，4 階升至 3（滿）；技能 2 在 5 階解鎖，7／9 階升至 2／3；技能 3 在 11 階解鎖（只有 1 級）。"
-        "史萊姆 0 階 <code>pet_lv_max</code> 20、17 階 90。"
+        "史萊姆 0 階等級上限 20、17 階 90。"
     ))
     add(tbl["br830"])
     add(p_html(
@@ -2121,13 +2156,12 @@ def render_html(data: TablesData) -> str:
         "名稱取技能表上的名稱。"
         f"部分 4 號技能共用「{H(o.shelter['聯盟的庇護'], terms)}」「{H(o.shelter['部落的庇護'], terms)}」"
         f"「{H(o.shelter['自然的庇護'], terms)}」這組鍵；達達的 4 號技能是「{H(o.shelter['魔狗的庇護'], terms)}」。"
-        "雪團子 3 號技能的名稱鍵是 <code>hero_skill_name_8401203</code>（「優雅」），"
-        "時光龍 3 號技能的名稱鍵是 <code>hero_skill_name_8401103</code>（「龍威」），鍵與寵物編號交叉，照表登錄。"
+        "雪團子 3 號技能是「優雅」，時光龍 3 號技能是「龍威」，名稱鍵與寵物編號交叉，照表登錄。"
         "蓬蓬崽的技能 id 是 8400301–8400304，絨嗚嗚是 8400201–8400204，也與寵物編號交叉，照表登錄。"
-        "達達 3 號技能名稱鍵是 <code>hero_skill_name_84017033</code>（堅硬表皮）。"
-        "鐵喙前三個技能的名稱鍵（<code>hero_skill_name_8401801</code>–<code>8401803</code>）在字串表沒有內容，不編造技能名；"
+        "達達 3 號技能是「堅硬表皮」。"
+        "鐵喙前三個技能在字串表沒有內容，不編造技能名；"
         f"第四個技能仍是「{H(o.shelter['聯盟的庇護'], terms)}」。"
-        "每隻只列 origin_break 與滿突破的技能文案，不展每一中間等級。"
+        "每隻只列起始突破階與滿突破的技能文案，不展每一中間等級。"
         "毛茸茸「揚塵」基礎文案兩處 <code>{1}</code> 都代入同一參數 6，參數表另有未使用的 1.5，照錄不猜、不自行挪位。"
     ))
     for p in data.pets:
@@ -2142,18 +2176,18 @@ def render_html(data: TablesData) -> str:
     add('    <section id="guidebook">')
     add("      <h2>圖鑑與榮譽牆</h2>")
     add(p_html(
-        f"圖鑑介面字串：「{H(o.title003_dec, terms)}」（<code>pet_title003_dec</code>）。"
+        f"圖鑑介面字串：「{H(o.title003_dec, terms)}」。"
         f"寵物圖鑑 58 級，每級有經驗與給英雄的"
         f"{H(o.attr_names[3], terms)}、{H(o.attr_names[4], terms)}（點數類屬性）。"
-        f"<code>attr_pet</code> 全表為空。經驗合計 {data.guidebook_exp_total:,}。"
-        "成就表 393 筆按寵物 id 與 <code>need_level</code>／<code>need_break</code> 給圖鑑經驗等，本頁不逐條展開。"
+        f"寵物屬性欄全表為空。經驗合計 {data.guidebook_exp_total:,}。"
+        "成就表 393 筆按寵物編號與需求等級／需求突破給圖鑑經驗等，本頁不逐條展開。"
     ))
     add(tbl["guidebook"])
-    add(p_html(f"{H(o.honour_name, terms)}說明（<code>pet_honour_info_1</code>）："))
+    add(p_html(f"{H(o.honour_name, terms)}說明："))
     add(f"<blockquote>{highlight_lines(o.honour_info, terms)}</blockquote>")
     add(p_html(
         "榮譽牆表 2 筆，品質 5／6。生命值 40／80，戰力 160／880。"
-        "<code>need_chip</code> 分別照錄，各段含義未標，不解讀。"
+        "碎片欄分別照錄，各段含義未標，不解讀。"
     ))
     add(tbl["honor"])
     add(p_html(
@@ -2169,21 +2203,21 @@ def render_html(data: TablesData) -> str:
         "孵化表 5 筆。前 3 筆編號與 830001–830003 相同，消耗對應三種寵物蛋，"
         "孵化時間 14,400／21,600／28,800 秒（4／6／8 小時）。"
         "沒有對應的道具短名鍵；界面短名見上文優良／稀有／史詩寵物蛋。鍵名見資料說明。"
-        "830002 列有保底：<code>is_guaranteed=1</code>，<code>guaranteed_pet_id</code> 為 830001｜830002｜830003，"
-        f"<code>probability_time=4</code>，與字串「{H(o.guaranteed, terms)}」相符。"
-        "後兩筆 id 830004／830005 不在 <code>pet_detail</code>，也沒有 30004／30005 的道具說明，"
-        "不編造這兩種蛋的名稱與孵出結果（<code>pet_reward</code> 為 15004／15005，字串表沒有對應道具名）。"
+        "830002 列有保底：保底標記為 1，保底寵物編號為 830001｜830002｜830003，"
+        f"保底次數為 4，與字串「{H(o.guaranteed, terms)}」相符。"
+        "後兩筆編號 830004／830005 不在寵物定義表，也沒有 30004／30005 的道具說明，"
+        "不編造這兩種蛋的名稱與孵出結果（孵出結果為 15004／15005，字串表沒有對應道具名）。"
     ))
     add(tbl["incubate"])
     add(p_html(
         "搜索任務表 3 筆，名稱為優良／稀有／史詩寵物蛋，是搜索任務而不是 21 隻寵物的定義。"
-        "<code>pet_info_tips_1</code> 與 <code>_4</code> 文案不完全相同，兩則並列，不合併、不另推次數表。"
+        "兩則搜索說明文案不完全相同，並列如下，不合併、不另推次數表。"
     ))
-    add(p_html("搜索說明（<code>pet_info_tips_1</code>，完成任務時 33.33%、蛋最多存在 24 小時）："))
+    add(p_html("搜索說明（完成任務時 33.33%、蛋最多存在 24 小時）："))
     add(f"<blockquote>{highlight_lines(o.tips['pet_info_tips_1'], terms)}</blockquote>")
-    add(p_html("另一則（<code>pet_info_tips_4</code>，接取特殊任務 33.33%、蛋最多存在 72 小時）："))
+    add(p_html("另一則（接取特殊任務 33.33%、蛋最多存在 72 小時）："))
     add(f"<blockquote>{highlight_lines(o.tips['pet_info_tips_4'], terms)}</blockquote>")
-    add(p_html(f"<code>pet_info_tips_8</code>：「{H(o.tips['pet_info_tips_8'], terms)}」"))
+    add(p_html(f"另有說明：「{H(o.tips['pet_info_tips_8'], terms)}」"))
     add(tbl["egg_tasks"])
     add(p_html(
         "口糧轉換表 9 筆，消耗 100–4000、上限 20–99999，獎勵編號 110411–110419，"
@@ -2191,12 +2225,12 @@ def render_html(data: TablesData) -> str:
     ))
     add(tbl["food"])
     add(p_html(
-        "重生說明（<code>pet_info_tips_5</code>、<code>pet_function_reborn_tips2</code>）："
+        "重生說明："
     ))
     add(f"<blockquote>{highlight_lines(o.tips['pet_info_tips_5'], terms)}</blockquote>")
     add(p_html(f"另寫：「{H(o.reborn_tips2, terms)}」"))
     add(p_html(
-        f"<code>pet_info_tips_6</code>：「{H(o.tips['pet_info_tips_6'], terms)}」"
+        f"另有說明：「{H(o.tips['pet_info_tips_6'], terms)}」"
         "這是官方說明，不是本頁對賽季開放的判斷。"
     ))
     add("    </section>")
@@ -2206,14 +2240,14 @@ def render_html(data: TablesData) -> str:
     add("<ul>")
     add(f"<li>{H('英靈', terms)}（見已發佈的<a href=\"valhalla.html\">{H('英靈總表', terms)}</a>，英靈不是寵物）。"
         "帕魯、守護魔獸、精靈、魚缸、蝴蝶、乙太牧場等伴侶與休閒系統。</li>")
-    add("<li>寵物主表不存在的穩定 <code>pet_name_{id}</code>；不以寶箱俗稱覆寫皮膚名稱鍵。</li>")
+    add("<li>寵物主表不存在穩定的寵物名稱鍵；不以寶箱俗稱覆寫皮膚顯示名。</li>")
     add("<li>升級消耗欄對應的確切道具（口糧／精華／兩者），以及突破消耗各段的含義。</li>")
     add("<li>技能解鎖門檻＝10／20／30／40 的含義；屬性 1133 沒有對應官方屬性名，"
-        "與 <code>pet_building_attr_cd</code> 是否同一界面顯示待確認。</li>")
+        "與升級說明第三項是否同一界面顯示待確認。</li>")
     add("<li>孵化表 830004／830005、獎勵 id 15001–15006／110411–110419 的名稱與實際孵出內容。</li>")
     add("<li>圖鑑成就 393 筆、搜索任務次數與協助獎勵的完整數值表、儲值與禮包。</li>")
-    add("<li>寵物樂園全部 41 列的中間值，以及兩張升級表不同的 <code>buildTime</code>／<code>cost3</code> 逐級對照。"
-        "也不把 <code>para1</code>／<code>para2</code> 自行指定為哪一欄。</li>")
+    add("<li>寵物樂園全部 41 列的中間值，以及兩張升級表不同的升級時間／第三欄消耗逐級對照。"
+        "也不把參數欄 1／參數欄 2 自行指定為哪一欄。</li>")
     add("<li>升級 2,520 列逐級表、突破 396 列逐階全表，以及每一中間突破等級的技能文案。</li>")
     add("<li>解鎖時間、賽季限制與賽季日曆的對應（不標未開放）。</li>")
     add("<li>與英雄技能、站位的搭配模擬，以及轉化公式代入面板後的戰鬥結算。</li>")
@@ -2237,7 +2271,23 @@ def render_html(data: TablesData) -> str:
         "額外消耗 <code>extra_cost</code>／升級 <code>cost_extra</code> 為 <code>2|289|數量</code>（寵物精華）。"
         "830xxx 從 12 階、840xxx 從 18 階起 <code>season_limit=2</code>、<code>season_limit_new=[1, 35]</code>。"
         "達達 <code>unlocktime</code> 為 <code>2026-08-10 00:00:00|2026-10-01 00:00:00</code>；"
-        "鐵喙為 <code>2030-08-10 00:00:00|2030-10-01 00:00:00</code>。</li>"
+        "鐵喙為 <code>2030-08-10 00:00:00|2030-10-01 00:00:00</code>。"
+        "技能名稱鍵原名 <code>hero_skill_name_*</code>，可見正文只寫官方技能名與技能編號。"
+        "起始突破階原名 <code>origin_break</code>。榮譽牆碎片欄原名 <code>need_chip</code>。"
+        "樂園升級消耗欄原名 <code>cost1</code>／<code>cost2</code>／<code>cost3</code>，升級時間原名 <code>buildTime</code>；"
+        "兩張建築升級表原名 <code>citybuilding_lvup</code>／<code>citybuilding_lvup_new</code>。"
+        "陣營組編號原名 <code>group_id</code>。"
+        "可見正文的官方顯示名對應名稱鍵 <code>hero_name_*</code>，基礎名稱鍵只保留在資料說明。"
+        "圖鑑寵物屬性欄原名 <code>attr_pet</code>（全表為空）；建築等級條件欄原名 <code>build_level_limit</code>（全表為 1）。"
+        "轉化率欄原名 <code>conversion_rate</code>；突破等級上限欄原名 <code>pet_lv_max</code>。"
+        "成就表需求等級／需求突破原名 <code>need_level</code>／<code>need_break</code>。"
+        "孵化保底欄原名 <code>is_guaranteed</code>、<code>guaranteed_pet_id</code>、<code>probability_time</code>、<code>guaranteed_reward</code>；孵出結果原名 <code>pet_reward</code>；寵物定義表原名 <code>pet_detail</code>。"
+        "樂園可見「參數欄 1／2」「字串參數 2」原名 <code>para1</code>／<code>para2</code>／<code>string_para2</code>。"
+        "轉化公式與規則說明原文對應 <code>pet_function_attr_tips_1</code>／<code>_2</code>、<code>pet_info_tips_2</code>／<code>_3</code>、<code>pet_attr_info_tips</code>；"
+        "圖鑑說明原名 <code>pet_title003_dec</code>；榮譽牆說明原名 <code>pet_honour_info_1</code>；"
+        "搜索與重生等說明原名 <code>pet_info_tips_1</code>／<code>_4</code>／<code>_5</code>／<code>_6</code>／<code>_8</code>、<code>pet_function_reborn_tips2</code>。"
+        "寵物主表沒有穩定的 <code>pet_name_{id}</code>。"
+        "可見搜索任務表寫編號、名稱、時間、消失時間；時間／消失時間原名 <code>time</code>／<code>disappear_time</code>（本表為 30／259200），名稱鍵 <code>pet_egg_05</code>／<code>08</code>／<code>09</code> 只留在資料說明，可見正文寫官方蛋名。</li>"
     )
     add("<li><strong>寵物主表沒有名稱欄，也沒有穩定的 <code>pet_name_{id}</code>。</strong>"
         "能對上的路徑是：突破表的 <code>pet_skin_id</code> → <code>skin.json</code>（頭像圖集為 "
@@ -2345,7 +2395,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
     )
 
     def break_md(pet: PetInfo, include_attr: bool, cost_header: str) -> str:
-        headers = ["突破階", "轉化率", "品質", "技能等級", "等級上下限", cost_header, "extra_cost"]
+        headers = ["突破階", "轉化率", "品質", "技能等級", "等級上下限", cost_header, "額外消耗"]
         if include_attr:
             headers.append("attr_role 原值")
         headers.append("season（只照錄）")
@@ -2355,7 +2405,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
                 str(r.break_level), str(r.conversion_rate), str(r.quality),
                 "／".join(str(x) for x in r.skill_levels),
                 f"{r.pet_lv_min}–{r.pet_lv_max}",
-                format_cost(r.cost), format_cost(r.extra_cost),
+                format_cost(r.cost), format_essence_cost(r.extra_cost, data.official.essence_name),
             ]
             if include_attr:
                 cells.append("、".join(f"{k}｜{v}" for k, v in r.attr_role.items()))
@@ -2387,7 +2437,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
         skills[p.pid] = md_table(
             ["階段", "技能文案"],
             [
-                [f"{p.origin_break} 階（origin_break）", _skill_block_plain(p, "origin")],
+                [f"{p.origin_break} 階（起始突破階）", _skill_block_plain(p, "origin")],
                 [f"{p.break_max} 階（滿突破）", _skill_block_plain(p, "max")],
             ],
         )
