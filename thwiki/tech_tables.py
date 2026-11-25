@@ -1102,11 +1102,78 @@ def _page_name_cell(page: TypePage, html: bool, terms: list[str] | None = None) 
     return body
 
 
+def _type_names_by_id(data: "TablesData") -> dict[int, str]:
+    names: dict[int, str] = {}
+    for page in data.set1 + data.set2 + data.empty_pages + data.shine_pages:
+        if page.name:
+            names[page.type_id] = page.name
+    return names
+
+
+def _prereq_names(raw: str, names: dict[int, str]) -> str | None:
+    labels: list[str] = []
+    for part in str(raw).split("|"):
+        part = part.strip()
+        if not part:
+            return None
+        try:
+            tid = int(part)
+        except ValueError:
+            return None
+        nm = names.get(tid)
+        if not nm:
+            return None
+        labels.append(f"「{nm}」")
+    return "、".join(labels)
+
+
+def _rewrite_prereq_note_html(text: str, names: dict[int, str]) -> str:
+    def repl_one(m: re.Match[str]) -> str:
+        lab = _prereq_names(m.group(1), names)
+        return f"前置為{lab}" if lab else "前置對照見資料說明"
+
+    def repl_both(m: re.Match[str]) -> str:
+        a = _prereq_names(m.group(1), names)
+        b = _prereq_names(m.group(2), names)
+        if a and b:
+            if a == b:
+                return f"前置為{a}，另一套前置亦為{b}"
+            return f"前置為{a}，另一套前置為{b}"
+        return "前置對照見資料說明"
+
+    text = re.sub(r"新前置欄 ([0-9|]+)、舊前置欄 ([0-9|]+)", repl_both, text)
+    text = re.sub(r"舊前置欄為 ([0-9|]+)", repl_one, text)
+    text = re.sub(r"新前置欄為 ([0-9|]+)", repl_one, text)
+    return text
+
+
+def _prereq_mapping_note(data: "TablesData") -> str:
+    names = _type_names_by_id(data)
+    bits: list[str] = []
+    empty = {"", "（空）", None, -1}
+    for page in data.set1 + data.set2 + data.empty_pages:
+        chunks: list[str] = []
+        if page.pre_old not in empty:
+            raw = str(page.pre_old)
+            lab = _prereq_names(raw, names) or raw
+            chunks.append(f"舊前置 {raw} {lab}")
+        if page.pre_new not in empty:
+            raw = str(page.pre_new)
+            lab = _prereq_names(raw, names) or raw
+            chunks.append(f"新前置 {raw} {lab}")
+        if chunks:
+            nm = f"「{page.name}」" if page.name else "（空）"
+            bits.append(f"類型 {page.type_id}{nm}：" + "、".join(chunks))
+    return "；".join(bits) + "。"
+
+
 def _note_cell(text: str, html: bool, terms: list[str]) -> str:
     if not text:
         return EMPTY if not html else official_term_html("") or EMPTY
     if not html:
         return text
+    text = text.replace("名稱鍵非常規，對照見資料說明", "名稱來源特殊，對照見資料說明")
+    text = text.replace("名稱與類型 21 用同一條名稱鍵", "名稱與類型 21 相同，對照見資料說明")
     # Keep code spans; highlight the rest in chunks.
     parts = re.split(r"(`[^`]+`)", text)
     out = []
@@ -1120,7 +1187,7 @@ def _note_cell(text: str, html: bool, terms: list[str]) -> str:
 
 def _attr_label_html(row: CombatRow, terms: list[str]) -> str:
     name = official_term_html(row.label) if "／" not in row.label else H(row.label, terms)
-    return f"{name}（{e(row.ids_text)}）"
+    return name
 
 
 def _attr_label_md(row: CombatRow) -> str:
@@ -1131,6 +1198,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     out: dict[str, str] = {}
     name_136 = data.official.building_136
     name_169 = data.official.building_169
+    names_by_id = _type_names_by_id(data)
 
     def bcond(raw: str) -> str:
         plain = building_condition_plain(raw, name_136, name_169)
@@ -1162,7 +1230,8 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         rows = []
         for p in pages:
             name = _page_name_cell(p, True, terms)
-            note = _note_cell(p.note, True, terms) if p.note else ""
+            raw_note = _rewrite_prereq_note_html(p.note, names_by_id) if p.note else ""
+            note = _note_cell(raw_note, True, terms) if raw_note else ""
             if with_speed:
                 rows.append([str(p.type_id), name, bcond(p.build_lv), e(p.attr_id), note])
             elif with_season:
@@ -1172,13 +1241,13 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         return rows
 
     out["set1"] = table(
-        ["類型編號", "名稱", "建築條件", "加速屬性", "備註"],
+        ["類型", "名稱", "建築條件", "加速屬性", "備註"],
         page_rows(data.set1, True, False),
         mobile="cards",
         card_title="名稱",
     )
     out["set2"] = table(
-        ["類型編號", "名稱", "建築條件", "加速屬性", "備註"],
+        ["類型", "名稱", "建築條件", "加速屬性", "備註"],
         page_rows(data.set2, True, False),
         mobile="cards",
         card_title="名稱",
@@ -1200,17 +1269,17 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         shine_note,
     ])
     out["empty"] = table(
-        ["類型編號", "名稱", "建築條件", "開放欄（只照錄）", "備註"],
+        ["類型", "名稱", "建築條件", "開放欄（只照錄）", "備註"],
         empty_rows,
         mobile="cards",
-        card_title="類型編號",
+        card_title="類型",
     )
 
     unmatched_rows = []
     for u in data.unmatched:
         attr = f"{u.attr_id}"
         if u.attr_name:
-            attr = f"{official_term_html(u.attr_name)}（{u.attr_id}）"
+            attr = official_term_html(u.attr_name) if u.attr_name else f"{u.attr_id}"
         unmatched_rows.append([
             str(u.tree_id),
             str(u.levels),
@@ -1243,13 +1312,12 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     camp_rows = []
     for row in data.same_camp:
         camp_rows.append([
-            str(row.attr_id),
             official_term_html(row.name),
             str(row.trees),
             fmt_range(row.lo, row.hi),
         ])
     out["same_camp"] = table(
-        ["屬性編號", "官方屬性名", "樹數", "數值範圍"],
+        ["官方屬性名", "樹數", "數值範圍"],
         camp_rows,
         mobile="cards",
         card_title="官方屬性名",
@@ -1259,11 +1327,11 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     for s in data.soul_pairs:
         soul_rows.append([
             f"{s.tree_20}／{s.tree_21}",
-            str(s.attr_id),
+            "沒有官方屬性名稱字串",
             official_term_html(s.desc),
         ])
     out["soul"] = table(
-        ["編號（類型 20／21 各一）", "屬性（名稱未定）", "說明文"],
+        ["編號（類型 20／21 各一）", "屬性（沒有官方名稱字串）", "說明文"],
         soul_rows,
         mobile="cards",
         card_title="編號（類型 20／21 各一）",
@@ -1300,11 +1368,10 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         id_text = "／".join(str(i) for i in ids)
         et2_rows.append([
             H(label, terms),
-            e(id_text),
             e(count_text),
         ])
     out["alliance_et2"] = table(
-        ["寫入", "屬性編號", "筆數（屬性寫入）"],
+        ["寫入", "筆數（屬性寫入）"],
         et2_rows,
         mobile="sticky",
     )
@@ -1451,7 +1518,7 @@ def render_html(data: TablesData) -> str:
     )
     add(
         "<li><strong>屬性用官方名稱。</strong>"
-        "百分比類屬性只記表內原值，不自行換算成百分比。"
+        "百分比類屬性只記原值，不自行換算成百分比。"
         "名稱相同但不是同一條屬性的，不要混成同一欄："
         f"例如「{H(o.name_atk_1, terms)}／{H(o.name_hp_1, terms)}」與"
         f"「{H(o.name_hero_atk, terms)}／{H(o.name_hero_hp, terms)}」是不同屬性；"
@@ -1530,26 +1597,27 @@ def render_html(data: TablesData) -> str:
     add("      <h2>與戰鬥相關的寫入（玩家科技）</h2>")
     add(p_html(
         "下面統計本抽取玩家科技節點表實際出現的屬性與數值範圍。"
-        "同一屬性可能出現在兩套頁面的不同樹上，戰鬥輸入要對具體編號與等級，不能只記屬性編號。"
+        "同一屬性可能出現在兩套頁面的不同樹上，戰鬥輸入要對具體科技與等級，不能只看屬性名。"
         "數值都是原值，本頁不自行換成百分比。"
     ))
     add(tbl["combat"])
     add(p_html(
-        "另有「隊伍英雄為同一陣營時」額外提升的屬性。其中 21023–21028 有官方屬性名，例如 "
-        f"21024「{official_term_html(next(r.name for r in data.same_camp if r.attr_id==21024))}」"
+        "另有「隊伍英雄為同一陣營時」額外提升的屬性。其中一組有官方屬性名，例如"
+        f"「{official_term_html(next(r.name for r in data.same_camp if r.attr_id==21024))}」"
         "（本抽取 10 條樹，數值 100–600）、"
-        f"21025「{official_term_html(next(r.name for r in data.same_camp if r.attr_id==21025))}」"
-        "（7 條樹，50–600）；21026–21028、21023 是同一組的其餘陣營士兵攻擊／生命。"
-        "21029–21034 沒有官方屬性名稱字串，說明文是"
+        f"「{official_term_html(next(r.name for r in data.same_camp if r.attr_id==21025))}」"
+        "（7 條樹，50–600）；其餘是同一組的陣營士兵攻擊／生命。"
+        "另有一組沒有官方屬性名稱字串，說明文是"
         "「當隊伍中上陣英雄均為同一陣營時，隊伍中所有〔陣營〕英雄攻擊／生命提升」；"
         "除下文英雄鑄魂每級固定寫 10 以外，全表這組屬性的數值範圍是 10–1,000。"
-        "21007–21010 在屬性表裡，"
+        "還有一組在屬性表裡，"
         "沒有名稱字串，也沒有說明文，本抽取各 10 條樹、數值固定 100，功能不能從本抽取定名。"
-        "21035–21037 同樣沒有屬性名，說明文是"
+        "另有一組同樣沒有屬性名，說明文是"
         "「當隊伍中上陣英雄全為〔陣營〕時，英雄出征上限增加」。"
+        "編號對照見資料說明。"
     ))
     add(tbl["same_camp"])
-    add(p_html("10103、陣營 13103 等、同一陣營額外屬性 210xx 如何疊加，表沒有公式。"))
+    add(p_html("上表士兵攻擊類、陣營屬性等、同一陣營額外屬性如何疊加，表沒有公式。編號對照見資料說明。"))
     add("    </section>")
 
     add('    <section id="soul">')
@@ -1565,7 +1633,7 @@ def render_html(data: TablesData) -> str:
     add(p_html(
         "這 12 條樹沒有官方名稱字串。"
         "表沒有再寫這 1,500 級如何取得或有沒有實際上限。"
-        "同一組屬性 21029–21034 也出現在其他樹上（數值可到 1,000），"
+        "同一組沒有官方屬性名稱字串的屬性也出現在其他樹上（數值可到 1,000），"
         "不要把全表這組屬性都當成鑄魂的每級 +10。"
         "本頁不把 1,500 級逐列展開。"
     ))
@@ -1584,21 +1652,22 @@ def render_html(data: TablesData) -> str:
         "捐獻資源類型有 308 筆，本頁不逐列展開。"
     ))
     add(p_html(
-        "屬性寫入（697 筆）時，效果參數是「屬性編號、數值」。"
+        "屬性寫入（697 筆）時，效果參數是屬性與數值成對寫入。"
         "出現較多的戰鬥寫入如下。計筆以表內成對參數為準"
         "（部分列的效果參數把兩組寫入擠在同一欄，不能只讀該欄第一個數字）。"
     ))
     add(tbl["alliance_et2"])
     add(p_html(
-        "同一類屬性寫入也寫入 3／4"
-        f"（官方名稱是「{official_term_html(o.name_atk_1)}」「{official_term_html(o.name_hp_1)}」，各 30 筆），"
-        f"以及 3003「{official_term_html(o.name_3003)}」（5 筆）。"
-        "不要和 103／104、3103 混成同一欄。聯盟科技同時寫入這兩組時，公式用哪一組，表沒有標。"
+        f"同一類屬性寫入也寫入「{official_term_html(o.name_atk_1)}」「{official_term_html(o.name_hp_1)}」（各 30 筆），"
+        f"以及「{official_term_html(o.name_3003)}」（5 筆）。"
+        f"不要和「{official_term_html(o.name_hero_atk)}」「{official_term_html(o.name_hero_hp)}」混成同一欄；"
+        f"「{official_term_html(o.name_3103)}」也有兩條，不要當成同一欄。"
+        "聯盟科技同時寫入這兩組時，公式用哪一組，表沒有標。"
     ))
     add(p_html(
         "效果類型還有其他值，不要一律當成屬性加成。例如效果類型 1 的"
         f"「{official_term_html(o.great_guild)}」效果參數是 [3]，說明文是"
-        f"「{official_term_html(o.great_guild_des)}」，這裡的 3 不是屬性 3「{H(o.name_atk_1, terms)}」。"
+        f"「{official_term_html(o.great_guild_des)}」，這裡的 3 不是「{H(o.name_atk_1, terms)}」這項屬性。"
         "效果類型 −1 的 25 筆沒有效果參數"
         "（例如部分活動獎勵、解鎖公會箭塔）。"
         "效果類型 3／4／5 筆數很少（鑽石福袋、公會商隊、邀請科迪莉亞等），本頁不展開。"
@@ -1626,10 +1695,12 @@ def render_html(data: TablesData) -> str:
     )
     add("<li>英雄鑄魂 1,500 級的實際取得方式與上限。</li>")
     add(
-        "<li>10103、陣營士兵／英雄屬性、同一陣營額外屬性 210xx 的疊加公式；"
-        "聯盟科技點數屬性 3／4 與另一組 103／104 並寫時公式用哪一組。</li>"
+        "<li>士兵攻擊類、陣營士兵／英雄屬性、同一陣營額外屬性的疊加公式；"
+        f"聯盟科技點數寫入（官方名稱是「{official_term_html(o.name_atk_1)}」「{official_term_html(o.name_hp_1)}」）"
+        f"與另一組「{official_term_html(o.name_hero_atk)}」「{official_term_html(o.name_hero_hp)}」並寫時公式用哪一組。"
+        "編號對照見資料說明。</li>"
     )
-    add("<li>屬性 21007–21010 的功能，以及光輝科技 1001–1006 的官方頁名。</li>")
+    add("<li>沒有名稱字串、也沒有說明文的那一組屬性的功能，以及光輝科技 1001–1006 的官方頁名。編號對照見資料說明。</li>")
     add("<li>科技與英雄、士兵、站位的搭配模擬，以及強弱評定。</li>")
     add("</ul>")
     add("    </section>")
@@ -1654,11 +1725,11 @@ def render_html(data: TablesData) -> str:
         "戰鬥寫入統計出自 <code>technology_advanced_detail.json</code>；"
         "「要對具體編號與等級」的編號原名是 <code>tree_id</code>。"
         "數值都是原值，不把 <code>show_type=2</code> 自行換算成百分比。"
-        "戰鬥屬性表可見儲存格只寫官方名與屬性編號；"
+        "可見類型表頭寫「類型」，儲存格仍是類型編號。戰鬥屬性表與同營表可見儲存格只寫官方名，屬性編號見此；"
         "10103／10104、103／104、18／19、165／166 為 <code>type=2</code>、<code>show_type=2</code>，"
         "1019 為 <code>type=1</code>、<code>show_type=1</code>。"
         "21029–21034 沒有 <code>attribute_name_*</code> 字串。"
-        "21007–21010 在屬性表裡為 <code>type=2</code>、<code>show_type=2</code>；"
+        "可見鑄魂表頭改寫「屬性（沒有官方名稱字串）」，儲存格不再寫 21029–21034，編號對照見此（與類型 20／21 樹編號列對應）。可見聯盟科技正文不再寫 3／4、3003、103／104、3103，改寫官方屬性名；編號對照見此。可見戰鬥寫入節不再列出 21023–21028／21024／21025／21029–21034／21007–21010／21035–21037，編號對照見此。可見疊加與本頁未列入不再寫 10103、13103、同一陣營額外屬性 210xx、聯盟科技點數屬性 3／4 與 103／104，編號對照見此。可見本頁未列入改寫「沒有名稱字串、也沒有說明文的那一組屬性」，編號 21007–21010 對照見此。可見鑄魂節改寫「同一組沒有官方屬性名稱字串的屬性」，編號 21029–21034 對照見此。可見效果參數 3 的對照改寫「不是〔官方屬性名〕這項屬性」，不是屬性 3。21007–21010 在屬性表裡為 <code>type=2</code>、<code>show_type=2</code>；"
         "21035–21037 為 <code>type=1</code>、<code>show_type=1</code>。"
         "英雄鑄魂 12 條樹的編號原名 <code>tree_id</code>：200101–200106 與 210101–210106；"
         "這 12 條沒有 <code>technology_adv_name_*</code> 名稱字串。"
@@ -1676,6 +1747,7 @@ def render_html(data: TablesData) -> str:
         "來源分類 <code>attr_category</code> 32。"
         "841 條樹名稱字串 <code>technology_adv_name_*</code> 只有 "
         f"{comma(data.table_meta['adv_name_count'])} 條。"
+        "可見類型表備註改寫「名稱來源特殊」「名稱與類型 21 相同」，非常規名稱鍵對照見此："
         "類型表非常規名稱鍵：101、214 為 <code>exchange_first_textA2</code>，"
         "213 為 <code>alliance_tech_tips1</code>，215 為 <code>hero_name_64012</code>，"
         "501 為 <code>activity_name_348</code>，502 為 <code>activity_name_359</code>；"
@@ -1684,7 +1756,8 @@ def render_html(data: TablesData) -> str:
         "<code>IsShineTechnology=true</code>，<code>brilliance_switch=1</code>，"
         "建築條件原值 <code>169|1</code>；字串表另有 <code>tech_type_name_shine_1</code>、"
         "<code>tech_type_name_shine_2</code>，類型表沒有掛上這 6 個編號。"
-        "備註裡的「新前置欄／舊前置欄」原名 <code>pre_new</code>／<code>pre_old</code>。</li>"
+        "可見類型表備註改寫「前置為〔官方頁名〕」，舊／新前置欄原名 <code>pre_old</code>／<code>pre_new</code>，編號對照見此："
+        f"{_prereq_mapping_note(data)}</li>"
     )
     add(
         "<li>明細表沒有「類型」外鍵，不能由 <code>tree_id</code> 前綴唯一對回 35 個頁面"

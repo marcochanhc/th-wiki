@@ -405,10 +405,13 @@ def attr_label_text(info: AttrInfo) -> str:
     return f"{info.attr_id}（沒有官方屬性名）"
 
 
-def attr_label_html(info: AttrInfo, terms: list[str]) -> str:
+def attr_label_html(info: AttrInfo, terms: list[str], *, include_id: bool = True) -> str:
     if info.name:
-        return H(f"{info.name}（{info.attr_id}）", terms)
-    return e(f"{info.attr_id}（沒有官方屬性名）")
+        text = f"{info.name}（{info.attr_id}）" if include_id else info.name
+        return H(text, terms)
+    if include_id:
+        return e(f"{info.attr_id}（沒有官方屬性名）")
+    return e("沒有官方屬性名")
 
 
 def _player_row(row: dict) -> PlayerLevel:
@@ -831,7 +834,7 @@ def pairs_html(pairs: list[tuple[int, int]], attrs: dict[int, AttrInfo], terms: 
     parts = []
     for aid, val in pairs:
         info = attrs.get(aid) or AttrInfo(aid, "", True, "", "", None, None, None)
-        parts.append(f"{attr_label_html(info, terms)} {e(fmt(val))}")
+        parts.append(f"{attr_label_html(info, terms, include_id=False)} {e(fmt(val))}")
     return "；".join(parts)
 
 
@@ -857,33 +860,33 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         typ = tt.typ
         if typ == 1:
             writ = "／".join(
-                str(H(data.attrs[aid].name, terms)) + f"（{aid}）"
+                str(H(data.attrs[aid].name, terms))
                 for aid in (3062, 4062, 5062)
             )
             v1, v10 = "230", "3000"
         elif typ == 2:
             writ = "／".join(
-                str(H(data.attrs[aid].name, terms)) + f"（{aid}）"
+                str(H(data.attrs[aid].name, terms))
                 for aid in (3062, 4062, 5062)
-            ) + "，以及 " + H("突破防禦", terms) + "（64）"
+            ) + "，以及 " + H("突破防禦", terms)
             v1, v10 = "分營隊列攻擊 38、突破防禦 769", "分營隊列攻擊 500、突破防禦 10000"
         elif typ == 3:
             writ = "／".join(
-                str(H(data.attrs[aid].name, terms)) + f"（{aid}）"
+                str(H(data.attrs[aid].name, terms))
                 for aid in (3063, 4063, 5063)
-            ) + "，以及 " + H("防禦", terms) + "（22）"
+            ) + "，以及 " + H("防禦", terms)
             v1, v10 = "分營隊列生命 50、防禦 600", "分營隊列生命 500、防禦 6000"
         elif typ == 4:
             writ = "／".join(
-                str(H(data.attrs[aid].name, terms)) + f"（{aid}）"
+                str(H(data.attrs[aid].name, terms))
                 for aid in (3063, 4063, 5063)
             )
             v1, v10 = "230", "3000"
         else:
             writ = (
-                "／".join(str(H(data.attrs[aid].name, terms)) + f"（{aid}）" for aid in (3062, 4062, 5062))
+                "／".join(str(H(data.attrs[aid].name, terms)) for aid in (3062, 4062, 5062))
                 + " 與 "
-                + "／".join(str(H(data.attrs[aid].name, terms)) + f"（{aid}）" for aid in (3063, 4063, 5063))
+                + "／".join(str(H(data.attrs[aid].name, terms)) for aid in (3063, 4063, 5063))
                 + "，兩值相同"
             )
             v1, v10 = "各 115", "各 1500"
@@ -912,9 +915,9 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         "等級", "品質", "合成所需枚數",
         H("力量符文", terms) + "／" + H("生命符文", terms) + "（分營隊列攻擊或生命）",
         H("破甲符文", terms) + "：" + "分營隊列攻擊",
-        H("破甲符文", terms) + "：" + H("突破防禦", terms) + "（64）",
+        H("破甲符文", terms) + "：" + H("突破防禦", terms),
         H("厚甲符文", terms) + "：分營隊列生命",
-        H("厚甲符文", terms) + "：" + H("防禦", terms) + "（22）",
+        H("厚甲符文", terms) + "：" + H("防禦", terms),
         H("絕對強擊符文", terms) + "（攻擊與生命同值）",
         "戰力", "基礎戰力",
     ]
@@ -936,19 +939,19 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     out["team_curve"] = table(cols_html, rows, mobile="sticky")
 
     # 3. 編號示例
-    cols = ["類型", "種族編號", "陣營", "1 級編號", "10 級編號", "1 級攻擊／生命屬性編號"]
+    cols = ["類型", "種族", "陣營", "1 級編號", "10 級編號", "1 級攻擊／生命屬性"]
     rows = []
     for typ in range(1, 6):
         for race in range(1, 4):
             atk_or_hp = RACE_ATK[race] if typ in (1, 2, 5) else RACE_HP[race]
             if typ == 5:
-                attr_txt = f"{RACE_ATK[race]}、{RACE_HP[race]}"
+                attr_txt = H(attrs[RACE_ATK[race]].name, terms) + "、" + H(attrs[RACE_HP[race]].name, terms)
             elif typ == 3:
-                attr_txt = str(RACE_HP[race])
+                attr_txt = H(attrs[RACE_HP[race]].name, terms)
             elif typ == 4:
-                attr_txt = str(RACE_HP[race])
+                attr_txt = H(attrs[RACE_HP[race]].name, terms)
             else:
-                attr_txt = str(RACE_ATK[race])
+                attr_txt = H(attrs[RACE_ATK[race]].name, terms)
             rows.append([
                 str(typ),
                 str(race),
@@ -963,7 +966,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     cols = ["符文等級", "出征上限（1019）", "隊列欄（數值相同）", "資料列對照"]
     cols_html = [
         "符文等級",
-        H("出征上限", terms) + "（1019）",
+        H("出征上限", terms),
         "隊列欄（數值相同）",
         "資料列對照",
     ]
@@ -996,15 +999,15 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     out["player_names"] = table(cols, rows, mobile="cards", card_title="名稱")
 
     # 6. 依寫入屬性對照
-    cols = ["類型", "編號區間", "寫入欄位", "寫入屬性（表內原值）", "依寫入屬性對照，不是表內名稱欄"]
+    cols = ["類型", "寫入屬性", "對照"]
     rows = []
     descriptions = {
-        1: "參數欄為 4，高級加 104。像英雄生命。",
-        2: "參數欄為 10004，其後加 1019，再加 10104。像士兵生命。",
-        3: "用特殊參數 1／2，不用參數欄。寫入 4 與 20006。像秘寶。",
-        4: "參數欄為 3，高級加 103。像英雄強擊。編號前綴是 706，與種類編號不一致。",
-        5: "參數欄為 10003，其後加 1019，再加 10103。像士兵強擊。編號前綴是 705。",
-        6: "參數欄為 22 與 64，高級加 1019。像隊列強擊。編號前綴是 704，與種類編號不一致。",
+        1: "像英雄生命。",
+        2: "像士兵生命。",
+        3: "像秘寶。其中一項沒有官方屬性名。",
+        4: "像英雄強擊。",
+        5: "像士兵強擊。",
+        6: "像隊列強擊。",
     }
     for typ in range(1, 7):
         meta = PLAYER_TYPE_META[typ]
@@ -1016,11 +1019,9 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             for aid, _ in (p.para + p.sp_para1 + p.sp_para2):
                 if aid not in seen:
                     seen.append(aid)
-        writ = "；".join(attr_label_html(attrs[aid], terms) if aid in attrs else e(str(aid)) for aid in seen)
+        writ = "；".join(attr_label_html(attrs[aid], terms, include_id=False) if aid in attrs else e(str(aid)) for aid in seen)
         rows.append([
             str(typ),
-            e(f"{lo}–{hi}（前綴 {meta['prefix']}）"),
-            e({"para": "參數欄", "sp_para1／sp_para2": "特殊參數 1／特殊參數 2"}.get(meta["fields"], meta["fields"])),
             writ,
             e(descriptions[typ]),
         ])
@@ -1050,10 +1051,10 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         if typ == 3:
             cols_t = [
                 "等級", "編號",
-                "特殊參數 1 " + attr_label_html(attrs[4], terms),
-                "特殊參數 1 " + attr_label_html(attrs[20006], terms),
-                "特殊參數 2 " + attr_label_html(attrs[4], terms),
-                "特殊參數 2 " + attr_label_html(attrs[20006], terms),
+                "特殊參數 1 " + attr_label_html(attrs[4], terms, include_id=False),
+                "特殊參數 1 " + attr_label_html(attrs[20006], terms, include_id=False),
+                "特殊參數 2 " + attr_label_html(attrs[4], terms, include_id=False),
+                "特殊參數 2 " + attr_label_html(attrs[20006], terms, include_id=False),
                 "基礎戰力",
             ]
             body = []
@@ -1071,7 +1072,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             for aid, _ in p.para:
                 if aid not in seen:
                     seen.append(aid)
-        cols_t = ["等級", "編號"] + [attr_label_html(attrs[aid], terms) for aid in seen] + ["基礎戰力"]
+        cols_t = ["等級", "編號"] + [attr_label_html(attrs[aid], terms, include_id=False) for aid in seen] + ["基礎戰力"]
         body = []
         for p in rows_t:
             body.append(
@@ -1264,7 +1265,7 @@ def render_html(data: TablesData) -> str:
         f"「{H(o.tips6, terms)}」。"
     ))
     add(p_html(
-        f"官方規則寫「五個插槽」。另有郵件標題「{H(o.mail_title, terms)}」，正文如下。兩者都照官方字串記下，不自行裁斷插槽數，也不把它們寫成同一套規則。鍵名見資料說明。"
+        f"官方規則寫「五個插槽」。另有郵件標題「{H(o.mail_title, terms)}」，正文如下。兩者都照官方字串記下，不自行裁斷插槽數，也不把它們寫成同一套規則。對照見資料說明。"
     ))
     add(f"<p>{official_term_html(o.mail_desc)}</p>")
     add("    </section>")
@@ -1290,7 +1291,7 @@ def render_html(data: TablesData) -> str:
     add("<ul>")
     add("<li><strong>屬性只錄表上的原值</strong>，不自行換成百分比。"
         f"「{H('攻擊', terms)}／{H('生命值', terms)}」與「{H('英雄攻擊', terms)}／{H('英雄生命', terms)}」不要混成同一欄。"
-        "有一個編號在四份字串包都沒有對應名稱鍵，本頁不把它的備用名稱當成正式名稱。對照見資料說明。</li>")
+        "有一個編號在四份字串包都沒有對應名稱，本頁不把它的備用名稱當成正式名稱。對照見資料說明。</li>")
     add("<li>正式用語是「部族」不是「部落」。不要從時間或賽季欄位自動標未開放（這幾張符文表沒有這類欄位）。</li>")
     add("<li>隊列符文五種只使用對應的官方名稱與說明，不用另一套符文表的編號名稱來標這五種。</li>")
     add("<li>官方字串同時有「精煉」與「精鍊」，照原文引，不統一改字。"
@@ -1310,8 +1311,8 @@ def render_html(data: TablesData) -> str:
     add('    <section id="team-catalog">')
     add("      <h2>五種隊列符文</h2>")
     add(p_html(
-        "五種隊列符文各自使用對應的官方名稱與說明。鍵名見資料說明。"
-        "三個陣營的數值相同，只換分營屬性編號：聯盟 3062／3063、部族 4062／4063、自然 5062／5063。"
+        "五種隊列符文各自使用對應的官方名稱與說明。對照見資料說明。"
+        "三個陣營的數值相同，只換分營屬性（聯盟／部族／自然）。"
         "品質隨等級走：1–3 級為 3，4–6 級為 4，7–9 級為 5，10 級為 6。"
         "編號規律是 37、種類、陣營、等級兩位，例如聯盟力量 1 級為 371101，自然絕對強擊 10 級為 375310。"
     ))
@@ -1328,7 +1329,7 @@ def render_html(data: TablesData) -> str:
         "分營隊列攻擊／生命只記原值，不換成百分比。顯示規則見資料說明。"
     ))
     add(tbl["team_curve"])
-    add(p_html("編號與分營屬性對照（種族 1／2／3 對應聯盟／部族／自然）："))
+    add(p_html("編號與分營屬性對照："))
     add(tbl["team_ids"])
     add("    </section>")
 
@@ -1346,7 +1347,7 @@ def render_html(data: TablesData) -> str:
     add('    <section id="player-names">')
     add("      <h2>後續資料包符文的官方名稱與說明</h2>")
     add(p_html(
-        "後續資料包那套符文表沒有名稱欄。下列是字串表裡的官方名稱、說明與介面字串。鍵名見資料說明。"
+        "後續資料包那套符文表沒有名稱欄。下列是字串表裡的官方名稱、說明與介面字串。對照見資料說明。"
         "介面字串前置羅馬數字，且順序與名稱表不完全相同"
         f"（第一條介面字串是「{H(o.player_names[0].ui, terms)}」，照原文，不自行加空格）。"
         "名稱與說明並非一一對應："
@@ -1360,9 +1361,7 @@ def render_html(data: TablesData) -> str:
     add('    <section id="player-map">')
     add("      <h2>依寫入屬性對照</h2>")
     add(p_html(
-        "下表依各種類實際寫入的屬性編號作對照，<strong>不是表內名稱欄</strong>，也不是把種類編號直接對成上一節那組名稱的第 N 條。"
-        "種類號與編號前綴並不一致：第 4 種的前綴是 706，第 6 種的前綴是 704。"
-        "第 3 種用另一組寫入欄，照欄位展示。欄位名見資料說明。"
+        "下表依各種類實際寫入的屬性作對照，不是把種類編號直接對成上一節那組名稱的第 N 條。"
         "「像某某」只是依寫入屬性所作的對照說明。"
     ))
     add(tbl["player_map"])
@@ -1399,7 +1398,7 @@ def render_html(data: TablesData) -> str:
     add("      <h2>本頁未列入</h2>")
     add("<ul>")
     add("<li>羈絆隊列欄從 2 起、沒有 1 與 10 的含義。</li>")
-    add("<li>分營隊列攻擊／生命（3062 等）與不分營 62／63 如何疊加，以及如何進入戰鬥結算。</li>")
+    add("<li>分營隊列攻擊／生命與不分營隊列攻擊／生命如何疊加，以及如何進入戰鬥結算。</li>")
     add("<li>後續資料包名稱與說明不一致的原因；也不把這組名稱派給隊列符文，或按種類編號直接對成那組名稱的第 N 條。</li>")
     add("<li>精煉經驗與材料／道具的對應（表沒指明）。</li>")
     add("<li>插槽數為五或六的裁斷。</li>")
@@ -1426,7 +1425,7 @@ def render_html(data: TablesData) -> str:
         "介面另有 <code>team_rune_power_tip</code>、<code>team_rune_uncompound</code>；"
         "羈絆提示為 <code>team_rune_bond</code>，以及 <code>team_rune_tips5</code>／<code>team_rune_tips6</code>。"
         "郵件標題鍵是 <code>mail_rune_title</code>。"
-        "符文名稱只使用對應的官方名稱鍵，不改官方名。</li>"
+        "符文名稱只使用對應的官方名稱鍵，不改官方名。可見改寫「沒有對應名稱」「對照見資料說明」，名稱鍵對照見此。</li>"
     )
     add("<li>隊列符文對應 <code>team_rune.json</code>（150 筆）與 <code>team_rune_bond.json</code>（36 筆）；"
         "另一套是只在 LocalLow 包出現的 <code>player_rune.json</code>（72 筆：6 個 type × 12 級，含精煉欄）。"
@@ -1438,6 +1437,15 @@ def render_html(data: TablesData) -> str:
         f"id 4 用 <code>attribute_name_4</code>「{H('生命值', terms)}」，不寫成「{H('英雄攻擊', terms)}／{H('英雄生命', terms)}」。"
         f"id 103／104 才是 show_type=2 的「{H('英雄攻擊', terms)}／{H('英雄生命', terms)}」。"
         "id 20006 必須先查 <code>attribute_name_20006</code>：四份字串包都沒有此鍵；name 欄指向 <code>attribute_name_20004</code>，本頁不把它當作正式名稱。"
+        "可見「依寫入屬性對照」表只列類型、寫入屬性官方名與對照。編號區間、寫入欄位、表內原值與編號前綴見此："
+        "類型 1 為 7010001–7010012（前綴 701），寫入欄位為參數欄（原名 <code>para</code>），生命值 4、英雄生命 104，參數欄為 4，高級加 104；"
+        "類型 2 為 7020001–7020012（前綴 702），參數欄，士兵生命 10004、出征上限 1019、所有士兵生命 10104；"
+        "類型 3 為 7030001–7030012（前綴 703），寫入欄位為特殊參數 1／2（原名 <code>sp_para1</code>／<code>sp_para2</code>），生命值 4 與 20006（沒有官方屬性名），不用參數欄；"
+        "類型 4 為 7060001–7060012（前綴 706，與種類編號不一致），參數欄，攻擊 3、英雄攻擊 103；"
+        "類型 5 為 7050001–7050012（前綴 705），參數欄，士兵攻擊 10003、出征上限 1019、所有士兵攻擊 10103；"
+        "類型 6 為 7040001–7040012（前綴 704，與種類編號不一致），參數欄，防禦 22、突破防禦 64、出征上限 1019。"
+        "可見隊列符文寫入屬性只列官方名；分營屬性編號聯盟隊列攻擊／生命 3062／3063、部族 4062／4063、自然 5062／5063，破甲另加突破防禦 64，厚甲另加防禦 22。"
+        "種族 1／2／3 對應聯盟／部族／自然。羈絆「出征上限」編號 1019。後續資料包曲線表頭只寫官方屬性名；20006 沒有官方屬性名，編號只在資料說明。"
         f"隊列符文的分營隊列攻擊／生命（3062 等）是 type=2、show_type=2；"
         f"{H('防禦', terms)} 22、{H('突破防禦', terms)} 64、{H('出征上限', terms)} 1019，"
         "以及 player_rune 裡 show_type=1 的 3／4／22／64／10003／10004／20006，也都只記原值。"

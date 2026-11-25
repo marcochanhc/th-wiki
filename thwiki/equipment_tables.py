@@ -135,37 +135,38 @@ def _int(value) -> int:
     return int(float(str(value).strip()))
 
 
-def attr_label(attr_id: int) -> str:
-    return f"{A.attr_name(attr_id)}（{attr_id}）"
+def attr_label(attr_id: int, *, include_id: bool = True) -> str:
+    name = A.attr_name(attr_id)
+    return f"{name}（{attr_id}）" if include_id else name
 
 
-def format_attrs(pairs) -> str:
+def format_attrs(pairs, *, include_id: bool = True) -> str:
     if not pairs:
         return "—"
     bits = []
     for item in pairs:
         if isinstance(item, (list, tuple)) and len(item) >= 2:
-            bits.append(f"{attr_label(_int(item[0]))} {_int(item[1])}")
+            bits.append(f"{attr_label(_int(item[0]), include_id=include_id)} {_int(item[1])}")
         elif isinstance(item, str) and "|" in item:
             a, v = item.split("|", 1)
-            bits.append(f"{attr_label(_int(a))} {_int(v)}")
+            bits.append(f"{attr_label(_int(a), include_id=include_id)} {_int(v)}")
     return "、".join(bits) if bits else "—"
 
 
-def format_attr_map(mapping: dict) -> str:
+def format_attr_map(mapping: dict, *, include_id: bool = True) -> str:
     if not mapping:
         return "—"
-    bits = [f"{attr_label(_int(a))} {_int(v)}" for a, v in mapping.items()]
+    bits = [f"{attr_label(_int(a), include_id=include_id)} {_int(v)}" for a, v in mapping.items()]
     return "、".join(bits)
 
 
-def format_thresholds(triples) -> str:
+def format_thresholds(triples, *, include_id: bool = True) -> str:
     if not triples:
         return "—"
     bits = []
     for item in triples:
         if isinstance(item, (list, tuple)) and len(item) >= 3:
-            bits.append(f"門檻 {_int(item[0])}：{attr_label(_int(item[1]))} {_int(item[2])}")
+            bits.append(f"門檻 {_int(item[0])}：{attr_label(_int(item[1]), include_id=include_id)} {_int(item[2])}")
     return "；".join(bits) if bits else "—"
 
 
@@ -263,6 +264,8 @@ class PieceRow:
     attrs_text: str
     star_text: str
     break_text: str
+    star_pairs: list
+    break_pairs: list
     fightforce: str
     upgrade_text: str
     get_ids: list[int]
@@ -467,6 +470,8 @@ def _piece_row(
         attrs_text=format_attrs(attr_pairs),
         star_text=format_thresholds(star),
         break_text=format_thresholds(brk),
+        star_pairs=star,
+        break_pairs=brk,
         fightforce=format_fightforce(r.get("fightforce") or r.get("basePowers")),
         upgrade_text=upgrade_text,
         get_ids=get_ids,
@@ -997,10 +1002,22 @@ def _suit_heading(suit: SuitRow) -> str:
     return f"{suit.name}（{suit.suit_id}）"
 
 
+def _effect_note_html(ev: EffectRow) -> str:
+    bits = []
+    if ev.attrs:
+        bits.append(f"原始點數：{format_attrs(ev.attrs, include_id=False)}")
+    if ev.power is not None:
+        bits.append(f"戰力欄 {ev.power}")
+    if ev.component is not None:
+        bits.append(f"零件編號 {ev.component}")
+    return "；".join(bits)
+
+
 def _effect_lines_html(effects: list[EffectRow], terms: list[str]) -> str:
     items = []
     for ev in effects:
-        note = f"（{e(ev.raw_note)}）" if ev.raw_note else ""
+        note_body = _effect_note_html(ev)
+        note = f"（{e(note_body)}）" if note_body else ""
         items.append(f"<li>{H(ev.desc, terms)}{note}</li>")
     return "<ul>" + "".join(items) + "</ul>"
 
@@ -1013,7 +1030,7 @@ def _bond_table(suit: SuitRow, terms: list[str], *, show_power: bool) -> str:
         cols.append("精煉戰力")
     rows = []
     for b in suit.bonds:
-        row = [e(str(b.quality)), H(format_attrs(b.attrs), terms)]
+        row = [e(str(b.quality)), H(format_attrs(b.attrs, include_id=False), terms)]
         if show_power:
             row.append(e(str(b.power_suit_refine) if b.power_suit_refine is not None else "—"))
         rows.append(row)
@@ -1025,7 +1042,7 @@ def _refine_table(suit: SuitRow, terms: list[str]) -> str:
         return "<p>本套在套裝精煉表沒有列。</p>"
     rows = []
     for opt in suit.refine:
-        rows.append([H(opt.slot_name, terms), H("、".join(lab for _, _, lab in opt.entries), terms)])
+        rows.append([H(opt.slot_name, terms), H("、".join(f"{col}＝{attr_label(aid, include_id=False)}" for col, aid, _ in opt.entries), terms)])
     return table(
         ["部位", "可選屬性（列編號＝屬性名；數字是精煉屬性表的列編號，不是屬性編號）"],
         rows,
@@ -1043,9 +1060,9 @@ def _new_piece_table(suit: SuitRow, terms: list[str]) -> str:
             e(str(p.piece_id)),
             H(p.name, terms),
             H(p.slot_name, terms),
-            H(p.attrs_text, terms),
-            H(p.star_text, terms),
-            H(p.break_text, terms),
+            H(format_attrs(p.attrs, include_id=False), terms),
+            H(format_thresholds(p.star_pairs, include_id=False), terms),
+            H(format_thresholds(p.break_pairs, include_id=False), terms),
             e(p.fightforce),
         ])
     return table(
@@ -1067,7 +1084,7 @@ def _old_piece_table(suit: SuitRow, terms: list[str]) -> str:
             H(p.name, terms),
             H(p.slot_name, terms),
             e(str(p.quality)),
-            H(p.attrs_text, terms),
+            H(format_attrs(p.attrs, include_id=False), terms),
             e(p.fightforce),
             H(p.upgrade_text, terms),
         ])
@@ -1177,7 +1194,7 @@ def render_html(data: TablesData) -> str:
             H(p.slot_name, terms),
             e(str(p.quality)),
             e(str(p.version)),
-            H(p.attrs_text, terms),
+            H(format_attrs(p.attrs, include_id=False), terms),
             e(p.fightforce),
         ])
     loose_tbl = table(
@@ -1233,7 +1250,7 @@ def render_html(data: TablesData) -> str:
         unfilled_rows.append([
             e(str(u.suit_id)),
             e(u.name),
-            H(f"{two.desc}（原始點數 {format_attrs(two.attrs)}）", terms),
+            H(f"{two.desc}（原始點數 {format_attrs(two.attrs, include_id=False)}）", terms),
             H(four.desc, terms),
         ])
     unfilled_tbl = table(
@@ -1337,11 +1354,11 @@ def render_html(data: TablesData) -> str:
     {toc}
     <section id="lead">
       <h2>簡介與閱讀說明</h2>
-      <p>正文只根據遊戲資料表與官方字串，不評定套裝強弱。表上沒有「每個英雄推薦哪套裝備」的欄位；角色搭配一節是依稱號屬性推算，不是官方列，已另外標明。</p>
+      <p>正文只根據遊戲資料表與官方字串，不評定套裝強弱。表上沒有「每個英雄推薦哪套裝備」的欄位；角色搭配一節是依英雄屬性推算，不是官方列，已另外標明。</p>
       <p>名錄以較新的裝備定義為準，較舊的展開表不拿來當完整名錄。檔名與筆數見資料說明。</p>
-      <p>部位共四格：{H("武器", terms)}、{H("衣服", terms)}、{H("鞋子", terms)}、{H("頭盔", terms)}。四格都是等級 5 顯示與解鎖。鞋子與頭盔的編號順序與名稱鍵不完全相同，對照見資料說明。</p>
+      <p>部位共四格：{H("武器", terms)}、{H("衣服", terms)}、{H("鞋子", terms)}、{H("頭盔", terms)}。四格都是等級 5 顯示與解鎖。鞋子與頭盔的編號順序與名稱不完全相同，對照見資料說明。</p>
       <p>兩套套裝體例並存。舊套裝用 2 件／4 件效果；新套裝（{H("泰坦之威", terms)}、{H("血之怒", terms)}、{H("騎士榮光", terms)}）用「集齊 4 件／4 件升至 40 級／4 件突破至紅色」三檔。官方鍛造介面寫「{H(o["forge_404"], terms)}」。這三套尚未開放：表上沒有裝備「已推出」欄。功能條件是{H("鐵匠鋪", terms)} 15 級開啟「{H(o["forge_014"], terms)}／{H("傳奇打造", terms)}」（官方提示「{H(o["forge_open"], terms)}」；前置{H("城堡", terms)} 16 級），也沒有商店自選箱。品質 6 的{H(q6_names, terms)}是另一條舊線，已有進階路徑和商店箱，不標未開放。同版本的侍從級至元帥級散件是合成進這三套的線，本身不標未開放。</p>
-      <p>套裝效果以官方說明文案為準。表上另有原始點數（例如 165／166 的 500 對應文案「裝備生命＋5%」），本頁在需要核對時附上原始點數，不另行換算未見於文案的百分比。這與天賦、造型、英靈的 ÷100 規則不同，也不沿用專武部分英雄屬性保留原值的寫法。</p>
+      <p>套裝效果以官方說明文案為準。表上另有原始點數（例如裝備攻擊／裝備生命的 500 對應文案「裝備生命＋5%」），本頁在需要核對時附上原始點數，不另行換算未見於文案的百分比。這與天賦、造型、英靈的 ÷100 規則不同，也不沿用專武部分英雄屬性保留原值的寫法。</p>
       <p>升星與突破加成照表列出，格式為「門檻、屬性、數值」。表上沒有說明門檻等於第幾星或第幾級，本頁不自行解釋。品質欄是表上的 2–6，正文不另改稱傳說或神話。名稱已自帶「侍從級／士兵級／騎士級／元帥級」的，照錄。</p>
       <p>打造可帶陣營標記。{H("泰坦印記", terms)}官方說明：「{H(o["titan_desc"], terms)}」。介面另寫：「{H(o["forge_210"], terms)}」「{H(o["forge_sys_08"], terms)}」。商店箱也寫「可在任意陣營的〔某件〕中選擇」。資料表沒有為每個陣營各存一筆獨立編號，本頁不自造分營零件列。</p>
         </section>
@@ -1354,7 +1371,7 @@ def render_html(data: TablesData) -> str:
     </section>
     <section id="overview">
       <h2>套裝總覽</h2>
-      <p>去重後，較新的裝備定義實際用到的套裝有 12 套（舊套裝 9、新套裝 3）。另有套裝編號 101、102，名稱文案是「0.0」、4 件說明只有「4件：」，本頁視為文案未填，不當作正式套裝。同一中文套裝名在套裝表會重複多組編號（例如「{H("大地的守護者", terms)}」有 103、301、419、519 等），2 件／4 件效果文案相同。本頁不臆測其餘編號各自對應哪個陣營或伺服器分段。</p>
+      <p>去重後，較新的裝備定義實際用到的套裝有 12 套（舊套裝 9、新套裝 3）。另有套裝編號 101、102，名稱文案是「0.0」、4 件說明只有「4件：」，本頁視為文案未填，不當作正式套裝。同一中文套裝名在套裝表會重複多組（例如「{H("大地的守護者", terms)}」），2 件／4 件效果文案相同。本頁不臆測其餘組各自對應哪個陣營或伺服器分段。</p>
       <p>總覽表中，泰坦之威、血之怒、騎士榮光的「未開放」是本站加上的標註，不是表上的欄位。說明見資料說明。</p>
       {overview_tbl}
     </section>
@@ -1373,7 +1390,7 @@ def render_html(data: TablesData) -> str:
       </section>
       <section id="unfilled">
         <h3>文案未填的套裝列</h3>
-        <p>套裝表還有編號 101、102 兩組。名稱鍵見資料說明，文案是「0.0」。較新的裝備定義沒有零件掛這兩個編號。本頁不為它們編造套裝名。</p>
+        <p>套裝表還有編號 101、102 兩組。名稱對照見資料說明，文案是「0.0」。較新的裝備定義沒有零件掛這兩個編號。本頁不為它們編造套裝名。</p>
         {unfilled_tbl}
       </section>
     </section>
@@ -1398,7 +1415,7 @@ def render_html(data: TablesData) -> str:
       {syn_tbl}
       <ul>
         <li><strong>材料：</strong>{H("太陽金", terms)}（404100005，官方說明「{H(o["sun_gold_desc"], terms)}」）用於製造裝備；{H("泰坦印記", terms)}（404100006）在鍛造時為裝備生成種族標記。裝備精華有 301、302 兩個貨品編號，名稱同為「{H("裝備精華", terms)}」。材料表另有 {e(str(data.counts["material"]))} 筆合成／分解數量關係，本頁未展開。</li>
-        <li><strong>詞條：</strong>詞條表 {e(str(data.counts["entry"]))} 筆，是隨機屬性條目（含屬性、分數、品質、戰力）。較舊的展開表以詞條組編號引用這些組，本頁不逐條展開。</li>
+        <li><strong>詞條：</strong>詞條表 {e(str(data.counts["entry"]))} 筆，是隨機屬性條目（含屬性、分數、品質、戰力）。較舊的展開表以詞條組引用這些組，本頁不逐條展開。</li>
         <li><strong>裝備精通：</strong>裝備精通表 {e(str(data.counts["master"]))} 筆，按類型、等級（以及部分列的品質）給裝備攻擊、裝備生命，部分列還有出征上限。本頁不把類型臆測成部位或套裝。</li>
         <li><strong>套裝精煉與套裝羈絆：</strong>套裝精煉表 {e(str(data.counts["refine"]))} 筆，只覆蓋新三套與舊的太陽／雷霆／聖光／生命／扭曲／凱旋。每部位可從若干精煉屬性表的列中取值，列上依品質 1–6 有一組遞增數值。上節各套裝已列出可選屬性種類，六檔數值見原表，本頁不全部抄列。套裝羈絆表的羈絆是 4 件都精煉到指定品質才啟動，屬養成加深，不是另一套裝備。</li>
         <li><strong>升星／突破表：</strong>升星表（{e(str(data.counts["star_up"]))} 筆）、突破表（{e(str(data.counts["break"]))} 筆）體積較大，本頁不展開消耗。新三套零件上已列出升星與突破加成的門檻與屬性。</li>
@@ -1410,7 +1427,7 @@ def render_html(data: TablesData) -> str:
     </section>
     <section id="derived">
       <h2>由表推算的角色套裝（非官方欄位）</h2>
-      <p><strong>本節是推算，不是官方推薦列。</strong>表上沒有「每個英雄推薦哪一套裝備」的欄位。以下依稱號屬性四類（角色詳情表的稱號屬性）對套裝 2／4 件效果推算，同一類走同一條主線，並另列後期打造套。稱號屬性只寫表上的原始點數（例如英雄治療率 500），不把已鎖定的四項百分比套用或延伸到本節。未把技能逐條模擬，英雄生命那組尤其不能一刀切。後期對應的泰坦之威、血之怒、騎士榮光尚未開放，目前可用路徑停在品質 6 或橙色過渡套；打造套仍照推算列出，供開放後對照。本節不寫進英雄條目頁。</p>
+      <p><strong>本節是推算，不是官方推薦列。</strong>表上沒有「每個英雄推薦哪一套裝備」的欄位。以下依英雄屬性四類對套裝 2／4 件效果推算，同一類走同一條主線，並另列後期打造套。英雄屬性只寫表上的原始點數（例如英雄治療率 500），不把已鎖定的四項百分比套用或延伸到本節。未把技能逐條模擬，英雄生命那組尤其不能一刀切。後期對應的泰坦之威、血之怒、騎士榮光尚未開放，目前可用路徑停在品質 6 或橙色過渡套；打造套仍照推算列出，供開放後對照。本節不寫進英雄條目頁。</p>
       {''.join(derived_secs)}
     </section>
     <section id="out-of-scope">
@@ -1419,7 +1436,7 @@ def render_html(data: TablesData) -> str:
         <li>領主裝備與神器／秘寶。</li>
         <li>皮膚套裝、城市 DIY 套裝、世界皮膚套裝（屬外觀，不是英雄裝備）。</li>
         <li>打造、升星、突破、精煉的完整消耗與屬性加總，以及精煉六檔數值、精通表逐列。</li>
-        <li>依技能逐條模擬後的裝備搭配；上述角色套裝只依稱號屬性推算。</li>
+        <li>依技能逐條模擬後的裝備搭配；上述角色套裝只依英雄屬性推算。</li>
         <li>專武升級與突破（見<a href="exclusive.html">專武總表</a>）。</li>
       </ul>
     </section>
@@ -1427,7 +1444,7 @@ def render_html(data: TablesData) -> str:
       <h2>資料說明</h2>
       <ul>
         <li>以下是整理用註記，查套裝與效果可略過。</li>
-        <li>可見正文把檔名與欄位名收到這裡。較新的裝備定義原名 <code>equipment_new.json</code>；較舊的展開表原名 <code>equipment.json</code>；套裝表 <code>equipment_suit.json</code>（未填文案列的名稱鍵是 <code>equipment_suit_101</code>／<code>equipment_suit_102</code>）；套裝編號原名 <code>suit_id</code>，未掛套裝為 <code>suit_id=-1</code>；陣營欄 <code>race_list</code>；取得來源欄 <code>get_id</code>；零件最高等級／可否突破原欄名 <code>max_level</code>、<code>break_on</code>（新三套為 40 與 1）。進階表 <code>equipment_upgrade.json</code>；打造等級表 <code>equipment_make_level.json</code>；打造預覽表 <code>equipment_build.json</code>；材料表 <code>equipment_material.json</code>；詞條表 <code>equipment_entry.json</code>，詞條組編號 <code>entry_group</code>；裝備精通表 <code>equipment_master.json</code>（按 <code>type</code>、<code>level</code>）；套裝精煉表 <code>equipment_suit_refine.json</code>；精煉屬性表 <code>equipment_suit_attribute</code>；套裝羈絆表 <code>equipment_suit_bond.json</code>；升星表 <code>equipment_star_up.json</code>、突破表 <code>equipment_break.json</code>；升星／突破加成本名 <code>starAttrs</code>／<code>breakBonusAttr</code>；合成表 <code>equipment_synthesize</code>；角色詳情表 <code>hero_detail.json</code>；領主裝備表 <code>lord_equipment.json</code>。舊套裝 <code>version=-1</code>，新套裝 <code>version=1</code>。精煉戰力欄原名 <code>power_suit_refine</code>。版本欄可見寫成「新套裝／舊套裝」，原值 <code>version=1</code>／<code>version=-1</code>。套裝效果備註「零件編號」原名 <code>component</code>（含 <code>-1</code>）。陣營打造另耗原名 <code>race_produce_goods</code>／<code>RaceCostDic</code>。</li>
+        <li>可見正文把檔名與欄位名收到這裡。較新的裝備定義原名 <code>equipment_new.json</code>；較舊的展開表原名 <code>equipment.json</code>；套裝表 <code>equipment_suit.json</code>（未填文案列的名稱鍵是 <code>equipment_suit_101</code>／<code>equipment_suit_102</code>）。可見「同一中文套裝名會重複多組」對應套裝編號，例如「大地的守護者」有 103、301、419、519 等；較舊展開表引用的詞條組編號原名 <code>entry_group</code>；套裝編號原名 <code>suit_id</code>，未掛套裝為 <code>suit_id=-1</code>；陣營欄 <code>race_list</code>；取得來源欄 <code>get_id</code>；零件最高等級／可否突破原欄名 <code>max_level</code>、<code>break_on</code>（新三套為 40 與 1）。進階表 <code>equipment_upgrade.json</code>；打造等級表 <code>equipment_make_level.json</code>；打造預覽表 <code>equipment_build.json</code>；材料表 <code>equipment_material.json</code>；詞條表 <code>equipment_entry.json</code>，詞條組編號 <code>entry_group</code>；裝備精通表 <code>equipment_master.json</code>（按 <code>type</code>、<code>level</code>）；套裝精煉表 <code>equipment_suit_refine.json</code>；精煉屬性表 <code>equipment_suit_attribute</code>；套裝羈絆表 <code>equipment_suit_bond.json</code>；升星表 <code>equipment_star_up.json</code>、突破表 <code>equipment_break.json</code>；升星／突破加成本名 <code>starAttrs</code>／<code>breakBonusAttr</code>；合成表 <code>equipment_synthesize</code>；角色詳情表 <code>hero_detail.json</code>；領主裝備表 <code>lord_equipment.json</code>。可見正文「英雄屬性」對應角色詳情表的稱號屬性欄。可見裝備屬性只寫官方名與原值，編號見此：裝備攻擊 65／165、裝備生命 66／166、增傷 18／20、減傷 19／21／26／1200116；文案「裝備生命＋5%」對應的原始點數例是裝備攻擊／裝備生命 165／166 的 500。舊套裝 <code>version=-1</code>，新套裝 <code>version=1</code>。精煉戰力欄原名 <code>power_suit_refine</code>。版本欄可見寫成「新套裝／舊套裝」，原值 <code>version=1</code>／<code>version=-1</code>。套裝效果備註「零件編號」原名 <code>component</code>（含 <code>-1</code>）。陣營打造另耗原名 <code>race_produce_goods</code>／<code>RaceCostDic</code>。</li>
         <li>名錄以 <code>equipment_new.json</code>（111 筆定義）為準。<code>equipment.json</code>（2561 筆）是較舊的展開表，含等級欄（1、20、40…200），品質只到 5，套裝 id 也只出現 301／302／303，不拿它當完整名錄。部位出自 <code>equipment_slot.json</code>；四格的 <code>unlock_level</code> 與 <code>show_level</code> 皆為 5。id 3 的名稱鍵是 <code>equipment_slot_name_4</code>（鞋子），id 4 是 <code>equipment_slot_name_3</code>（頭盔）。對照見頁內部位表。<code>equipment_new.type</code> 1–4 分別對應這四個部位。舊套裝 <code>version=-1</code>，新套裝 <code>version=1</code>。鐵匠鋪前置見新建築表 <code>citybuilding_lvup_new</code>（舊表鐵匠鋪只到對應最高級）。升星與突破加成照 <code>starAttrs</code>、<code>breakBonusAttr</code> 列出。<code>equipment_new</code> 沒有為每個陣營各存一筆獨立 id。</li>
         <li>資料出自遊戲資料表與官方字串（equipment_new、equipment_slot、equipment_suit、equipment_suit_group、equipment_suit_bond、equipment_suit_refine、equipment_suit_attribute、equipment_upgrade、equipment_synthesize、equipment_make_level、equipment_build、equipment_material、equipment_entry、equipment_master、equipment_star_up、equipment_break、hero_detail、attribute、strings_zh.json），資料截至 {EQUIP_DATA_CUTOFF}（香港時間）。來源是 LocalLow 包 {e(EQUIP_DATA_PACK)}（759 張表），打包時戳 {EQUIP_DATA_PACKED}（香港時間）。這 17 張 <code>equipment*.json</code> 與 <code>hero_detail.json</code> 與第 13 章所用 2026-11-05 解壓檔、以及 2026-11-22 StreamingAssets／LocalLow 歸檔位元組相同；這不表示整個 LocalLow 包與 2026-11-05 解壓檔相同。顯示規則依攻略手冊「裝備圖鑑」第四版（2026-11-13，香港時間；該章標題仍寫來源解壓日期 2026-11-05）。這不是官方 wiki。</li>
         <li>泰坦之威、血之怒、騎士榮光的「未開放」依玩家確認標註，不是表上的欄位。藥劑師歸自然亦依玩家確認。品質 6 舊線與侍從級至元帥級散件不標未開放。公開名冊裡只有牧羊人（10029）標未開放；老闆娘不標未開放。</li>

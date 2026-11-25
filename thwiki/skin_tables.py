@@ -343,10 +343,11 @@ def _hero_display(hero_id: int, roster: dict) -> str:
     return hero_name(hero_id)
 
 
-def _faction_source(hero_id: int) -> str:
+def _faction_source(hero_id: int, *, include_id: bool = True) -> str:
     fac, source, group, attr_id = A.hero_faction(hero_id)
     if source == "honor" and attr_id is not None:
-        return f"榮譽加成鏈：{A.attr_name(attr_id)}（{attr_id}）"
+        name = A.attr_name(attr_id)
+        return f"榮譽加成鏈：{name}（{attr_id}）" if include_id else f"榮譽加成鏈：{name}"
     if source == "skill301":
         return "無陣營加成，依技能文案補入（既有圖鑑）"
     if source == "lock":
@@ -1162,7 +1163,7 @@ def render_html(data: TablesData) -> str:
             _hero_link_html(n.hero_id, n.hero_display, terms),
             e(str(n.hero_id)),
             H(n.faction, terms),
-            e(n.source),
+            e(_faction_source(n.hero_id, include_id=False)),
             e(n.default_note),
         ])
     t_noskin = table(
@@ -1373,7 +1374,7 @@ def render_html(data: TablesData) -> str:
         <li>以下是整理用註記，查造型名稱與效果可略過。</li>
         <li>兩層外觀：單位模型主表是 <code>skin.json</code>，本身沒有時裝幣、隊伍屬性或造型戰力；造型圖鑑是 <code>hero_skin.json</code>。表七「有預設模型（名稱，頭像 Head_編號）」對應 <code>skin.json</code> 中與英雄編號相同的列，名稱鍵是 <code>hero_name_{{id}}</code>。無名列的模型名稱同樣取自 <code>skin.json</code>，不是造型圖鑑的造型名。</li>
         <li>解鎖說明可見表只列原文。鍵名對照：{unlock_key_map}。</li>
-        <li>可見表標題對照：造型戰力原名 <code>add_power</code>；升星上限原名 <code>star_max</code>；成對屬性原名 <code>suit_attr</code>；賽季欄／賽季效果／賽季效果二原名 <code>season</code>、<code>season_effect</code>、<code>season_effect2</code>；賽季說明原名 <code>season_dec</code>；外觀編號原名 <code>skin_id</code>；獎勵原值原名 <code>reward</code>；啟用條件原名 <code>suit_star_need</code>（例如 <code>4|0,6|0</code>）。成對欄原名 <code>hero_skin.suit</code>，寫的是另一把造型的 id，不是收集套裝 id。陣營來源「榮譽加成鏈」的組編號原名 <code>honor_group</code>；無陣營加成那筆是 <code>honor_group</code> 301。</li>
+        <li>可見表標題對照：造型戰力原名 <code>add_power</code>；升星上限原名 <code>star_max</code>；成對屬性原名 <code>suit_attr</code>；賽季欄／賽季效果／賽季效果二原名 <code>season</code>、<code>season_effect</code>、<code>season_effect2</code>；賽季說明原名 <code>season_dec</code>；外觀編號原名 <code>skin_id</code>；獎勵原值原名 <code>reward</code>；啟用條件原名 <code>suit_star_need</code>（例如 <code>4|0,6|0</code>）。成對欄原名 <code>hero_skin.suit</code>，寫的是另一把造型的 id，不是收集套裝 id。陣營來源「榮譽加成鏈」的組編號原名 <code>honor_group</code>；無陣營加成那筆是 <code>honor_group</code> 301。可見榮譽加成鏈只寫官方屬性名，編號見此：聯盟英雄攻擊 3103、聯盟英雄生命 3104、部族英雄攻擊 4103、部族英雄生命 4104、自然英雄攻擊 5103、自然英雄生命 5104。</li>
         <li>解鎖時間若是兩段日期，可見表寫成「A 至 B」；原值是 <code>A|B</code>，欄位原名 <code>unlocktime</code>。不把 <code>unlock_season</code>、<code>season</code> 或 <code>season_dec</code> 對成第幾賽季日曆，也不對成臨時擁有或臨時使用。</li>
         <li>本頁只收 {e("hero_skin")}／{e("hero_skin_suit")}／{e("hero_skin_voice")}。分組依戰力欄 {e("add_power")}。百分比類是 {e("show_type")}=2（原值÷100）；點數類是 {e("show_type")}=1。可升星造型的隊伍顯示值＝{e("team_attr")} 基礎＋當前星檔。不把 {e("unlock_season")}、{e("unlock_server")} 或 {e("unlocktime")} 自行標成未開放。</li>
         <li>資料出自遊戲資料表與官方字串（{e("hero_skin")}、{e("hero_skin_suit")}、{e("hero_skin_voice")}、{e("skin")}、{e("hero_detail")}、{e("attribute")}、{e("strings_zh.json")}），資料截至 {SKIN_DATA_CUTOFF}（香港時間）。來源是 LocalLow 包 {e(SKIN_DATA_PACK)}（759 張表），打包時戳 {SKIN_DATA_PACKED}（香港時間）。顯示規則仍依攻略手冊「英雄造型圖鑑」第三版，但這包不是第 15 章第三版所用的同一日較早 StreamingAssets 解壓檔。這不是官方 wiki。</li>

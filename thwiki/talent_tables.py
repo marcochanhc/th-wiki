@@ -1159,25 +1159,29 @@ def _dec_label(dec_key: str, o: Official) -> str:
     return official_text(dec_key) or dec_key
 
 
-def _slot3_name_note(slot: HeroSlot, curve: GroupCurve) -> str:
+def _slot3_name_note(slot: HeroSlot, curve: GroupCurve, *, html: bool = False) -> str:
     name = slot.name
     if slot.group_id == 20196:
-        return f"{name}（名稱鍵仍是「法術增效」，群組是 20196，不是技能增傷那條）"
+        label = "顯示名" if html else "名稱鍵"
+        return f"{name}（{label}仍是「法術增效」，群組是 20196，不是技能增傷那條）"
     if slot.group_id == 20255 and slot.name_key == "talent_name_201":
-        return f"{name}（名稱鍵仍是「進攻戰略」，群組是 20255）"
+        label = "顯示名" if html else "名稱鍵"
+        return f"{name}（{label}仍是「進攻戰略」，群組是 20255）"
     return name
 
 
-def _attr_cell(curve: GroupCurve, attrs: dict[int, AttrInfo]) -> str:
+def _attr_cell(curve: GroupCurve, attrs: dict[int, AttrInfo], *, include_id: bool = True) -> str:
     info = attrs.get(curve.attr_id)
     aname = info.name if info and info.name else f"屬性 {curve.attr_id}"
     if info and info.name_missing:
         aname = f"屬性 {curve.attr_id}（沒有官方屬性名稱字串）"
     note = _type_show_plain(info.typ, info.show_type) if info else ""
-    return f"{aname}（{curve.attr_id}，{note}）" if note else f"{aname}（{curve.attr_id}）"
+    if include_id:
+        return f"{aname}（{curve.attr_id}，{note}）" if note else f"{aname}（{curve.attr_id}）"
+    return f"{aname}（{note}）" if note else aname
 
 
-def _lord_effect(tree: LordTree, data: TablesData) -> str:
+def _lord_effect(tree: LordTree, data: TablesData, *, include_id: bool = True) -> str:
     o = data.official
     if tree.tree_id == 70050100:
         ids = "／".join(tree.map_buildings)
@@ -1215,17 +1219,29 @@ def _lord_effect(tree: LordTree, data: TablesData) -> str:
     else:
         aname = info.name if info and info.name else f"屬性 {tree.attr_id}"
         typ_note = ""
+        plain = ""
         if info and (info.typ, info.show_type) != (2, 2):
             plain = _type_show_plain(info.typ, info.show_type)
             typ_note = f"，{plain}" if plain else ""
-        text = f"{aname}（{tree.attr_id}{typ_note}）{v}"
+        if include_id:
+            text = f"{aname}（{tree.attr_id}{typ_note}）{v}"
+        elif typ_note:
+            text = f"{aname}（{plain}）{v}"
+        else:
+            text = f"{aname} {v}"
     if tree.node_name:
         text += f"。節點名稱字串「{tree.node_name}」"
     if tree.tree_id == 71040700:
-        text += (
-            "。與戰爭樹 60070500 的醫院容量上限（1032，點數）官方名稱相同，"
-            "但不是同一個屬性編號，類型與顯示類型也不同"
-        )
+        if include_id:
+            text += (
+                "。與戰爭樹 60070500 的醫院容量上限（1032，點數）官方名稱相同，"
+                "但不是同一個屬性編號，類型與顯示類型也不同"
+            )
+        else:
+            text += (
+                "。與戰爭樹 60070500 的醫院容量上限（點數）官方名稱相同，"
+                "但不是同一條屬性，類型與顯示類型也不同"
+            )
     return text
 
 
@@ -1322,7 +1338,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             join_heroes_html(ids, terms, data.roster_names),
         ])
     out["quality"] = table(
-        ["品質", "人數（含 15032／15033／15039）", "新表槽 1／2／4 群組", "新表英雄攻擊或生命 1 級／30 級（屬性 103 或 104）", "英雄"],
+        ["品質", "人數（含 15032／15033／15039）", "新表槽 1／2／4 群組", "新表英雄攻擊或生命 1 級／30 級", "英雄"],
         q_rows,
         mobile="cards",
         card_title="品質",
@@ -1337,7 +1353,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             e(str(_curve(data, 50101).values[lv - 1])),
         ])
     out["new_seq"] = table(
-        ["等級", "品質 1（30101）", "品質 2（40101）", "品質 3（50101）"],
+        ["等級", "品質 1", "品質 2", "品質 3"],
         seq_rows,
         mobile="sticky",
     )
@@ -1349,10 +1365,10 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             slots.sort(key=lambda s: SLOT3_HERO_ORDER[gid].index(s.hero_id))
             s0 = slots[0]
             curve = _curve(data, gid)
-            name_note = _slot3_name_note(s0, curve)
+            name_note = _slot3_name_note(s0, curve, html=True)
             quals = "／".join(str(q) for q in sorted({s.quality for s in slots}))
             rows.append([
-                H(_attr_cell(curve, data.attrs), terms),
+                H(_attr_cell(curve, data.attrs, include_id=False), terms),
                 H(name_note, terms),
                 H(_dec_label(s0.dec_key, o), terms),
                 e(str(gid)),
@@ -1375,7 +1391,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         cols = ["樹 id", "級數", "天賦建築等級", "前置（樹|等級）", "寫入屬性（1 級→滿級）"] if with_bld else ["樹 id", "級數", "寫入屬性（1 級→滿級）"]
         title = "樹 id"
         for tree in trees:
-            effect = _lord_effect(tree, data)
+            effect = _lord_effect(tree, data, include_id=False)
             if with_bld:
                 bld = f"{tree.bld_first}→{tree.bld_last}"
                 rows.append([
@@ -1496,37 +1512,37 @@ def render_html(data: TablesData) -> str:
     add(p_html(
         f"天賦品質欄 1／2／3 把英雄分成三檔。<strong>新表</strong>裡，槽 1／2／4 對應攻擊或生命群組的強度；"
         f"群組都是 1–30 級，寫入皆為英雄側、百分比類（本頁不自行換成百分比）的"
-        f"{H('英雄攻擊', terms)}（103）或{H('英雄生命', terms)}（104）。"
+        f"{H('英雄攻擊', terms)}或{H('英雄生命', terms)}。"
         f"說明文是「{official_term_html(o.des_101)}」。"
         f"槽 1 一般名稱是「{H(o.name_atk, terms)}」、槽 2 是「{H(o.name_hp_i, terms)}」、槽 4 是「{H(o.name_hp_ii, terms)}」。"
         "這些是新表的寫法，不是這次前服面板顯示的那套。"
     ))
     add(tbl["quality"])
-    add(p_html("新表槽 1 的 1–30 級數列如下。槽 2／4 的新表英雄生命數列，與同品質槽 1 的英雄攻擊數列相同（只是屬性改為 104）。"))
+    add(p_html("新表槽 1 的 1–30 級數列如下。槽 2／4 的新表英雄生命數列，與同品質槽 1 的英雄攻擊數列相同（只是屬性改為英雄生命）。"))
     add(tbl["new_seq"])
     add(p_html(
-        f"例外（僅就新表名稱鍵）：{hero_link_html(10009, terms, data.roster_names)}、{hero_link_html(10010, terms, data.roster_names)}"
-        f"的槽 1／2 名稱鍵仍是「{H(o.name_strategy, terms)}」「{H(o.name_endure, terms)}」，"
+        f"例外（僅就新表顯示名）：{hero_link_html(10009, terms, data.roster_names)}、{hero_link_html(10010, terms, data.roster_names)}"
+        f"的槽 1／2 顯示名仍是「{H(o.name_strategy, terms)}」「{H(o.name_endure, terms)}」，"
         "但掛的群組已是 30101／30201（英雄攻擊／英雄生命），數值與同品質其他英雄相同。"
         f"槽 4 名稱已是「{H(o.name_hp_ii, terms)}」。介面實際顯示哪一組，表沒有再說明。"
-        "前服已確認的品質 1／2／3 面板都對舊表，不能用來推鐵匠、護衛在新表名稱鍵下會顯示哪一組。"
+        "前服已確認的品質 1／2／3 面板都對舊表，不能用來推鐵匠、護衛在新表顯示名下會顯示哪一組。"
     ))
     add("    </section>")
 
     add('    <section id="confirmed">')
     add("      <h3>舊表與面板對照</h3>")
     add(p_html(
-        f"<strong>舊表與面板對照。</strong>舊表品質 3 的槽 1 是群組 20015（屬性 10103 {H('所有士兵攻擊', terms)}，1 級 300／30 級 9,000），"
-        f"名稱「{H(o.name_strategy, terms)}」；槽 2 是群組 20255（10104 {H('所有士兵生命', terms)}，900／27,000），"
+        f"<strong>舊表與面板對照。</strong>舊表品質 3 的槽 1 是群組 20015（{H('所有士兵攻擊', terms)}，1 級 300／30 級 9,000），"
+        f"名稱「{H(o.name_strategy, terms)}」；槽 2 是群組 20255（{H('所有士兵生命', terms)}，900／27,000），"
         f"名稱「{H(o.name_endure, terms)}」。品質 3 的槽 4 不是人人相同：23 人掛 20255（{H(o.name_endure, terms)}），"
         f"20 人掛 20015（{H(o.name_strategy, terms)}）。"
-        f"{hero_link_html(10031, terms, data.roster_names)}（10031，品質 3）槽 4 是 20255；槽 3 兩表相同，審判官是群組 20085（16 {H('格擋', terms)}，100／3,000），"
+        f"{hero_link_html(10031, terms, data.roster_names)}（10031，品質 3）槽 4 是 20255；槽 3 兩表相同，審判官是群組 20085（{H('格擋', terms)}，100／3,000），"
         f"名稱「{H('格擋研究', terms)}」。舊表品質 1 只有槽 1／2，滿級 10 級（群組 20013／20253：所有士兵攻擊 200／2,000，所有士兵生命 600／6,000）；"
         "品質 2 只有槽 1／2／3，槽 1／2 滿級 20 級（群組 20014／20254：250／5,000、750／15,000），槽 3 滿級 30 級。"
     ))
     add(p_html(
         "2026-11-16 前服審判官（10031，品質 3）四槽皆 30 級、已滿級的面板，槽名與數值都對得上這份舊表，"
-        "對不上新表的 103／104、600／18,000（槽 3 除外）。面板原文："
+        "對不上新表的英雄攻擊／英雄生命、600／18,000（槽 3 除外）。面板原文："
     ))
     add("<ul>")
     add(f"<li>{official_term_html(PANEL_JUDGE_ATK)}</li>")
@@ -1542,7 +1558,7 @@ def render_html(data: TablesData) -> str:
     add(
         f"<li>{hero_link_html(10007, terms, data.roster_names)}（10007，品質 1）兩槽皆已滿 10 級。"
         f"面板原文：「{official_term_html(PANEL_ALCHEMIST_ATK)}」。"
-        "這筆鎖定前服品質 1 讀舊表（只有 2 槽，滿級 10 級），不是新表的 4 槽／30 級／103／104。"
+        "這筆鎖定前服品質 1 讀舊表（只有 2 槽，滿級 10 級），不是新表的 4 槽／30 級／英雄攻擊／英雄生命。"
         "槽 2 未入鏡，本頁不編造槽 2 的面板原文。</li>"
     )
     add(
@@ -1550,7 +1566,7 @@ def render_html(data: TablesData) -> str:
         f"面板原文：「{official_term_html(PANEL_DANCER_ATK)}」（20 級）、"
         f"「{official_term_html(PANEL_DANCER_HP)}」（20 級）、"
         f"「{official_term_html(PANEL_DANCER_HEAL)}」（30 級）。"
-        "這筆鎖定前服品質 2 讀舊表（3 槽；槽 1／2 滿級 20 級，槽 3 滿級 30 級），並鎖定屬性 1022 滿級原值 3,000＝30.00%。</li>"
+        "這筆鎖定前服品質 2 讀舊表（3 槽；槽 1／2 滿級 20 級，槽 3 滿級 30 級），並鎖定傷兵治療速度滿級原值 3,000＝30.00%。</li>"
     )
     add(
         f"<li>{hero_link_html(10028, terms, data.roster_names)}（10028）槽 3 已滿 30 級。"
@@ -1588,8 +1604,8 @@ def render_html(data: TablesData) -> str:
     add(p_html(
         "槽 3 的名稱與群組多數一致，說明文有"
         f"「{official_term_html(o.des_101)}」、"
-        f"「{official_term_html(o.des_102)}」（102）、"
-        f"「{official_term_html(o.des_104)}」（104）三種。"
+        f"「{official_term_html(o.des_102)}」、"
+        f"「{official_term_html(o.des_104)}」三種。"
         "下面按實際寫入的屬性排列；1 級與 30 級數值已對過群組表。名稱與屬性不一致的，在該條註明。"
     ))
     add('    <section id="slot3-combat">')
@@ -1667,7 +1683,7 @@ def render_html(data: TablesData) -> str:
         "附加數量在表上為 100、200、300、600、1,000 或 2,000。"
         "節點另要求天賦建築等級欄（1 到 21）。"
         f"表沒有把這個欄位直接寫成哪一座建築的等級；物品說明提到{H(o.hall_name, terms)}"
-        "，本頁不自行斷定該欄就等於建築 145。"
+        "，本頁不自行斷定該欄就等於該建築。"
     ))
     add(p_html(
         "領主天賦明細 293 筆、47 條樹。所有節點的說明、時間、品質欄皆為空或 -1。"
@@ -1681,7 +1697,7 @@ def render_html(data: TablesData) -> str:
     add(tbl["war"])
     add(p_html(
         f"字串表另有「{H(o.train_accel_name, terms)}」，"
-        "對應屬性名稱鍵 1016（士兵訓練速度）。戰爭樹沒有寫入 1016，本頁不把這條名稱掛到任何節點。"
+        "對應屬性「士兵訓練速度」。戰爭樹沒有寫入這條屬性，本頁不把這條名稱掛到任何節點。"
     ))
     add("    </section>")
 
@@ -1704,7 +1720,7 @@ def render_html(data: TablesData) -> str:
     add("<h4>自動採集設施說明</h4>")
     add(f"<blockquote>{official_term_html(o.tips_facility)}</blockquote>")
     add(p_html(
-        "1040「英雄攻擊轉化率」如何進入士兵或戰鬥公式，表沒有寫。本頁只記錄它被豐饒樹寫入。"
+        "「英雄攻擊轉化率」如何進入士兵或戰鬥公式，表沒有寫。本頁只記錄它被豐饒樹寫入。"
     ))
     add("    </section>")
 
@@ -1728,9 +1744,9 @@ def render_html(data: TablesData) -> str:
     add("<li>未被新舊英雄天賦定義表引用的 81 個群組。</li>")
     add(
         f"<li>{H(o.light_tower, terms)}、{H(o.dark_tower, terms)}、{H(o.auto_facility, terms)}"
-        "的建築效果、範圍與耐久明細（只在豐饒樹註明解鎖的建築 id 與官方名稱）。</li>"
+        "的建築效果、範圍與耐久明細（只在豐饒樹註明解鎖的建築編號與官方名稱）。</li>"
     )
-    add("<li>英雄天賦 103／104、領主天賦 1040「英雄攻擊轉化率」如何進入官方戰鬥公式。</li>")
+    add("<li>英雄天賦的英雄攻擊／英雄生命、領主天賦「英雄攻擊轉化率」如何進入官方戰鬥公式。</li>")
     add("<li>天賦與英雄技能、站位、士兵的搭配模擬，以及強弱評定。</li>")
     add("</ul>")
     add("    </section>")
@@ -1740,7 +1756,7 @@ def render_html(data: TablesData) -> str:
     add("<ul>")
     add("<li>以下是整理用註記，查天賦名稱與效果可略過。</li>")
     add(
-        "<li>可見正文把檔名與欄位名收到這裡。"
+        "<li>可見正文把檔名與欄位名收到這裡。可見天賦屬性只寫官方名，編號見此：英雄攻擊 103、英雄生命 104、所有士兵攻擊 10103、所有士兵生命 10104、格擋 16、傷兵治療速度 1022、士兵訓練速度 1016、英雄攻擊轉化率 1040；槽 3 說明文三種對應 <code>hero_talent_des_101</code>／<code>102</code>／<code>104</code>。可見「顯示名」對應名稱鍵。"
         "屬性 <code>type=2</code>／<code>show_type=2</code> 在可見正文寫成「百分比類，本頁不自行換成百分比」；"
         "<code>type=1</code>／<code>show_type=1</code> 寫成「點數」。沒有把百分比類原值自行換成百分比，已鎖定的面板顯示除外。"
         "志向官方名稱鍵是 <code>professional_name01</code>／<code>professional_name02</code>（戰爭領主、豐饒領主），說明鍵 <code>professional_des01</code>／<code>professional_des02</code>。"
@@ -1797,7 +1813,7 @@ def render_html(data: TablesData) -> str:
         "<code>hero_talent_swap</code> 的品質 3–6 與 <code>talent_quality</code> 1–3 如何對應；"
         "屬性 1212、1085、1079 的名稱；710 系列與 700 對應節點哪套現役；"
         "<code>talent_building_lv</code> 對應哪一座建築；領主天賦與職業加成是否同時生效。"
-        "可見表頭「天賦建築等級」原名 <code>talent_building_lv</code>。"
+        "可見表頭「天賦建築等級」原名 <code>talent_building_lv</code>。可見不再寫建築 145，建築編號 145 對照見此。可見新表數列表頭不再附（30101）／（40101）／（50101），改寫「品質 1／品質 2／品質 3」；群組編號對照見名錄「新表槽 1／2／4 群組」欄。"
         "地圖建築官方說明全文對應 <code>mapBuilding_tips_01</code>／<code>_02</code>／<code>_03</code>。</li>"
     )
     add("</ul>")
