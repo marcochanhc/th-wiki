@@ -254,16 +254,24 @@ def fmt_cost(raw, style: str = "short") -> str:
     bits = []
     for typ, gid, qty in items:
         if typ == 2:
-            if style == "short":
+            name = official_text(f"goods_name_{gid}")
+            if style == "html":
+                if name:
+                    bits.append(f"「{name}」×{qty}")
+                else:
+                    bits.append(f"沒有官方道具名稱字串 ×{qty}")
+            elif style == "short":
                 bits.append(f"道具 {gid} ×{qty}")
             else:
-                name = official_text(f"goods_name_{gid}")
                 if name:
                     bits.append(f"道具 {gid}（{name}）×{qty}")
                 else:
                     bits.append(f"道具 {gid} ×{qty}")
         else:
-            bits.append(f"類型 {typ}、編號 {gid} ×{qty}")
+            if style == "html":
+                bits.append("沒有對應官方資源名的消耗 ×" + str(qty))
+            else:
+                bits.append(f"類型 {typ}、編號 {gid} ×{qty}")
     return "加".join(bits)
 
 
@@ -1075,16 +1083,17 @@ def _quality_sentence(rows: list[SkinRow]) -> str:
     return "各列品質照表。"
 
 
-def _cost_sentence(rows: list[SkinRow]) -> str:
+def _cost_sentence(rows: list[SkinRow], *, html: bool = False) -> str:
+    style = "html" if html else "short"
     if all(is_empty(r.cost) for r in rows):
         return "各列都沒有升級消耗。"
     first, rest = rows[0], rows[1:]
     if is_empty(first.cost) and rest and all(str(r.cost) == str(rest[0].cost) for r in rest):
-        return f"表上等級 {first.level} 沒有升級消耗，等級 {rest[0].level}–{rest[-1].level} 為{fmt_cost(rest[0].cost)}。"
+        return f"表上等級 {first.level} 沒有升級消耗，等級 {rest[0].level}–{rest[-1].level} 為{fmt_cost(rest[0].cost, style=style)}。"
     # maybe two cost bands (創世紀)
     bands: list[tuple[str, list[int]]] = []
     for r in rows:
-        key = "（空）" if is_empty(r.cost) else fmt_cost(r.cost)
+        key = "（空）" if is_empty(r.cost) else fmt_cost(r.cost, style=style)
         if bands and bands[-1][0] == key:
             bands[-1][1].append(r.level)
         else:
@@ -1366,9 +1375,16 @@ def _standard_group_prose(g: SkinGroup, html: bool, attrs: dict[int, AttrInfo], 
     text = (
         f"{head}表上等級 {lv_txt}；編號依序為 {_ids_list(rows, html=html)}。"
         f"{_quality_sentence(rows)}"
-        f"{_cost_sentence(rows)}"
+        f"{_cost_sentence(rows, html=html)}"
     )
     extra = GROUP_EXTRA.get(g.group, "")
+    if html and extra:
+        n314 = official_text("goods_name_314")
+        n313 = official_text("goods_name_313")
+        if n314:
+            extra = extra.replace("314 說明可升級", f"「{n314}」說明可升級")
+        if n313:
+            extra = extra.replace("再用 313 升成", f"再用「{n313}」升成")
     level_note = (
         "本節只抄表上等級與擁有／使用屬性，不是已用面板核過 0 星或滿星。"
         if html else
@@ -1611,7 +1627,7 @@ def render_html(data: TablesData) -> str:
         "名稱下方的金星是城堡本身星級；技能等級是另一套。"
         f"技能升級介面字串：「{official_term_html(official_text('world_skin_skill_level_up_4'))}」。"
         "三座城堡（熾火要塞、山岳之傲、盾貝城）技能可升到 1–10 級；其他「可升級」城堡多半只有基礎技能與一筆強化技能。"
-        "蛋糕城、飛翔號：表上等級 2–6 皆為道具 290 ×20。"
+        f"蛋糕城、飛翔號：表上等級 2–6 皆為「{H(o.goods[290][0], terms)}」×20。"
         "道具說明名單仍未列這兩座。"
     ))
     add(li_html(
@@ -1673,10 +1689,19 @@ def render_html(data: TablesData) -> str:
     add(p_html(
         "「技能」欄：基礎＝只有一筆；基礎＋強化＝另有強化列、無 1–10 級；"
         "1–10＝有強化技能且可再升到 10 級。創世紀有三筆技能，對應關係見技能章。"
-        "巨蟹沙城、南瓜小鎮在 290 的可升級名單中，但本抽取沒有技能列。"
+        f"巨蟹沙城、南瓜小鎮在「{H(o.goods[290][0], terms)}」的可升級名單中，但本抽取沒有技能列。"
         "巨蟹沙城、南瓜小鎮、天空之城在本抽取沒有主動技能列，這已由技能表確認，不是漏對；天空之城畫面亦無技能按鈕。"
     ))
     up_map = _goods_upgrade_map(o)
+    dir_names = {}
+    for sid in DIRECTORY_IDS:
+        if sid == 1:
+            g0 = data.groups[1]
+        elif sid == 111:
+            g0 = data.groups[110]
+        else:
+            g0 = data.groups.get(sid)
+        dir_names[sid] = g0.name if g0 else official_text(f"skin_name_{sid}")
     dir_rows = []
     for sid in DIRECTORY_IDS:
         # find group: usually group == sid, except 1 (group 1), 111 (group 110)
@@ -1696,27 +1721,57 @@ def render_html(data: TablesData) -> str:
         else:
             diamonds = parse_repeat_diamonds(desc)
         mat = up_map.get(sid, EMPTY)
+        if mat == "290":
+            mat = official_term_html(o.goods[290][0])
+        elif mat == "314":
+            mat = official_term_html(o.goods[314][0])
+        elif mat == "305 升星":
+            mat = official_term_html(o.goods[305][0]) + "升星"
+        elif mat == "313":
+            mat = official_term_html(o.goods[313][0])
         note = DIRECTORY_NOTES.get(sid, "").replace("名稱鍵", "名稱")
+        n290 = official_text("goods_name_290")
+        n314 = official_text("goods_name_314")
+        n313 = official_text("goods_name_313")
+        if n290:
+            note = note.replace("升級用道具 290", f"升級用「{n290}」")
+            note = note.replace("消耗亦為 290×20", f"消耗亦為「{n290}」×20")
+        if n313:
+            note = note.replace("再用 313 升成", f"再用「{n313}」升成")
+        if n314:
+            note = note.replace("314 說明可升級", f"「{n314}」說明可升級")
+        # HTML-only: sibling skin ids → official display names already on this table
+        for other_sid, other_name in sorted(dir_names.items(), key=lambda kv: -len(str(kv[0]))):
+            if other_sid == sid or not other_name:
+                continue
+            note = note.replace(f"與 {other_sid} 為獨立造型", f"與「{other_name}」為獨立造型")
+            note = note.replace(f"不是 {other_sid} 的升級形態", f"不是「{other_name}」的升級形態")
+            note = note.replace(f"不是 {other_sid}", f"不是「{other_name}」")
+        note = note.replace("另有 7／14／30 天限時 id 412–414", "另有 7／14／30 天限時造型")
+
         dir_rows.append([
-            str(sid),
             official_term_html(name),
             _skill_dir_label(sid, data),
             mat,
             diamonds,
             H(note, terms) if note else "",
         ])
-    add(_tbl(["id", "名稱", "技能", "升級材料（說明名單）", "重複獲得", "備註"], dir_rows, "cards", card_title="名稱"))
+    add(_tbl(["名稱", "技能", "升級材料（說明名單）", "重複獲得", "備註"], dir_rows, "cards", card_title="名稱"))
     add(p_html(
         f"以上永久造型（含預設、不含南瓜小鎮限時道具）共 {len(DIRECTORY_IDS)} 座。"
         "有幾座名稱與若干賽季稱呼相近，這裡只記名稱，不推斷開放賽季。"
     ))
     add(p_html(
         "不能把未具名的 VIP18 造型逕指為某一座。"
-        "VIP18 先拿到水晶聖城，再用 VIP20 水晶徽章（313）升成 VIP20 的水晶聖城。"
+        "VIP18 先拿到水晶聖城，再用 VIP20「"
+        f"{official_term_html(official_text('goods_name_313'))}"
+        "」升成 VIP20 的水晶聖城。"
         "徽章說明只寫來自 VIP20 專屬禮包；官方屬性名仍是"
         f"「{official_term_html(official_text('attribute_name_1142'))}」，沒有寫造型名稱。"
         "對照：已實裝行軍造型「水晶戰車」（說明寫「VIP19級獲得」）；"
-        "另有「專屬於VIP20的城堡及光環造型」；水晶聖城以 313 升級，光環「水晶冠冕」的說明寫「VIP20級獲得」。"
+        "另有「專屬於VIP20的城堡及光環造型」；水晶聖城以「"
+        f"{official_term_html(official_text('goods_name_313'))}"
+        "」升級，光環「水晶冠冕」的說明寫「VIP20級獲得」。"
     ))
     add(p_html(
         "可贈送：春日小屋（品質 4）、火砲要塞、蛋糕城、南瓜小鎮（後三座品質 5）。"
@@ -1750,12 +1805,13 @@ def render_html(data: TablesData) -> str:
         add(p_html(
             f"六列，表上等級 1–6；編號依序為 {_ids_list(g.rows, html=True)}。"
             f"{'使用屬性六階完全相同' + ('，與蛋糕城的使用屬性相同' if gid==302 else '') + '；擁有屬性隨表上等級遞增。' if True else ''}"
-            f"{_cost_sentence(g.rows)}"
+            f"{_cost_sentence(g.rows, html=True)}"
             f"{_quality_sentence(g.rows)}"
             + (
                 "本節列出 0 星與滿 1 星，並補上表上等級 2–5 的數字；中間檔尚未用面板核對。"
                 "這座與蛋糕城、飛翔號一樣都是主表六檔，使用屬性整條曲線不變，"
-                f"滿 1 星對上表上等級 6（id {g.rows[-1].sid}），因此表上等級 1 就是 0 星檔。"
+                "滿 1 星對上表上等級 6，因此表上等級 1 就是 0 星檔。"
+                "編號對照見資料說明。"
                 if mid_note else ""
             )
         ))
@@ -1871,7 +1927,7 @@ def render_html(data: TablesData) -> str:
         171, "g-171", "h3",
         "三列，表上等級 1–3；編號依序為 171、172、173。"
         + _quality_sentence(data.groups[171].rows)
-        + _cost_sentence(data.groups[171].rows)
+        + _cost_sentence(data.groups[171].rows, html=True)
         + "隱藏欄在表上等級 1–3 為 1。三列擁有屬性完全相同，使用屬性皆空。"
         "本節只抄表上等級與擁有／使用屬性，不是已用面板核過 0 星或滿星。",
     )
@@ -1880,7 +1936,7 @@ def render_html(data: TablesData) -> str:
         "十一列，表上等級 1–11；編號依序為 "
         + _ids_list(data.groups[311].rows, html=True) + "。"
         + _quality_sentence(data.groups[311].rows)
-        + _cost_sentence(data.groups[311].rows)
+        + _cost_sentence(data.groups[311].rows, html=True)
         + "滿星為 2 顆金星；技能／領域的 1 顆星與 2 顆星檔，見技能章與介面實例。"
         "面板抄錄的擁有／使用與共鳴等級 1 額外屬性見「介面實例」與「共鳴」。"
         "<strong>不要把表上等級 1／6／11 寫成面板幾星</strong>，也不要把共鳴條件的 1／6／11 讀成此座星數。"
@@ -1891,7 +1947,7 @@ def render_html(data: TablesData) -> str:
         "十一列，表上等級 1–11；編號依序為 "
         + _ids_list(data.groups[327].rows, html=True) + "。"
         + _quality_sentence(data.groups[327].rows)
-        + _cost_sentence(data.groups[327].rows)
+        + _cost_sentence(data.groups[327].rows, html=True)
         + "名稱下無星；目前滿星就是 0 星，不要推斷以後會不會開放升星。"
         "因此共鳴等級 2／3 目前開不到，見機制與介面實例。"
         "主表雖有 1–11 級列，且十一階擁有／使用完全相同，"
@@ -1965,10 +2021,10 @@ def render_html(data: TablesData) -> str:
     up_rows = []
     for gid in (290, 314, 305, 313):
         name, desc = o.goods[gid]
-        up_rows.append([str(gid), official_term_html(name), official_term_html(desc).replace("<br>", "／")])
-    add(_tbl(["道具", "名稱", "用途（道具說明原文）"], up_rows, "cards", card_title="名稱"))
+        up_rows.append([official_term_html(name), official_term_html(desc).replace("<br>", "／")])
+    add(_tbl(["名稱", "用途（道具說明原文）"], up_rows, "cards", card_title="名稱"))
     add(p_html(
-        "技能 1–10 級消耗（道具 290）："
+        f"技能 1–10 級消耗（「{H(o.goods[290][0], terms)}」）："
     ))
     su_rows = []
     total = 0
@@ -1977,23 +2033,23 @@ def render_html(data: TablesData) -> str:
         qty = cost[0][2] if cost else 0
         total += qty
         su_rows.append([str(r.get("level")), str(qty), str(r.get("skill_quality"))])
-    add(_tbl(["技能等級", "消耗 290", "技能品質"], su_rows, "sticky"))
+    add(_tbl(["技能等級", f"消耗「{H(o.goods[290][0], terms)}」", "技能品質"], su_rows, "sticky"))
     add(p_html(
         f"合計 {total} 張城堡設計圖（只計這張技能升級表，不含把城堡升到可解鎖更高技能上限所需的數量）。"
     ))
     add(p_html(
-        "道具說明稱 314 的對象為「蘑菇之家」，官方名稱另有「蘑菇」，可能是同一座城堡的不同稱呼。"
+        f"道具說明稱「{H(o.goods[314][0], terms)}」的對象為「蘑菇之家」，官方名稱另有「蘑菇」，可能是同一座城堡的不同稱呼。"
         f"現行道具說明名單為：{official_term_html(o.goods[314][1]).replace('<br>', '／')}。"
-        "第 17 章此處仍按較早五座名單書寫（沒有火砲要塞）；本頁改引現行官方字串。主表火砲要塞升級消耗在章節與現行包都是道具 314 ×5。"
+        f"第 17 章此處仍按較早五座名單書寫（沒有火砲要塞）；本頁改引現行官方字串。主表火砲要塞升級消耗在章節與現行包都是「{H(o.goods[314][0], terms)}」×5。"
     ))
     add(p_html(
         "任務字串可見升級後名稱加「-Lv.2」，例如「擁有城堡巨蟹沙城-Lv.2」；290 名單中多座都有對應條目。"
-        "同一批任務字串還有蛋糕城（301）、飛翔號（302）、美味史萊姆（317）的 -Lv.2，這三座卻不在 290／314 的說明名單；"
+        f"同一批任務字串還有蛋糕城（301）、飛翔號（302）、美味史萊姆（317）的 -Lv.2，這三座卻不在「{H(o.goods[290][0], terms)}」／「{H(o.goods[314][0], terms)}」的說明名單；"
         "美味史萊姆的強化形態名稱為「加倍美味史萊姆」。"
         "夢幻摩天輪（318）技能表有強化列，也不在這兩份說明名單。"
-        "蛋糕城、飛翔號、美味史萊姆、夢幻摩天輪都用城堡設計圖（290）升級。"
+        f"蛋糕城、飛翔號、美味史萊姆、夢幻摩天輪都用「{H(o.goods[290][0], terms)}」升級。"
         "道具說明名單仍未列這四座。"
-        "蛋糕城／飛翔號主表等級 2–6 的消耗亦為 290×20。"
+        f"蛋糕城／飛翔號主表等級 2–6 的消耗亦為「{H(o.goods[290][0], terms)}」×20。"
     ))
     add(p_html(
         f"採集物表仍只有 {data.table_meta['goods_rows']} 筆，分別是幸運火雞的"
@@ -2001,10 +2057,10 @@ def render_html(data: TablesData) -> str:
         f"「{official_term_html(official_text('skin_goods_name_309_lv2'))}」與泡泡霜熊的"
         f"「{official_term_html(official_text('skin_name_3221'))}」，"
         "是技能在身邊生成的採集物，不是城堡升級材料表。"
-        "所有道具說明裡寫「升級城堡外觀／升星」的道具，仍只有 290、314、305、313 四種；"
+        f"所有道具說明裡寫「升級城堡外觀／升星」的道具，仍只有「{H(o.goods[290][0], terms)}」、「{H(o.goods[314][0], terms)}」、「{H(o.goods[305][0], terms)}」、「{H(o.goods[313][0], terms)}」四種；"
         "沒有任何道具說明把蛋糕城、飛翔號、美味史萊姆、夢幻摩天輪列入可升級名單。"
         "夢幻摩天輪也沒有 <code>-Lv.2</code> 任務字串，只有技能表的強化列。"
-        "升級材料以道具 290 與官方名單一併列出：說明名單尚未列這四座，但這四座都用 290 升級。"
+        f"升級材料以「{H(o.goods[290][0], terms)}」與官方名單一併列出：說明名單尚未列這四座，但這四座都用「{H(o.goods[290][0], terms)}」升級。"
     ))
     add("    </section>")
 
@@ -2064,7 +2120,7 @@ def render_html(data: TablesData) -> str:
     ))
     add(p_html(
         "創世紀三筆技能的技能等級皆為 0，表內沒有星級數字欄。"
-        "這三筆對應基礎、1 顆可見星、2 顆可見星（滿星），與道具 305「可用於城堡造型創世紀、天空之城的升星」相符。"
+        f"這三筆對應基礎、1 顆可見星、2 顆可見星（滿星），與「{H(o.goods[305][0], terms)}」說明「可用於城堡造型創世紀、天空之城的升星」相符。"
         "<strong>不要把檔名裡的 5／10 讀成滿星至少 5 星或 10 星。</strong>"
         "1 顆可見星、2 顆可見星已與創世紀畫面金星對上；創世紀滿星為 2 顆金星。"
         "不是從升星上限欄讀出的。"
@@ -2096,7 +2152,7 @@ def render_html(data: TablesData) -> str:
     add("</ul>")
     add(p_html(
         "技能表的強化列名稱已指向「加倍美味史萊姆」（上列名稱欄以技能表名稱為準；對照見資料說明）。"
-        "升級用城堡設計圖（290），主表等級 2–6 消耗亦為 290×20，但 290／314 說明名單尚未列這座。"
+        f"升級用「{H(o.goods[290][0], terms)}」，主表等級 2–6 消耗亦為「{H(o.goods[290][0], terms)}」×20，但「{H(o.goods[290][0], terms)}」／「{H(o.goods[314][0], terms)}」說明名單尚未列這座。"
     ))
     add(p_html(
         "面板上：畫面技能名稱是「加倍美味史萊姆」；開到的是贈送介面，每日選三位玩家送糖果，"
@@ -2239,7 +2295,7 @@ def render_html(data: TablesData) -> str:
     add(p_html(f"基礎領域：{official_term_html(official_raw('skin_territory_311'))}"))
     add(p_html(f"2 顆星檔：{official_term_html(official_raw('skin_territory_311_star10'))}"))
     add(p_html(
-        "這份 2 顆星檔與對應技能、道具 305 相符。"
+        f"這份 2 顆星檔與對應技能、「{H(o.goods[305][0], terms)}」相符。"
         "這就是創世紀的滿星檔，不是「至少 10 星」。不要把某一座的滿星顆數推到其他造型。"
     ))
     add(f"      <h3>{H('永恆紀', terms)}</h3>")
@@ -2744,6 +2800,14 @@ def render_html(data: TablesData) -> str:
     add('    <section id="notes">')
     add("      <h2>資料說明</h2>")
     add("<p>以下是整理用註記，查星數與屬性可略過。</p>")
+    add(p_html(
+        "可見目錄說明不再寫水晶徽章（313）與「以 313 升級」，改寫官方道具名；編號對照見此。可見城堡造型目錄表不再寫 id 欄，編號對照見此（依目錄列序）："
+        + "、".join(
+            f"「{official_term_html(dir_names[sid])}」{sid}"
+            for sid in DIRECTORY_IDS
+        )
+        + "。"
+    ))
     add("<p>可見正文把研究鍵名、內部檔／內部欄與參數欄原值收到這裡。可見「參數與原值對照見資料說明」「屬性與顯示規則見資料說明」「檔名見資料說明」「欄位見資料說明」對應參數欄原值、屬性編號、內部檔名與內部欄；可見「對照見資料說明」亦對應鍵名。藍晶堡相關字串的鍵名對照見本節。可見「沒有獨立名稱」「另有 n 天名稱」對應名稱鍵；「說明檔名少一條底線」對應說明鍵。可見「原值」與百分比並陳，對應表內原值；屬性對照見本節。"
         "創世紀技能說明鍵是 <code>world_skin_skill_311</code>／<code>world_skin_skill_311_star5</code>／<code>world_skin_skill_311_star10</code>；"
         "內部 <code>star5</code>＝畫面 1 顆可見星、<code>star10</code>＝2 顆可見星（滿星）。"

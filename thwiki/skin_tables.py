@@ -1039,7 +1039,6 @@ def render_html(data: TablesData) -> str:
             H(s.faction, terms),
             _hero_link_html(s.hero_id, s.hero_display, terms),
             H(s.name, terms),
-            e(str(s.skin_id)),
             e(_quality(s)),
             e(s.coins),
             H(s.unlock, terms),
@@ -1055,7 +1054,7 @@ def render_html(data: TablesData) -> str:
         ])
     t_collect = table(
         [
-            "陣營", "英雄", "造型", "編號", "品質", "時裝幣", "解鎖說明",
+            "陣營", "英雄", "造型", "品質", "時裝幣", "解鎖說明",
             "收集屬性（彈窗標籤；可升星寫滿星）", "升星上限", "成對造型", "收集套裝",
             "賽季說明", "賽季效果", "語音",
         ],
@@ -1083,7 +1082,7 @@ def render_html(data: TablesData) -> str:
 
     suit_rows = []
     for su in data.suits:
-        members = "、".join(f"{name}（{sid}）" for sid, name in su.members)
+        members = "、".join(H(name, terms) if name else e(str(sid)) for sid, name in su.members)
         tiers = "<br>".join(
             f"{e(raw)}：{H(effect, terms)}" for raw, effect in su.tiers
         )
@@ -1095,13 +1094,13 @@ def render_html(data: TablesData) -> str:
             e(str(su.count)),
             e(str(su.quality) if su.quality is not None else "無"),
             e(su.need_raw),
-            H(members, terms),
+            members,
             tiers,
             e(su.reward),
             "<br>".join(extra) if extra else "無",
         ])
     t_suit = table(
-        ["套裝", "件數", "品質", "啟用條件", "成員（造型編號）", "各檔屬性（當前檔，不加總）", "獎勵原值", "備註"],
+        ["套裝", "件數", "品質", "啟用條件", "成員", "各檔屬性（當前檔，不加總）", "獎勵原值", "備註"],
         suit_rows,
         wrap_class="table-dense",
         mobile="cards",
@@ -1110,10 +1109,10 @@ def render_html(data: TablesData) -> str:
     pair_rows = []
     for p in data.pairs:
         pair_rows.append([
-            f"{H(p.a_name, terms)}（{e(str(p.a_id))}）",
+            H(p.a_name, terms) if p.a_name else e(str(p.a_id)),
             _hero_link_html(p.a_hero_id, p.a_hero, terms),
             H(p.a_attr, terms),
-            f"{H(p.b_name, terms)}（{e(str(p.b_id))}）",
+            H(p.b_name, terms) if p.b_name else e(str(p.b_id)),
             _hero_link_html(p.b_hero_id, p.b_hero, terms),
             H(p.b_attr, terms),
         ])
@@ -1296,7 +1295,7 @@ def render_html(data: TablesData) -> str:
       </section>
       <section id="scope-unlock">
         <h3>解鎖說明</h3>
-        <p>{fashion}（物品 {e(str(FASHION_ITEM))}）說明：{H(data.fashion_desc, terms)}。</p>
+        <p>{fashion}說明：{H(data.fashion_desc, terms)}。</p>
         {t_unlock}
       </section>
       <section id="scope-coin">
@@ -1307,7 +1306,7 @@ def render_html(data: TablesData) -> str:
     </section>
     <section id="t1">
       <h2>表一、可收集造型總覽</h2>
-      <p>共 {e(str(n_col))} 件。收集屬性依彈窗標籤書寫：自身欄用英雄名，隊伍欄用「{H(TEAM_SCOPE, terms)}」。可升星造型的隊伍欄是滿星顯示值（基礎＋最後一檔）；0 星、較低星不在本表逐列展開，見表二。賽季說明與賽季效果分欄，前者不一定出現在收集屬性彈窗。以{H(elewen.name, terms)}（{e(str(ELEWEN_ID))}）為例，滿星收集屬性為「{H(elewen.collect_text, terms)}」。以{H(shark.name, terms)}（{e(str(SHARK_ID))}）為例，收集屬性為「{H(shark.collect_text, terms)}」，彈窗另列出「{H(shark.season_effect2, terms)}」；「{H(shark.season, terms)}」是表上的賽季說明，該句未出現在這張彈窗。2026-11-22 抽出新增的{H(new_a.name, terms)}（{e(str(PAIR_NEW_A))}）與{H(new_b.name, terms)}（{e(str(PAIR_NEW_B))}）已收入本表，見表四。</p>
+      <p>共 {e(str(n_col))} 件。收集屬性依彈窗標籤書寫：自身欄用英雄名，隊伍欄用「{H(TEAM_SCOPE, terms)}」。可升星造型的隊伍欄是滿星顯示值（基礎＋最後一檔）；0 星、較低星不在本表逐列展開，見表二。賽季說明與賽季效果分欄，前者不一定出現在收集屬性彈窗。以{H(elewen.name, terms)}為例，滿星收集屬性為「{H(elewen.collect_text, terms)}」。以{H(shark.name, terms)}為例，收集屬性為「{H(shark.collect_text, terms)}」，彈窗另列出「{H(shark.season_effect2, terms)}」；「{H(shark.season, terms)}」是表上的賽季說明，該句未出現在這張彈窗。2026-11-22 抽出新增的{H(new_a.name, terms)}與{H(new_b.name, terms)}已收入本表，見表四。編號對照見資料說明。</p>
       <p class="jump-nav">跳到：<a href="#skin-{data.collectable[0].skin_id}">表首</a>
       {' '.join(f'<a href="#skin-{next(s for s in data.collectable if s.faction==fac).skin_id}">{e(fac)}</a>' for fac in ("聯盟", "自然", "部族") if any(s.faction==fac for s in data.collectable))}
       <a href="#skin-{ELEWEN_ID}">{e(elewen.name)}</a>
@@ -1318,7 +1317,7 @@ def render_html(data: TablesData) -> str:
     </section>
     <section id="t1-sum">
       <h2>表一附、每位英雄所有可收集造型的屬性加總</h2>
-      <p>這張表把同一位英雄的所有可收集造型，依屬性 id 把顯示值的原值相加，再依同一套類型規則書寫。百分比是數字相加（例如 3.00%＋6.00%＝9.00%），不是乘算。這不是遊戲面板上的單一數字，只是把表一的收集屬性加起來方便對照。可升星造型用滿星顯示值（隊伍屬性基礎＋最後一檔），與表一、表二相同。覺醒造型沒有自身／隊伍屬性，不算進件數，也不加進總數。</p>
+      <p>這張表把同一位英雄的所有可收集造型，依屬性把顯示值的原值相加，再依同一套類型規則書寫。百分比是數字相加（例如 3.00%＋6.00%＝9.00%），不是乘算。這不是遊戲面板上的單一數字，只是把表一的收集屬性加起來方便對照。可升星造型用滿星顯示值（隊伍屬性基礎＋最後一檔），與表一、表二相同。覺醒造型沒有自身／隊伍屬性，不算進件數，也不加進總數。</p>
       <p>「自身加總」與「全部加總」是主要加總，分欄書寫：自身欄用英雄名，隊伍欄用「{H(TEAM_SCOPE, terms)}」。成對屬性另欄列出；成對效果何時啟動，表上沒有另寫說明，對方也可能是別的英雄，本欄不預設已啟動，也不計入自身／全部加總。賽季效果另欄列出，賽季說明不當屬性加，也不計入主要加總。收集套裝要湊數件造型，不是單一英雄自己的造型加總，因此不算進本表。</p>
       <p>共 {e(str(len(data.hero_sums)))} 人，排列依本站英雄目錄：聯盟 → 自然 → 部族，不依加總排序。沒有可收集造型的件數為 0，加總欄寫「無」。以{H("聖徒", terms)}（10033）為例，6 件可收集造型（含{H(elewen.name, terms)}滿星）自身加總為「{H(saint_sum.self_text, terms)}」，全部加總為「{H(saint_sum.team_text, terms)}」。以{H("發明家", terms)}為例，{H(shark.name, terms)}的「{H(shark.season_effect2, terms)}」只出現在賽季效果欄，沒有加進自身／全部加總。</p>
       <p class="jump-nav">跳到：
@@ -1374,7 +1373,7 @@ def render_html(data: TablesData) -> str:
         <li>以下是整理用註記，查造型名稱與效果可略過。</li>
         <li>兩層外觀：單位模型主表是 <code>skin.json</code>，本身沒有時裝幣、隊伍屬性或造型戰力；造型圖鑑是 <code>hero_skin.json</code>。表七「有預設模型（名稱，頭像 Head_編號）」對應 <code>skin.json</code> 中與英雄編號相同的列，名稱鍵是 <code>hero_name_{{id}}</code>。無名列的模型名稱同樣取自 <code>skin.json</code>，不是造型圖鑑的造型名。</li>
         <li>解鎖說明可見表只列原文。鍵名對照：{unlock_key_map}。</li>
-        <li>可見表標題對照：造型戰力原名 <code>add_power</code>；升星上限原名 <code>star_max</code>；成對屬性原名 <code>suit_attr</code>；賽季欄／賽季效果／賽季效果二原名 <code>season</code>、<code>season_effect</code>、<code>season_effect2</code>；賽季說明原名 <code>season_dec</code>；外觀編號原名 <code>skin_id</code>；獎勵原值原名 <code>reward</code>；啟用條件原名 <code>suit_star_need</code>（例如 <code>4|0,6|0</code>）。成對欄原名 <code>hero_skin.suit</code>，寫的是另一把造型的 id，不是收集套裝 id。陣營來源「榮譽加成鏈」的組編號原名 <code>honor_group</code>；無陣營加成那筆是 <code>honor_group</code> 301。可見榮譽加成鏈只寫官方屬性名，編號見此：聯盟英雄攻擊 3103、聯盟英雄生命 3104、部族英雄攻擊 4103、部族英雄生命 4104、自然英雄攻擊 5103、自然英雄生命 5104。</li>
+        <li>可見表標題對照：造型戰力原名 <code>add_power</code>；升星上限原名 <code>star_max</code>；成對屬性原名 <code>suit_attr</code>；賽季欄／賽季效果／賽季效果二原名 <code>season</code>、<code>season_effect</code>、<code>season_effect2</code>；賽季說明原名 <code>season_dec</code>；可見成對造型表不再在官方造型名後附加編號，改寫官方造型名；編號對照見此。可見套裝表成員欄不再在官方造型名後附加造型編號，改寫官方造型名；編號對照見此。可見可收集造型總覽表不再寫編號欄，改寫官方造型名；編號對照見此。可見表一說明不再在官方造型名後附加括號編號，改寫官方造型名；編號對照見此。外觀編號原名 <code>skin_id</code>；獎勵原值原名 <code>reward</code>；啟用條件原名 <code>suit_star_need</code>（例如 <code>4|0,6|0</code>）。成對欄原名 <code>hero_skin.suit</code>，寫的是另一把造型的 id，不是收集套裝 id。陣營來源「榮譽加成鏈」的組編號原名 <code>honor_group</code>；無陣營加成那筆是 <code>honor_group</code> 301。可見榮譽加成鏈只寫官方屬性名，編號見此：聯盟英雄攻擊 3103、聯盟英雄生命 3104、部族英雄攻擊 4103、部族英雄生命 4104、自然英雄攻擊 5103、自然英雄生命 5104。</li>
         <li>解鎖時間若是兩段日期，可見表寫成「A 至 B」；原值是 <code>A|B</code>，欄位原名 <code>unlocktime</code>。不把 <code>unlock_season</code>、<code>season</code> 或 <code>season_dec</code> 對成第幾賽季日曆，也不對成臨時擁有或臨時使用。</li>
         <li>本頁只收 {e("hero_skin")}／{e("hero_skin_suit")}／{e("hero_skin_voice")}。分組依戰力欄 {e("add_power")}。百分比類是 {e("show_type")}=2（原值÷100）；點數類是 {e("show_type")}=1。可升星造型的隊伍顯示值＝{e("team_attr")} 基礎＋當前星檔。不把 {e("unlock_season")}、{e("unlock_server")} 或 {e("unlocktime")} 自行標成未開放。</li>
         <li>資料出自遊戲資料表與官方字串（{e("hero_skin")}、{e("hero_skin_suit")}、{e("hero_skin_voice")}、{e("skin")}、{e("hero_detail")}、{e("attribute")}、{e("strings_zh.json")}），資料截至 {SKIN_DATA_CUTOFF}（香港時間）。來源是 LocalLow 包 {e(SKIN_DATA_PACK)}（759 張表），打包時戳 {SKIN_DATA_PACKED}（香港時間）。顯示規則仍依攻略手冊「英雄造型圖鑑」第三版，但這包不是第 15 章第三版所用的同一日較早 StreamingAssets 解壓檔。這不是官方 wiki。</li>
