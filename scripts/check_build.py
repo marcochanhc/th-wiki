@@ -1989,42 +1989,34 @@ def check_city_buildings_page(html: str, errors: list[str]) -> None:
         fail("city-buildings: visible body must keep 勛章 in 功勳碑 description", errors)
     if "功勳碑" not in vis:
         fail("city-buildings: visible body must keep 功勳碑", errors)
-    if "index * 1000 + lv" not in vis or "index * 10000 + lv" not in vis:
-        fail("city-buildings: visible body must state both row-id formulas", errors)
-    if "140000–140040" not in vis or "1400041" not in vis or "1550000" not in vis:
-        fail("city-buildings: visible body must state 140/155 row-id examples", errors)
-    if "index * 1000 + lv + 1" not in vis or "160001" not in vis or "198001" not in vis:
-        fail("city-buildings: visible body must state 160/198 row-id rule", errors)
+    notes_m = list(re.finditer(r"<h2\b[^>]*>\s*資料說明\s*</h2>", html))
+    notes = text_of(html[notes_m[-1].start():]) if notes_m else ""
     if "兩張升級表並列" not in vis:
         fail("city-buildings: visible body must say the two upgrade tables are shown side by side", errors)
+    if "原升級表" not in vis or "新升級表" not in vis:
+        fail("city-buildings: visible body should name 原升級表 and 新升級表", errors)
     if "2818" not in vis:
         fail("city-buildings: visible body must mention 2818 shared-column diffs", errors)
     if "7973" not in vis or "8032" not in vis:
         fail("city-buildings: visible body must mention both upgrade table row counts", errors)
-    if "goods_des" not in vis or "chat_icon" not in vis:
-        fail("city-buildings: visible body must record goods_des / chat_icon mappings", errors)
     if "復蘇季節" not in vis or "復甦季節" not in vis:
         fail("city-buildings: visible body must keep 蘇/甦 difference for 61022", errors)
     if "聊天視窗·甜甜圈" not in vis or "聊天框·甜甜圈" not in vis:
         fail("city-buildings: visible body must keep 聊天視窗／聊天框 difference for 61023", errors)
     if "聊天框·豐收" not in vis or "聊天視窗·豐收" not in vis:
         fail("city-buildings: visible body must keep reversed wording for 61031", errors)
-    if "uilding_lvup_des_115003" not in vis or "秘寶屬性轉化率" not in vis:
-        fail("city-buildings: visible body must keep typo-key uilding_lvup_des_115003", errors)
-    if "全體英雄防禦" not in vis or "building_lvup_des_115003" not in vis:
-        fail("city-buildings: visible body must also record building_lvup_des_115003 全體英雄防禦", errors)
+    if "秘寶屬性轉化率" not in vis or "全體英雄防禦" not in vis:
+        fail("city-buildings: visible body must keep 秘寶屬性轉化率 and 全體英雄防禦", errors)
     if "<color=#00000000>XXX</color>" not in vis:
         fail("city-buildings: id 111 official colour-tagged name must be quoted as-is", errors)
     if "字串表沒有內容" not in vis:
         fail("city-buildings: missing description keys should be marked in the visible body", errors)
-    if "該列 des 欄為空" not in vis:
-        fail("city-buildings: id 111 empty des field should be marked", errors)
+    if "該列沒有說明" not in vis:
+        fail("city-buildings: id 111 should be marked as having no description in the catalog", errors)
     if "自動加入遊蕩怪物集結（進入冰封之焰賽季)" not in vis:
         fail("city-buildings: attribute_name_1237 must keep official punctuation", errors)
     if "40 級起出現光輝" in vis or "建築編號為" in vis or "建築編號為 −1" in vis or "建築編號為 -1" in vis:
         fail("city-buildings: must not use the forbidden shine_lv / building-number wording", errors)
-    if "41 級起為 0" not in vis or "45 級起為 1" not in vis:
-        fail("city-buildings: shine_lv should be described as 41-level 0 and 45-level 1", errors)
     if "沒有對上名稱" in vis or "完全未知" in vis:
         fail("city-buildings: must not say reward strings were unmatched", errors)
     for phrase in FORBIDDEN_VISIBLE_ATTRIBUTION:
@@ -2038,11 +2030,34 @@ def check_city_buildings_page(html: str, errors: list[str]) -> None:
         fail("city-buildings: visible body must not mention 玩家確認", errors)
     if "未開放" in vis:
         fail("city-buildings: must not mark names as 未開放", errors)
-    if "show_type=2" not in vis and "show_type＝2" not in vis:
-        # the reading note uses show_type=2
-        fail("city-buildings: visible body should keep the show_type=2 rule", errors)
+    if "id 從 101 到 201" in vis:
+        fail("city-buildings: visible body must not use the inaccurate 101-to-201 id range", errors)
     if "不以其中一張覆寫另一張" not in vis:
         fail("city-buildings: must say the two tables are not overwritten", errors)
+    if "城堡 28 級" not in vis:
+        fail("city-buildings: visible body should state prerequisites with official names", errors)
+    if "任意兵營光輝4級" not in vis or "60／65／70／75" not in vis:
+        fail("city-buildings: visible body must keep 光輝 descriptions beside table numbers 60/65/70/75", errors)
+    # Technical keys, formulas and field names belong in 資料說明, not the visible body.
+    if "index * 1000 + lv" not in notes or "index * 10000 + lv" not in notes:
+        fail("city-buildings: data notes must state both row-id formulas", errors)
+    if "140000–140040" not in notes or "1400041" not in notes or "1550000" not in notes:
+        fail("city-buildings: data notes must state 140/155 row-id examples", errors)
+    if "index * 1000 + lv + 1" not in notes or "160001" not in notes or "198001" not in notes:
+        fail("city-buildings: data notes must state 160/198 row-id rule", errors)
+    if "goods_des" not in notes or "chat_icon" not in notes:
+        fail("city-buildings: data notes must record goods_des / chat_icon mappings", errors)
+    if "uilding_lvup_des_115003" not in notes or "building_lvup_des_115003" not in notes:
+        fail("city-buildings: data notes must keep both 115003 official keys", errors)
+    if "該列 des 欄為空" not in notes:
+        fail("city-buildings: data notes must mark id 111 empty des field", errors)
+    if "41 級起為 0" not in notes or "45 級起為 1" not in notes:
+        fail("city-buildings: data notes should describe shine_lv as 41-level 0 and 45-level 1", errors)
+    if "show_type=2" not in notes and "show_type＝2" not in notes:
+        fail("city-buildings: data notes should keep the show_type=2 rule", errors)
+    for tech in ("index * 1000 + lv", "show_type=2", "kvk_theme_dic", "citybuilding_lvup.json", "uilding_lvup_des_115003"):
+        if tech in vis:
+            fail(f"city-buildings: visible body should not contain technical {tech}", errors)
 
 
 def check_index_published_catalogs(index: str, errors: list[str]) -> None:

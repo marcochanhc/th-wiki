@@ -143,6 +143,136 @@ def code_json(value) -> str:
     return f"<code>{e(raw_json(value))}</code>"
 
 
+SRC_OLD = "原升級表"
+SRC_NEW = "新升級表"
+SRC_LABEL = {"lvup": SRC_OLD, "lvup_new": SRC_NEW}
+VISIBLE_EMPTY_DES = "該列沒有說明"
+
+
+def _as_segments(value):
+    if not is_filled(value):
+        return []
+    if isinstance(value, list):
+        if value and isinstance(value[0], (list, tuple)):
+            return [list(x) for x in value]
+        if value and isinstance(value[0], str) and "|" in value[0]:
+            segs = []
+            for item in value:
+                parts = str(item).split("|")
+                segs.append(parts)
+            return segs
+        if len(value) >= 3 and all(not isinstance(x, (list, tuple)) for x in value):
+            return [list(value)]
+        return [value]
+    if isinstance(value, str) and "|" in value:
+        return [value.split("|")]
+    return [value]
+
+
+def fmt_cost_segment(seg, terms: list[str]) -> str:
+    if isinstance(seg, str):
+        parts = seg.split("|")
+    elif isinstance(seg, (list, tuple)):
+        parts = list(seg)
+    else:
+        return e(raw_json(seg))
+    if len(parts) < 3:
+        return e(raw_json(seg) if not isinstance(seg, str) else seg)
+    typ, mid, qty = parts[0], parts[1], parts[2]
+    try:
+        typ_n = int(typ)
+    except (TypeError, ValueError):
+        typ_n = typ
+    if typ_n == 2:
+        try:
+            item_id = int(mid)
+        except (TypeError, ValueError):
+            item_id = mid
+        name = official_text(f"goods_name_{item_id}") if isinstance(item_id, int) else ""
+        if name:
+            return f"{H(name, terms)} ×{e(str(qty))}"
+        return f"類型 2、道具 {e(str(mid))}、數量 {e(str(qty))}"
+    if typ_n == 999:
+        return f"類型 999、第 {e(str(mid))} 段、數量 {e(str(qty))}"
+    return f"類型 {e(str(typ))}、第 {e(str(mid))} 段、數量 {e(str(qty))}"
+
+
+def fmt_cost_value(value, terms: list[str]) -> str:
+    segs = _as_segments(value)
+    if not segs:
+        return "（空）"
+    return "、".join(fmt_cost_segment(seg, terms) for seg in segs)
+
+
+def fmt_costs_row(row: dict, terms: list[str]) -> str:
+    parts = [fmt_cost_value(row.get(key), terms) for key in ("cost1", "cost2", "cost3", "cost4") if is_filled(row.get(key))]
+    return "、".join(parts) if parts else "（空）"
+
+
+def fmt_prereq(value, buildings: dict[int, "Building"], terms: list[str]) -> str:
+    if not is_filled(value):
+        return "（空）"
+    items = value if isinstance(value, list) else [value]
+    bits = []
+    for item in items:
+        s = str(item)
+        if "|" in s:
+            bid_s, lv_s = s.split("|", 1)
+            try:
+                bid = int(bid_s)
+            except ValueError:
+                bits.append(e(s))
+                continue
+            b = buildings.get(bid)
+            if b:
+                bits.append(f"{linked_name(bid, b.name, terms)} {e(lv_s)} 級")
+            else:
+                bits.append(f"{bid} {e(lv_s)} 級")
+        else:
+            bits.append(e(s))
+    return "、".join(bits)
+
+
+def fmt_para_list(value, terms: list[str]) -> str:
+    if not is_filled(value):
+        return ""
+    items = value if isinstance(value, list) else [value]
+    bits = []
+    for item in items:
+        s = str(item)
+        parts = s.split("|")
+        if len(parts) >= 2:
+            try:
+                aid = int(parts[0])
+            except ValueError:
+                bits.append(e(s))
+                continue
+            name = official_text(f"attribute_name_{aid}")
+            raw = parts[1]
+            if name:
+                bits.append(f"{H(name, terms)} {e(str(raw))}")
+            else:
+                bits.append(f"屬性 {aid}、原值 {e(str(raw))}")
+        else:
+            bits.append(e(s))
+    return "、".join(bits)
+
+
+def fmt_effect_params(row: dict, terms: list[str], *, include_para1: bool, include_group2: bool) -> str:
+    bits = []
+    if include_para1 and row.get("para1") not in (None, ""):
+        bits.append(f"參數 {e(str(row.get('para1')))}")
+    sp = fmt_para_list(row.get("string_para2"), terms)
+    if sp:
+        bits.append(sp)
+    if include_group2:
+        g2 = fmt_para_list(row.get("group2_string_para2"), terms)
+        if g2 and g2 != sp:
+            bits.append(f"另一組：{g2}")
+    return "；".join(bits) if bits else "（空）"
+
+
+
 def is_filled(value) -> bool:
     return value not in (None, "", [], {}, -1)
 
@@ -570,10 +700,20 @@ def load_tables_data() -> TablesData:
 
 def _des_cell(b: Building, terms: list[str]) -> str:
     if b.des_status == "empty-field":
-        return e(EMPTY_DES_FIELD)
+        return e(VISIBLE_EMPTY_DES)
     if b.des_status == "missing":
         return e(MISSING_TEXT)
-    return H(b.des, terms)
+    # Official descriptions: do not split a sentence by highlighting inner terms.
+    return e(b.des)
+
+
+def _shared_upgrade_cell(b: Building, data: "TablesData") -> str:
+    if b.lvupid == b.bid:
+        return "—"
+    other = data.by_id.get(b.lvupid)
+    if other:
+        return f"與{linked_name(other.bid, other.name, data.terms)}共用"
+    return f"與 {b.lvupid} 共用"
 
 
 def _data_notes(data: TablesData) -> str:
@@ -663,25 +803,19 @@ def _render_catalog(data: TablesData) -> str:
     rows = []
     row_ids = []
     for b in data.buildings:
-        des_key = f"<code>{e(b.des_key)}</code>" if b.des_key else e("（空）")
         rows.append([
             str(b.bid),
             linked_name(b.bid, b.name, terms),
-            f"<code>{e(b.name_key)}</code>",
-            des_key,
             _des_cell(b, terms),
-            str(b.typ),
             str(b.maxlevel),
             str(b.new_maxlevel),
-            str(b.lvupid),
-            str(b.is_discard),
-            str(b.is_building_list),
+            _shared_upgrade_cell(b, data),
         ])
         row_ids.append(f"b{b.bid}")
     return table(
-        ["id", "顯示名", "名稱鍵", "說明鍵", "說明", "type", "maxlevel", "new_maxlevel", "lvupid", "is_discard", "is_building_list"],
+        ["編號", "顯示名", "說明", "定義表上限", "定義表另一上限", "共用升級"],
         rows,
-        caption="主表 126 座，顯示名與說明按該列鍵從字串表照錄",
+        caption="名錄 126 座，顯示名與說明依遊戲裡看得到的字照錄",
         row_ids=row_ids,
         mobile="cards",
         card_title="顯示名",
@@ -696,15 +830,17 @@ def _render_production(data: TablesData) -> str:
         item = int(r["item"])
         item_name = official_text(f"goods_name_{item}") or MISSING_TEXT
         rows.append([
-            str(r["id"]), str(r["type"]), f"{item} {H(item_name, terms)}", str(r["out_put_num"]),
-            code_json(r.get("cost")), code_json(r.get("costs")),
+            str(r["id"]),
+            H(item_name, terms),
+            str(r["out_put_num"]),
+            fmt_cost_value(r.get("cost"), terms),
         ])
     return table(
-        ["id", "type", "item", "out_put_num", "cost", "costs"],
+        ["編號", "產出物", "產出數量", "消耗（原值）"],
         rows,
-        caption="citybuild_production.json 20 列",
+        caption="木板與原石的生產列（20 列）",
         mobile="cards",
-        card_title="id",
+        card_title="產出物",
     )
 
 
@@ -714,22 +850,22 @@ def _render_rewards(data: TablesData) -> str:
     for rid in data.table_meta["reward_ids"]:
         rows.append([
             str(rid),
-            H(official_text(f"goods_des_{rid}"), terms),
+            e(official_text(f"goods_des_{rid}")),
             H(official_text(f"chat_icon_{rid}"), terms),
         ])
     return table(
-        ["reward_id", "goods_des_{id}", "chat_icon_{id}"],
+        ["獎勵編號", "道具說明", "聊天圖示名稱"],
         rows,
-        caption="16 個獨特 reward_id 的字串照錄，用字差異不統一",
+        caption="16 個獨特獎勵的官方說明與聊天圖示名，用字差異不統一",
         mobile="cards",
-        card_title="reward_id",
+        card_title="獎勵編號",
     )
 
 
 def _render_function_table(data: TablesData) -> str:
     terms = data.terms
-    rows = [[str(fid), f"<code>{e(key)}</code>", H(name, terms)] for fid, key, name in data.functions]
-    return table(["id", "名稱鍵", "官方名"], rows, caption="citybuilding_function.json 5 列", mobile="cards", card_title="官方名")
+    rows = [[H(name, terms)] for _fid, _key, name in data.functions]
+    return table(["官方名"], rows, caption="功能的官方名", mobile="cards", card_title="官方名")
 
 
 def _render_civ_examples(data: TablesData) -> str:
@@ -762,67 +898,68 @@ def _render_civ_examples(data: TablesData) -> str:
             fmt_unlock(r.get("new_unlock_building")),
         ])
     return table(
-        ["id", "hero_lv", "unlock_building", "new_unlock_building"],
+        ["列編號", "表上等級（不對成玩家等級或賽季號）", "解鎖建築", "另一欄解鎖建築"],
         rows,
-        caption="文明大廳解鎖表示例（只錄建築 id 與官方顯示名，不是升級建議）",
+        caption="文明大廳解鎖表示例（只錄建築與官方顯示名，不是升級建議）",
         mobile="cards",
-        card_title="hero_lv",
+        card_title="表上等級（不對成玩家等級或賽季號）",
     )
 
 
 def _class_totem_tables(data: TablesData) -> tuple[str, str]:
-    cols = ["表", "lv", "id", "buildTime", "cost1", "fightforce", "pre_building_level", "para1", "string_para2", "group2_string_para2"]
+    terms = data.terms
+    cols = ["來源", "等級", "時間（表上原值，無單位）", "消耗", "戰力", "前置", "效果／參數（只錄原值）"]
     class_rows = []
-    for label, src in (("lvup_new", data.lvup_new), ("lvup", data.lvup)):
-        by_lv = {int(r["lv"]): r for r in src if int(r["index"]) == 179}
+    for key, rows in (("lvup_new", data.lvup_new), ("lvup", data.lvup)):
+        by_lv = {int(r["lv"]): r for r in rows if int(r["index"]) == 179}
         for lv in (0, 1):
             r = by_lv[lv]
             class_rows.append([
-                e(label), str(lv), str(r["id"]), str(r["buildTime"]),
-                code_json(r.get("cost1")) if is_filled(r.get("cost1")) else "（空）",
+                e(SRC_LABEL[key]), str(lv), str(r["buildTime"]),
+                fmt_costs_row(r, terms),
                 str(r["fightforce"]),
-                code_json(r.get("pre_building_level")) if is_filled(r.get("pre_building_level")) else "（空）",
-                str(r.get("para1")),
-                code_json(r.get("string_para2")) if is_filled(r.get("string_para2")) else "（空）",
-                code_json(r.get("group2_string_para2")) if is_filled(r.get("group2_string_para2")) else "（空）",
+                fmt_prereq(r.get("pre_building_level"), data.by_id, terms),
+                fmt_effect_params(r, terms, include_para1=True, include_group2=True),
             ])
-    class_tbl = table(cols, class_rows, caption="職業大廳（179）兩張升級表的 0–1 級", mobile="cards", card_title="lv")
-    totem_cols = ["表", "lv", "id", "buildTime", "cost1", "fightforce", "pre_building_level", "string_para2"]
+    class_tbl = table(cols, class_rows, caption="職業大廳兩張升級表的 0–1 級", mobile="cards", card_title="等級")
     totem_rows = []
-    for label, src in (("lvup_new", data.lvup_new), ("lvup", data.lvup)):
-        by_lv = {int(r["lv"]): r for r in src if int(r["index"]) == 195}
+    for key, rows in (("lvup_new", data.lvup_new), ("lvup", data.lvup)):
+        by_lv = {int(r["lv"]): r for r in rows if int(r["index"]) == 195}
         for lv in (0, 1, 39, 40):
             r = by_lv[lv]
             totem_rows.append([
-                e(label), str(lv), str(r["id"]), str(r["buildTime"]),
-                code_json(r.get("cost1")) if is_filled(r.get("cost1")) else "（空）",
+                e(SRC_LABEL[key]), str(lv), str(r["buildTime"]),
+                fmt_costs_row(r, terms),
                 str(r["fightforce"]),
-                code_json(r.get("pre_building_level")) if is_filled(r.get("pre_building_level")) else "（空）",
-                code_json(r.get("string_para2")) if is_filled(r.get("string_para2")) else "（空）",
+                fmt_prereq(r.get("pre_building_level"), data.by_id, terms),
+                fmt_effect_params(r, terms, include_para1=False, include_group2=False),
             ])
-    totem_tbl = table(totem_cols, totem_rows, caption="先祖圖騰（195）舉例：0、1、39、40 級，兩表並列", mobile="cards", card_title="lv")
+    totem_tbl = table(cols, totem_rows, caption="先祖圖騰舉例：0、1、39、40 級，兩表並列", mobile="cards", card_title="等級")
     return class_tbl, totem_tbl
 
 
 def _treasure_examples(data: TablesData) -> str:
+    terms = data.terms
     rows = []
     for index, levels in ((140, (0, 39, 40, 2076)), (155, (0, 39, 184, 2193))):
-        for label, src in (("lvup_new", data.lvup_new), ("lvup", data.lvup)):
-            by_lv = {int(r["lv"]): r for r in src if int(r["index"]) == index}
+        for key, src_rows in (("lvup_new", data.lvup_new), ("lvup", data.lvup)):
+            by_lv = {int(r["lv"]): r for r in src_rows if int(r["index"]) == index}
             for lv in levels:
                 r = by_lv[lv]
                 rows.append([
-                    str(index), e(label), str(lv), str(r["id"]),
-                    code_json(r.get("cost1")) if is_filled(r.get("cost1")) else "（空）",
-                    str(r["buildTime"]), str(r.get("para1")), str(r.get("fightforce")),
-                    code_json(r.get("string_para2")) if is_filled(r.get("string_para2")) else "（空）",
+                    str(index), e(SRC_LABEL[key]), str(lv),
+                    str(r["buildTime"]),
+                    fmt_costs_row(r, terms),
+                    str(r.get("fightforce")),
+                    fmt_prereq(r.get("pre_building_level"), data.by_id, terms),
+                    fmt_effect_params(r, terms, include_para1=True, include_group2=False),
                 ])
     return table(
-        ["index", "表", "lv", "id", "cost1", "buildTime", "para1", "fightforce", "string_para2"],
+        ["編號", "來源", "等級", "時間（表上原值，無單位）", "消耗", "戰力", "前置", "效果／參數（只錄原值）"],
         rows,
-        caption="兩座秘寶大廳的節點舉例（兩表並列；155 的 184 級 string_para2 兩表不同）",
+        caption="兩座秘寶大廳的節點舉例（兩表並列；其中一座 184 級的效果原值兩表不同）",
         mobile="cards",
-        card_title="lv",
+        card_title="等級",
     )
 
 
@@ -838,9 +975,9 @@ def _mismatch_range_table(data: TablesData) -> str:
             f"{lo}–{hi}（{n} 列）", f"{nlo}–{nhi}（{nn} 列）",
         ])
     return table(
-        ["id", "顯示名", "主表 maxlevel", "主表 new_maxlevel", "lvup 等級範圍", "lvup_new 等級範圍"],
+        ["編號", "顯示名", "定義表上限", "定義表另一上限", "原升級表等級範圍", "新升級表等級範圍"],
         rows,
-        caption="主表上限與升級表實際等級範圍不一致的例子（不自行判定哪一個是真正上限）",
+        caption="定義表上限與升級表實際等級範圍不一致的例子（不自行判定哪一個是真正上限）",
         mobile="cards",
         card_title="顯示名",
     )
@@ -940,35 +1077,32 @@ def render_html(data: TablesData) -> str:
         f"{linked_name(183, b183.name, terms)}見已發佈的<a href=\"pals.html\">{H('帕魯總表', terms)}</a>。"
         f"{linked_name(160, b160.name, terms)}見已發佈的<a href=\"pets.html\">{H('寵物總表', terms)}</a>。"
         f"{H('秘寶大廳', terms)}見已發佈的<a href=\"artifacts.html\">{H('秘寶總表', terms)}</a>。"
-        f"主表 id 151 顯示名為「{H(b151.name, terms)}」，只在名錄與升級索引中照錄，不展開商隊系統。"
+        f"顯示名為「{H(b151.name, terms)}」的建築只在名錄與升級索引中照錄，不展開商隊系統。"
     ))
     add("<ul>")
     add(
-        "<li>顯示名、說明按該列 <code>name</code>／<code>des</code> 鍵從字串表照錄。"
-        "名稱鍵不一定是 <code>citybuilding_name_{id}</code>。"
-        "例如 id 106 的名稱鍵是 <code>citybuilding_name_6</code>，id 155 與 140 都用 <code>citybuilding_name_140</code>。"
-        f"id 111 的顯示名原文是 <code>{e(b111.name)}</code>，照錄；該列 <code>des</code> 欄為空（不是缺 <code>citybuilding_des_111</code> 這條鍵）。"
-        f"說明鍵在字串表沒有內容者標明「{e(MISSING_TEXT)}」。不編造沒有官方名的資源或道具。</li>"
+        "<li>名稱與說明依遊戲裡看得到的字照錄。"
+        f"沒有官方說明的標明「{e(MISSING_TEXT)}」，不編造沒有官方名的資源或道具。"
+        "少數建築名稱不是按編號一一對應、兩座秘寶大廳共用同一個顯示名，以及部分列沒有說明，對照見資料說明。</li>"
     )
     add(
         f"<li>官方用語是「{H('部族', terms)}」。"
         f"例如「{H(b123.name, terms)}」「{H(b126.name, terms)}」皆照錄。"
-        f"建築名「{H(b168.name, terms)}」出自 <code>{e(b168.name_key)}</code>（「勳」為 U+52F3）；"
-        f"說明 <code>{e(b168.des_key)}</code> 寫「{H(b168.des, terms)}」（「勛」為 U+52DB）。"
-        f"村民提示 <code>building_villager_tips_168</code> 寫「{H(official_text('building_villager_tips_168'), terms)}」。"
-        "兩種用字並存，不統一。</li>"
+        f"建築名「{H(b168.name, terms)}」與說明「{e(b168.des)}」、"
+        f"村民提示「{e(official_text('building_villager_tips_168'))}」用字不同，兩種並存，不統一。</li>"
     )
     add(
         "<li>兩張升級表並列，不以其中一張覆寫另一張。"
-        "名錄的等級上限先照錄主表 <code>maxlevel</code>／<code>new_maxlevel</code>；"
+        f"以下稱「{e(SRC_OLD)}」與「{e(SRC_NEW)}」（檔名見資料說明）。"
+        "名錄先寫定義表上的兩個等級上限；"
         "升級列的等級範圍、消耗、時間與前置若兩表不同，分開標明來源。只在兩表相同時才合寫。</li>"
     )
     add(
-        "<li>不要把 <code>show_type=2</code> 轉成百分比。"
+        "<li>屬性只錄表上原值，不自行換成百分比。"
         "官方說明若已有百分比字串，只照錄該字串，與表上原值並列。"
-        "<code>season</code>、<code>kvk_theme_dic</code>、<code>server_list</code>、<code>theme</code> 只照錄，不對成 S2／S3，不自行加上開放狀態。"
-        "類型 999 的各段沒有官方資源名，只錄原值。"
-        "<code>buildTime</code> 沒有單位欄，不自行標成秒或分鐘。</li>"
+        "賽季與伺服器相關欄位只照錄，不對成 S2／S3，不自行加上開放狀態。"
+        "有些消耗段沒有官方資源名，只錄原值。"
+        "升級時間在表上沒有單位，本頁不自行標成秒或分鐘。欄位名與對照見資料說明。</li>"
     )
     add("</ul>")
     add("    </section>")
@@ -976,134 +1110,73 @@ def render_html(data: TablesData) -> str:
     add('    <section id="catalog">')
     add("      <h2>名錄</h2>")
     add(p_html(
-        f"主表 <code>citybuilding.json</code> 共 {MAIN_COUNT} 列，<code>id</code> 從 {data.buildings[0].bid} 到 {data.buildings[-1].bid}，彼此不重複。"
-        f"<code>count</code> 皆為 1。<code>is_discard</code> 為 1 的有 {discard_n} 列，其餘 {MAIN_COUNT - discard_n} 列為 -1。"
-        f"<code>is_building_list</code> 為 1 的有 {list_counts[1]} 列，為 -1 的有 {list_counts[-1]} 列，為 0 的只有 id 181（{H(data.by_id[181].name, terms)}）。"
-        f"<code>initlevel</code> 為 0 的有 {init_counts[0]} 列，為 1 的有 {init_counts[1]} 列。"
-        f"<code>type</code> 沒有官方中文類型名。<code>new_type</code> 僅 id 114（{H(b114.name, terms)}）為 {only_new_type[0].new_type}，其餘為 -1。"
-        f"114 也是唯一 <code>maxlevel</code>（{b114.maxlevel}）與 <code>new_maxlevel</code>（{b114.new_maxlevel}）不同的列。"
+        f"名錄共 {MAIN_COUNT} 座，編號彼此不重複。"
+        f"{H(b114.name, terms)}是唯一定義表兩個上限不一致的列（{b114.maxlevel} 與 {b114.new_maxlevel}）。"
+        "兩張升級表的實際等級範圍見下一節，本頁不自行判定哪一個是真正上限。"
     ))
-    shared_txt = "；".join(
-        f"{b.bid} {linked_name(b.bid, b.name, terms)}用 {b.lvupid}"
-        + (f"（{H(data.by_id[b.lvupid].name, terms)}）" if b.lvupid in data.by_id else "")
+    shared_txt = "、".join(
+        f"{linked_name(b.bid, b.name, terms)}{_shared_upgrade_cell(b, data)}"
         for b in shared_lvupid
     )
     add(p_html(
-        f"<code>lvupid</code> 等於自身 <code>id</code> 的有 {MAIN_COUNT - len(shared_lvupid)} 列。其餘 {len(shared_lvupid)} 列與另一座建築共用升級索引："
-        + shared_txt + "。"
-        + f"其中 id 309 的名稱鍵是 <code>{e(data.by_id[309].name_key)}</code>。"
-        + "升級表裡仍有這些建築自身 <code>index</code>＝其 <code>id</code> 的列，但對應建築的 <code>lvupid</code> 並不指向那些列。"
+        f"多數建築用自己的編號查升級列。下列 {len(shared_lvupid)} 座與另一座建築共用升級進度："
+        + shared_txt
+        + "。"
     ))
     add(_render_catalog(data))
     add(p_html(
-        f"宿舍：id 147–150 與 1001–1024 的名稱鍵都是 <code>citybuilding_name_11</code>（「{H(dorms_front[0].name, terms)}」），"
-        f"說明鍵都是 <code>citybuilding_des_11</code>（{e(MISSING_TEXT)}）。"
-        f"前四座 <code>is_discard</code> 為 {dorms_front[0].is_discard}、<code>is_building_list</code> 為 {dorms_front[0].is_building_list}；"
-        f"1001–1024 的 <code>is_discard</code> 為 {dorms_back[0].is_discard}、<code>is_building_list</code> 為 {dorms_back[0].is_building_list}。"
-    ))
-    add(p_html(
-        f"<code>is_discard</code> 為 1 的 {discard_n} 列，<code>server_list</code> 皆為 {code_json(['999'])}。"
-        f"未標記 <code>is_discard</code> 的 id 164（{H(data.by_id[164].name, terms)}）同樣是 {code_json(['999'])}。"
-        "這些欄位只照錄，不自行加上開放狀態。"
+        f"「{H(dorms_front[0].name, terms)}」有多座顯示名相同，其中編號 147–150 與 1001–1024 的說明均為「{e(MISSING_TEXT)}」。"
     ))
     add("    </section>")
 
     add('    <section id="lvup">')
     add("      <h2>兩張升級表</h2>")
     add(p_html(
-        f"<code>citybuilding_lvup.json</code>（{LVUP_COUNT} 列）與 <code>citybuilding_lvup_new.json</code>（{LVUP_NEW_COUNT} 列）的 <code>index</code> 集合相同，"
-        f"皆為 {data.table_meta['idx_count']} 個，等於主表全部 <code>id</code> 減去 103（{H(b103.name, terms)}）。"
-        f"{H(b103.name, terms)} 的 <code>lvupid</code> 為 103，兩張升級表都沒有 <code>index</code> 103 的列。"
-        "列 <code>id</code> 寫成索引加等級，兩張升級表規則相同。"
-        "多數為 <code>index * 1000 + lv</code>（例如 101 的 0 級是 101000）。"
-        "不是全程使用這個式子的索引有四個，沒有第五個："
-        f"140（{H(b140.name, terms)}）0–40 級仍是 <code>index * 1000 + lv</code>（140000–140040），"
-        "41 級起改為 <code>index * 10000 + lv</code>（41 級 1400041，2076 級 1402076）；"
-        f"155（{H(b155.name, terms)}）全程為 <code>index * 10000 + lv</code>（0 級 1550000，2193 級 1552193），沒有從 <code>* 1000</code> 切換；"
-        f"160（{H(b160.name, terms)}）與 198（升級表有此索引；主表 id 198 {H(b198.name, terms)} 的 <code>lvupid</code> 為 {b198.lvupid}）"
-        "全程為 <code>index * 1000 + lv + 1</code>（160 的 0 級 160001、40 級 160041；198 的 0 級 198001、40 級 198041）。"
-        "其餘 121 個索引皆為 <code>index * 1000 + lv</code>。"
+        f"{e(SRC_OLD)} {LVUP_COUNT} 列，{e(SRC_NEW)} {LVUP_NEW_COUNT} 列。"
+        f"兩張表的建築索引集合相同，皆為 {data.table_meta['idx_count']} 個，都比名錄少「{H(b103.name, terms)}」"
+        f"（兩張表都沒有它的升級列）。"
     ))
     add(p_html(
-        f"<code>lvup_new</code> 比 <code>lvup</code> 多 {LVUP_NEW_ONLY} 列，且只多在三個索引："
-        f"106 {H(b106.name, terms)} 41–50 級（10 列）、107 {H(b107.name, terms)} 41–50 級（10 列）、"
-        f"114 {H(b114.name, terms)} 2–40 級（39 列）。"
-        f"這與主表上限的對照是：106／107 的 <code>maxlevel</code> 與 <code>new_maxlevel</code> 都是 {b106.maxlevel}，"
-        f"<code>lvup</code> 最高到 40，<code>lvup_new</code> 最高到 50；"
-        f"114 的 <code>maxlevel</code> 為 {b114.maxlevel}、<code>new_maxlevel</code> 為 {b114.new_maxlevel}，"
-        f"<code>lvup</code> 最高到 1，<code>lvup_new</code> 最高到 40。"
-        "本頁同時記錄主表上限與兩張表的實際 <code>lv</code> 範圍，不自行判定哪一個是真正上限。"
+        f"{e(SRC_NEW)}比{e(SRC_OLD)}多 {LVUP_NEW_ONLY} 列，且只多在三處："
+        f"{H(b106.name, terms)} 41–50 級（10 列）、{H(b107.name, terms)} 41–50 級（10 列）、"
+        f"{H(b114.name, terms)} 2–40 級（39 列）。"
+        f"這與定義表上限的對照是：{H(b106.name, terms)}／{H(b107.name, terms)}的兩個上限都是 {b106.maxlevel}，"
+        f"{e(SRC_OLD)}最高到 40，{e(SRC_NEW)}最高到 50；"
+        f"{H(b114.name, terms)}的兩個上限為 {b114.maxlevel} 與 {b114.new_maxlevel}，"
+        f"{e(SRC_OLD)}最高到 1，{e(SRC_NEW)}最高到 40。"
+        "本頁同時記錄定義表上限與兩張表的實際等級範圍，不自行判定哪一個是真正上限。"
     ))
     add(_mismatch_range_table(data))
     add(p_html(
-        f"兩表共有的 {LVUP_COUNT} 個列 id，在共同欄位上有 {SHARED_FIELD_DIFFS} 列內容不同，"
-        "涉及消耗、<code>buildTime</code>、前置、戰力、<code>string_para2</code>、<code>para*</code>、圖鑑點等，"
+        f"兩表共有的 {LVUP_COUNT} 列裡，在共同欄位上有 {SHARED_FIELD_DIFFS} 列內容不同，"
+        "涉及消耗、時間、前置、戰力與效果原值等，"
         f"不是只有多出來的 {LVUP_NEW_ONLY} 列才有差別。"
-        f"例如 <code>lvup</code> 裡 12902（{H(data.by_id[12902].name, terms)}）63 級 "
-        f"<code>cost1</code> 為 {code_json(ex_old.get('cost1'))}、"
-        f"<code>cost2</code>／<code>cost3</code> 為 {code_json(ex_old.get('cost2'))}／{code_json(ex_old.get('cost3'))}、"
-        f"<code>cost4</code> 為 {code_json(ex_old.get('cost4'))}；"
-        f"同 id 在 <code>lvup_new</code> 為 {code_json(ex_new.get('cost1'))}、"
-        f"{code_json(ex_new.get('cost2'))}、{code_json(ex_new.get('cost3'))}、{code_json(ex_new.get('cost4'))}。"
-        f"又例如 155 的 184 級，<code>lvup</code> 的 <code>string_para2</code> 為 {code_json(ex155_old.get('string_para2'))}，"
-        f"<code>lvup_new</code> 為 {code_json(ex155_new.get('string_para2'))}。"
-        "因此不能只用其中一張表代表升級排程。"
-    ))
-    extra_fields = "、".join(f"<code>{e(name)}</code>" for name in LVUP_EXTRA_EMPTY_FIELDS)
-    empty_note = "在本批匯出裡這些欄全部為空。" if data.table_meta["lvup_extra_empty"] else "這些欄在本批並非全部為空，見資料說明。"
-    add(p_html(
-        f"<code>citybuilding_lvup.json</code> 比 <code>lvup_new</code> 多 12 個欄位（{extra_fields}），{empty_note}"
-        f"<code>lvup_new</code> 沒有多出來的獨有欄位，但與 <code>lvup</code> 同樣有 <code>pre_building_level_new</code>、"
-        f"<code>pre_building_level_2_new</code> 等欄；其中 <code>pre_building_level_2_new</code> 與對應說明欄在本批為空，"
-        f"<code>pre_building_level_new</code> 有 {pre_new_count} 列有值（索引 {'、'.join(str(i) for i in pre_new_indexes)}）。"
+        f"例如{H(data.by_id[12902].name, terms)} 63 級的消耗，以及一座{H('秘寶大廳', terms)} 184 級的效果原值，兩表不同。"
+        "因此不能只用其中一張表代表升級。具體原值見資料說明。"
     ))
     add(p_html(
-        "各列 <code>lv</code> 在同一 <code>index</code> 內連續。"
-        "最高級常見 <code>cost1</code> 為空、<code>buildTime</code> 為 -1，像是該級已達表內頂格、不再寫下一級消耗；"
+        "同一座建築的等級在表內連續。"
+        "最高級常見消耗為空、時間為 -1，像是該級已達表內頂格、不再寫下一級消耗；"
         "本頁只錄原值，不把 -1 自行解釋成「不可升級」以外的含義。"
-    ))
-    add(p_html(
-        f"本批 <code>shine_lv</code>：<code>lvup</code> 有 {len(shine_old['from41_0'])} 個索引自 41 級起為 0，"
-        f"<code>lvup_new</code> 則為 {len(shine_new['from41_0'])} 個"
-        f"（差異在索引 124 {H(data.by_id[124].name, terms)}：<code>lvup</code> 的 41–44 級為 0，<code>lvup_new</code> 同段為 -1）。"
-        f"兩張表都是 {len(shine_old['from45_1'])} 個索引自 45 級起為 1。"
-    ))
-    add(p_html(
-        "與 2026-11-05 相比，兩張升級表各有 42 列內容差異，都在索引 200"
-        f"（{H(b200.name, terms)}）0–40 級的 <code>string_para2</code>，以及索引 179（{H(b179.name, terms)}）1 級的 "
-        f"<code>string_para2</code> 與 <code>group2_string_para2</code>。詳見資料說明。"
     ))
 
     add('      <h3 id="costs">升級消耗、時間與前置</h3>')
     add(p_html(
-        "消耗寫在 <code>cost1</code>–<code>cost4</code>，每段為三元列表。"
-        "類型 999 的各段沒有官方資源名，只錄 "
-        f"{code_json([999, 4, '數量'])}、{code_json([999, 5, '數量'])}、{code_json([999, 6, '數量'])}。"
-        "類型 2 的第二段是道具 id，名稱取自字串表，例如 "
-        f"153「{H(goods153, terms)}」（<code>goods_desc_153</code>：「{H(desc153, terms)}」）、"
-        f"237「{H(goods237, terms)}」（<code>goods_desc_237</code>：「{H(desc237, terms)}」）、"
-        f"1044「{H(goods1044, terms)}」（<code>goods_desc_1044</code>：「{H(desc1044, terms)}」）。"
-    ))
-    add(p_html(
-        f"<code>lvup_new</code> {LVUP_NEW_COUNT} 列裡，消耗形態計次："
-        f"只有 <code>cost1</code> {pat_count(True, False, False, False)} 列；"
-        f"<code>cost1</code>＋<code>cost2</code> {pat_count(True, True, False, False)} 列；"
-        f"再加 <code>cost3</code> {pat_count(True, True, True, False)} 列；"
-        f"四段都有 {pat_count(True, True, True, True)} 列；"
-        f"沒有消耗 {pat_count(False, False, False, False)} 列；"
-        f"只有 <code>cost2</code>＋<code>cost3</code> {pat_count(False, True, True, False)} 列。"
-        "同一座建築在兩張表上的數量可以不同，引用時必須標表名。"
+        "消耗可以有多段。類型 999 的各段沒有官方資源名，只錄「類型 999、第 4 段、數量 …」、「類型 999、第 5 段、數量 …」、「類型 999、第 6 段、數量 …」。"
+        "已有官方道具名的消耗寫道具名與數量，例如 "
+        f"「{H(goods153, terms)}」（「{e(desc153)}」）、"
+        f"「{H(goods237, terms)}」（「{e(desc237)}」）、"
+        f"「{H(goods1044, terms)}」（「{e(desc1044)}」）。"
     ))
     wood = {int(r["lv"]): r for r in data.lvup_new if int(r["index"]) == 106}
-    wood50_pre = "空" if not is_filled(wood[50].get("pre_building_level")) else code_json(wood[50].get("pre_building_level"))
     add(p_html(
-        "前置 <code>pre_building_level</code> 為字串列表，寫成 <code>建築id|等級</code>。"
-        f"<code>lvup_new</code> 有 {pre_filled} 列填了此欄，常見前置是{name_of(data.by_id, 117, terms)}。"
-        f"例如{H(b106.name, terms)}在 <code>lvup_new</code> 裡 0–2 級前置為 {code_json(wood[0].get('pre_building_level'))}，"
-        f"3 級起為 {code_json(wood[3].get('pre_building_level'))}，之後隨等級把城堡要求往上加，"
-        f"至 49 級仍為 {code_json(wood[49].get('pre_building_level'))}；"
-        f"50 級（該表頂格）的 <code>pre_building_level</code> 為{wood50_pre}，該級亦無 <code>cost1</code>。"
-        f"同一張表裡，{H(b107.name, terms)}（107）50 級與{H(b114.name, terms)}（114）40 級（各自頂格）的前置同樣為空。"
+        f"前置寫官方建築名與等級。{e(SRC_NEW)}常見前置是{H(data.by_id[117].name, terms)}。"
+        f"例如{H(b106.name, terms)}在{e(SRC_NEW)}裡 0–2 級前置為 {fmt_prereq(wood[0].get('pre_building_level'), data.by_id, terms)}，"
+        f"3 級起為 {fmt_prereq(wood[3].get('pre_building_level'), data.by_id, terms)}，之後隨等級把城堡要求往上加，"
+        f"至 49 級仍為 {fmt_prereq(wood[49].get('pre_building_level'), data.by_id, terms)}；"
+        f"50 級（該表頂格）的前置為{fmt_prereq(wood[50].get('pre_building_level'), data.by_id, terms)}，該級亦無消耗。"
+        f"同一張表裡，{H(b107.name, terms)} 50 級與{H(b114.name, terms)} 40 級（各自頂格）的前置同樣為空。"
+        "同一座建築在兩張表上的數量可以不同，引用時必須標明來源。"
     ))
     castle_pre2 = [r for r in _rows_for(data.lvup_new, 117) if is_filled(r.get("pre_building_level_2"))]
     bands = []
@@ -1117,62 +1190,59 @@ def render_html(data: TablesData) -> str:
     for band in bands:
         desc_key = band["row"].get("pre_building_level_2_desc")
         desc = official_text(desc_key) if desc_key else ""
-        band_bits.append(
-            f"{band['lo']}–{band['hi']} 級值為 {code_json(list(band['key'][0]))}，"
-            f"說明鍵 <code>{e(desc_key)}</code>「{H(desc, terms)}」"
-        )
+        band_bits.append(f"{band['lo']}–{band['hi']} 級對應說明「{e(desc)}」")
+    table_nums = []
+    for band in bands:
+        for item in list(band["key"][0]):
+            if "|" in str(item):
+                try:
+                    table_nums.append(int(str(item).split("|", 1)[1]))
+                except ValueError:
+                    pass
+    table_num_txt = "／".join(str(n) for n in sorted(set(table_nums)))
     add(p_html(
-        f"另有 <code>pre_building_level_2</code>（只在索引 117 {H(b117.name, terms)}，{len(castle_pre2)} 列）："
+        f"{H(b117.name, terms)}另有第二前置（{len(castle_pre2)} 列）："
         + "；".join(band_bits) + "。"
-        + "對應 <code>_tips</code> 鍵寫「"
-        + H(official_text("pre_building_level_2_desc_117_tips"), terms)
+        + "對應提示寫「"
+        + e(official_text("pre_building_level_2_desc_117_tips"))
         + "」到「"
-        + H(official_text("pre_building_level_5_desc_117_tips"), terms)
-        + "」。說明原文是「光輝4級」至「光輝7級」，表上的數字是 60／65／70／75，本頁並列照錄，不把這些數字自行換算成「光輝」等級。"
-        + f"界面另有 <code>citybuilding_lvup_condition003</code>「{H(official_text('citybuilding_lvup_condition003'), terms)}」、"
-        + f"<code>citybuilding_lvup_pre_condition</code>「{H(official_text('citybuilding_lvup_pre_condition'), terms)}」、"
-        + f"<code>citybuilding_requirement_2</code>「{H(official_text('citybuilding_requirement_2'), terms)}」。"
+        + e(official_text("pre_building_level_5_desc_117_tips"))
+        + "」。說明原文是「光輝4級」至「光輝7級」，"
+        + f"表上的數字是 {e(table_num_txt)}，本頁並列照錄，不把這些數字自行換算成「光輝」等級。"
+        + f"界面另有「{e(official_text('citybuilding_lvup_condition003'))}」、"
+        + f"「{e(official_text('citybuilding_lvup_pre_condition'))}」、"
+        + f"「{e(official_text('citybuilding_requirement_2'))}」。"
     ))
-    add(p_html("<code>buildTime</code> 為整數，表沒有單位欄，本頁不自行標成秒或分鐘。"))
+    add(p_html("升級時間為整數，表沒有單位欄，本頁不自行標成秒或分鐘。"))
     add("    </section>")
 
     add('    <section id="class-totem">')
     add("      <h2>職業大廳與先祖圖騰</h2>")
     add(p_html(
-        f"{H(b179.name, terms)} id 179，名稱鍵 <code>{e(b179.name_key)}</code>「{H(b179.name, terms)}」，"
-        f"說明鍵 <code>{e(b179.des_key)}</code>「{H(b179.des, terms)}」。"
-        f"主表 <code>maxlevel</code>／<code>new_maxlevel</code> 皆為 {b179.maxlevel}。"
+        f"{H(b179.name, terms)}說明為「{e(b179.des)}」。"
+        f"定義表兩個上限皆為 {b179.maxlevel}。"
         "兩張升級表都是 0–1 級共 2 列，在共同欄位上相同（本批）："
-        f"0 級 <code>buildTime</code> {r179[0]['buildTime']}、<code>cost1</code> {code_json(r179[0].get('cost1'))}、"
-        f"<code>fightforce</code> {r179[0]['fightforce']}、前置 {code_json(r179[0].get('pre_building_level'))}、"
-        f"<code>para1</code> {r179[0]['para1']}；"
-        f"1 級 <code>buildTime</code> {r179[1]['buildTime']}、<code>cost1</code> {code_json(r179[1].get('cost1'))}、"
-        f"<code>fightforce</code> {r179[1]['fightforce']}、前置同樣 {code_json(r179[1].get('pre_building_level'))}、"
-        f"<code>para1</code> {r179[1]['para1']}、"
-        f"<code>string_para2</code> 與 <code>group2_string_para2</code> 皆為 {code_json(r179[1].get('string_para2'))}。"
-        f"<code>attribute_name_1237</code> 為「{H(attr1237, terms)}」。"
-        f"<code>para1</code> {r179[1]['para1']} 只錄原值，表沒有寫對應關係，本頁不推測。"
-        "與 11-05 的差別在 1 級的 <code>string_para2</code> 與 <code>group2_string_para2</code>，見資料說明。"
+        f"兩級時間皆為 {r179[0]['buildTime']}、消耗皆為 {fmt_cost_value(r179[0].get('cost1'), terms)}、"
+        f"前置皆為 {fmt_prereq(r179[0].get('pre_building_level'), data.by_id, terms)}；"
+        f"0 級戰力 {r179[0]['fightforce']}，1 級戰力 {r179[1]['fightforce']}。"
+        f"1 級效果原文為「{e(attr1237)}」。"
+        f"表上另有參數 {e(str(r179[1]['para1']))}，只錄原值，表沒有寫對應關係，本頁不推測。"
+        "與先前截稿的欄位差別見資料說明。"
         "本頁不另開領主職業圖鑑。"
     ))
     add(class_tbl)
-    cost_tmpl = r195[1].get("cost1")[:2] + ["數量"] if is_filled(r195[1].get("cost1")) else None
     add(p_html(
-        f"{H(b195.name, terms)} id 195，名稱鍵 <code>{e(b195.name_key)}</code>「{H(b195.name, terms)}」，"
-        f"說明鍵 <code>{e(b195.des_key)}</code>「{H(b195.des, terms)}」。"
-        f"主表上限 {b195.maxlevel}，兩張升級表皆為 0–40 級共 41 列，共同欄位相同。"
-        f"前置一律 {code_json(r195[0].get('pre_building_level'))}，<code>fightforce</code> 一律 {r195[0]['fightforce']}。"
-        f"說明鍵列為 <code>building_lvup_des_141001</code>「{H(des_worker, terms)}」、"
-        f"<code>building_lvup_des_xianzututeng</code>「{H(des_dust, terms)}」、"
-        f"<code>attribute_name_1012</code>「{H(attr1012, terms)}」、"
-        f"<code>attribute_name_1014</code>「{H(attr1014, terms)}」、"
-        f"<code>attribute_name_1123</code>「{H(attr1123, terms)}」。"
-        f"0 級無消耗、<code>buildTime</code> {r195[0]['buildTime']}；"
-        f"1 級起 <code>cost1</code> 為 {code_json(cost_tmpl) if cost_tmpl else '（空）'}"
-        f"（{H(goods1044, terms)}），數量從 1 級 {r195[1]['cost1'][2]} 增至 39 級 {r195[39]['cost1'][2]}；"
-        f"40 級無消耗、<code>buildTime</code> {r195[40]['buildTime']}。"
-        f"<code>string_para2</code> 三段原值從 0 級的 {code_json(r195[0].get('string_para2'))}，"
-        f"1 級為 {code_json(r195[1].get('string_para2'))}，之後每級加 500，至 40 級為 {code_json(r195[40].get('string_para2'))}。"
+        f"{H(b195.name, terms)}說明為「{e(b195.des)}」。"
+        f"定義表上限 {b195.maxlevel}，兩張升級表皆為 0–40 級共 41 列，共同欄位相同。"
+        f"前置一律為 {fmt_prereq(r195[0].get('pre_building_level'), data.by_id, terms)}，戰力一律 {r195[0]['fightforce']}。"
+        f"效果官方名為「{H(des_worker, terms)}」、「{H(des_dust, terms)}」、"
+        f"「{H(attr1012, terms)}」、「{H(attr1014, terms)}」、「{H(attr1123, terms)}」。"
+        f"0 級無消耗、時間 {r195[0]['buildTime']}；"
+        f"1 級起消耗為{H(goods1044, terms)}，數量從 1 級 {r195[1]['cost1'][2]} 增至 39 級 {r195[39]['cost1'][2]}；"
+        f"40 級無消耗、時間 {r195[40]['buildTime']}。"
+        f"加成原值從 0 級 {e(str(r195[0].get('string_para2')[0].split('|')[1]))} 起，"
+        f"1 級為 {e(str(r195[1].get('string_para2')[0].split('|')[1]))}，之後每級加 500，"
+        f"至 40 級為 {e(str(r195[40].get('string_para2')[0].split('|')[1]))}。"
         "本頁只錄原值，不換算成百分比。"
     ))
     add(totem_tbl)
@@ -1181,41 +1251,37 @@ def render_html(data: TablesData) -> str:
     add('    <section id="treasure">')
     add("      <h2>秘寶大廳</h2>")
     add(p_html(
-        f"兩座顯示名都是「{H(b140.name, terms)}」，名稱鍵都是 <code>{e(b140.name_key)}</code>，"
-        f"說明鍵 <code>{e(b140.des_key)}</code>「{H(b140.des, terms)}」。"
-        f"id 140 上限 {b140.maxlevel}，升級表 0–2076 共 {1 + 2076} 列；"
-        f"id 155 上限 {b155.maxlevel}，升級表 0–2193 共 {1 + 2193} 列。"
-        "兩座在兩張升級表裡都有完整這些列，但部分欄位（例如 155 的 <code>string_para2</code>）兩表不同。"
-        f"升級說明鍵為 <code>artifact_atk_up</code>「{H(atk_up, terms)}」、"
-        f"<code>artifact_hp_up</code>「{H(hp_up, terms)}」，以及 "
-        f"<code>uilding_lvup_des_115003</code>（鍵名開頭少一個 b）「{H(uilding, terms)}」。"
-        f"字串表另有 <code>building_lvup_des_115003</code>「{H(building115003, terms)}」，"
-        "本批這兩座的 <code>des</code> 用的是少字母的那個鍵。兩者都是官方鍵，不自行改正。"
+        f"兩座顯示名都是「{H(b140.name, terms)}」，說明都是「{e(b140.des)}」。"
+        f"編號 140 上限 {b140.maxlevel}，升級表 0–2076 共 {1 + 2076} 列；"
+        f"編號 155 上限 {b155.maxlevel}，升級表 0–2193 共 {1 + 2193} 列。"
+        "兩座在兩張升級表裡都有完整這些列，但部分欄位（例如編號 155 的效果原值）兩表不同。"
+        f"升級說明官方字為「{H(atk_up, terms)}」、「{H(hp_up, terms)}」，以及「{H(uilding, terms)}」。"
+        f"本批用的是「{H(uilding, terms)}」這條，不是「{H(building115003, terms)}」；兩個都是官方字串，不自行改正。"
     ))
-    add(p_html("以下斷點取自 <code>lvup_new</code>（<code>lvup</code> 同範圍，消耗與參數請以各表為準，不要混用）："))
+    add(p_html(f"以下斷點取自{e(SRC_NEW)}（{e(SRC_OLD)}同範圍，消耗與參數請以各表為準，不要混用）："))
     add(p_html(
-        f"140：0–39 級 <code>cost1</code> 為 {code_json([999, 4, '…'])}，"
-        f"<code>buildTime</code> 為正值（0 級 {r140_new[0]['buildTime']}，39 級 {r140_new[39]['buildTime']}），"
-        f"<code>para1</code> 從 {r140_new[0]['para1']} 到 {r140_new[39]['para1']}，"
-        f"<code>fightforce</code> 從 {r140_new[0]['fightforce']} 到 {r140_new[39]['fightforce']}；"
-        f"40–2075 級 <code>cost1</code> 改為 {code_json([2, 237, '…'])}（{H(goods237, terms)}），"
-        "其間 <code>buildTime</code> 在 -1 與 0 之間分段切換"
+        f"140：0–39 級消耗為類型 999、第 4 段（數量隨等級變化），"
+        f"時間為正值（0 級 {r140_new[0]['buildTime']}，39 級 {r140_new[39]['buildTime']}），"
+        f"參數從 {r140_new[0]['para1']} 到 {r140_new[39]['para1']}，"
+        f"戰力從 {r140_new[0]['fightforce']} 到 {r140_new[39]['fightforce']}；"
+        f"40–2075 級消耗改為{H(goods237, terms)}，"
+        "其間時間在 -1 與 0 之間分段切換"
         "（40–439 為 -1，440–478 為 0，479–1439 為 -1，1440–1478 為 0，1479–2076 為 -1）；"
-        f"其中 2076 級無消耗，<code>para1</code> {r140_new[2076]['para1']}，"
-        f"<code>fightforce</code> {r140_new[2076]['fightforce']}。"
-        f"<code>para1</code> 共有 {para1_140} 個不同取值。"
+        f"其中 2076 級無消耗，參數 {r140_new[2076]['para1']}，"
+        f"戰力 {r140_new[2076]['fightforce']}。"
+        f"參數共有 {para1_140} 個不同取值。"
     ))
     add(p_html(
-        f"155：全程 <code>cost1</code> 皆為類型 2、道具 237 的列表。"
-        f"0 級消耗 {r155_new[0]['cost1'][2]}、<code>buildTime</code> {r155_new[0]['buildTime']}、"
-        f"<code>para1</code> {r155_new[0]['para1']}、<code>fightforce</code> {r155_new[0]['fightforce']}；"
-        "1–39 級 <code>buildTime</code> 為 0；40–556 級為 -1；557–595 級為 0；"
+        f"155：全程消耗皆為{H(goods237, terms)}。"
+        f"0 級消耗 {r155_new[0]['cost1'][2]}、時間 {r155_new[0]['buildTime']}、"
+        f"參數 {r155_new[0]['para1']}、戰力 {r155_new[0]['fightforce']}；"
+        "1–39 級時間為 0；40–556 級為 -1；557–595 級為 0；"
         "596–1556 級為 -1；1557–1595 級為 0；1596–2193 級為 -1。"
-        f"2193 級 <code>cost1</code> {code_json(r155_new[2193].get('cost1'))}、"
-        f"<code>buildTime</code> {r155_new[2193]['buildTime']}、"
-        f"<code>para1</code> {r155_new[2193]['para1']}、"
-        f"<code>fightforce</code> {r155_new[2193]['fightforce']}。"
-        f"<code>para1</code> 同樣有 {para1_155} 個不同取值。"
+        f"2193 級消耗 {fmt_cost_value(r155_new[2193].get('cost1'), terms)}、"
+        f"時間 {r155_new[2193]['buildTime']}、"
+        f"參數 {r155_new[2193]['para1']}、"
+        f"戰力 {r155_new[2193]['fightforce']}。"
+        f"參數同樣有 {para1_155} 個不同取值。"
         "這兩座列數很大，本頁不逐列傾印。"
     ))
     add(_treasure_examples(data))
@@ -1224,50 +1290,43 @@ def render_html(data: TablesData) -> str:
     add('    <section id="production">')
     add("      <h2>生產、功能與圖鑑點</h2>")
     add(p_html(
-        f"<code>citybuild_production.json</code> {PRODUCTION_COUNT} 列，<code>type</code> 1 與 2 各 10 列。"
-        f"<code>type</code> 1 的 <code>item</code> 為 101，字串表 <code>goods_name_101</code>「{H(official_text('goods_name_101'), terms)}」，"
-        "消耗為 <code>999|4|</code> 1000 至 6000，對應產出 1 至 6；"
-        f"<code>type</code> 2 的 <code>item</code> 為 102，<code>goods_name_102</code>「{H(official_text('goods_name_102'), terms)}」，"
-        "消耗為 <code>999|5|</code> 1000 至 6000，對應產出 1 至 6。"
-        "產出 2 至 5 各有兩列（例如 1002 與 1003 都是"
+        f"生產表 {PRODUCTION_COUNT} 列，{H(official_text('goods_name_101'), terms)}與{H(official_text('goods_name_102'), terms)}各 10 列。"
+        f"{H(official_text('goods_name_101'), terms)}的消耗為類型 999、第 4 段，數量 1000 至 6000，對應產出 1 至 6；"
+        f"{H(official_text('goods_name_102'), terms)}的消耗為類型 999、第 5 段，數量同樣 1000 至 6000，對應產出 1 至 6。"
+        "產出 2 至 5 各有兩列（例如有兩列都是"
         f"{H(official_text('goods_name_101'), terms)} ×2、消耗 2000），產出 1 與 6 各只一列。"
-        f"界面有 <code>citybuilding_production_list_full</code>「{H(official_text('citybuilding_production_list_full'), terms)}」、"
-        f"<code>citybuilding_production_not_enough</code>「{H(official_text('citybuilding_production_not_enough'), terms)}」。"
-        f"功能鍵 4／5 的官方名是「{H(data.functions[3][2], terms)}」「{H(data.functions[4][2], terms)}」。"
-        f"主表 id 108「{H(b108.name, terms)}」說明為「{H(b108.des, terms)}」，該列 <code>is_discard</code> 為 {b108.is_discard}。"
+        f"界面有「{e(official_text('citybuilding_production_list_full'))}」、"
+        f"「{e(official_text('citybuilding_production_not_enough'))}」。"
+        f"功能裡的官方名包括「{H(data.functions[3][2], terms)}」「{H(data.functions[4][2], terms)}」。"
+        f"主表「{H(b108.name, terms)}」說明為「{e(b108.des)}」。"
     ))
     add(_render_function_table(data))
     add(_render_production(data))
     add(p_html(
-        f"<code>citybuilding_guidebook.json</code> {GUIDEBOOK_COUNT} 列，<code>id</code> 1–80，每列有 <code>level_exp</code> 與 <code>active_attr</code>（屬性 id 與原值）。"
-        f"<code>level_exp</code> 從 1 級 {gb_first['level_exp']} 增至 80 級 {gb_last['level_exp']}，不是等差。"
-        "<code>active_attr</code> 輪換出現 1100103、1100104、68、69 以及 1108、1111、1125、1126 等，本頁不整表傾印，也不把原值換算成百分比。"
-        "升級表另有 <code>is_guidebook_active</code>、<code>guidebook_lv_points</code> 欄，本頁不把它們與這 80 級逐列對齊（對應規則見資料說明待補）。"
+        f"圖鑑 1–{GUIDEBOOK_COUNT} 級，該級經驗從 1 級 {gb_first['level_exp']} 增至 80 級 {gb_last['level_exp']}，不是等差。"
+        "屬性只錄原值，不換成百分比，本頁不整表傾印。"
+        "升級表另有圖鑑相關欄，本頁不把它們與這 80 級逐列對齊（對應規則見資料說明）。"
     ))
     add(p_html(
-        f"<code>guidebook_reward.json</code> {REWARD_COUNT} 列，<code>guidebook_points</code> 從 {rewards_min} 到 {rewards_max}，"
-        f"有 {REWARD_ID_COUNT} 個獨特 <code>reward_id</code>："
+        f"圖鑑獎勵 {REWARD_COUNT} 列，點數從 {rewards_min} 到 {rewards_max}，"
+        f"有 {REWARD_ID_COUNT} 個獨特獎勵編號："
         + "、".join(str(i) for i in data.table_meta["reward_ids"])
         + "。"
-        "字串表沒有 <code>goods_name_{id}</code> 或 <code>goods_desc_{id}</code>，"
-        "這 16 個 id 也都不在 live <code>goods.json</code> 表列；"
-        "但 16 個都對得上 <code>goods_des_{id}</code>（鍵名是 <code>des</code> 不是 <code>desc</code>）與 <code>chat_icon_{id}</code>，"
-        "如下，按鍵照錄，用字差異不統一。"
-        f"61022 的 <code>goods_des_61022</code> 寫「{H(official_text('goods_des_61022'), terms)}」（「蘇」為 U+8607），"
-        f"<code>chat_icon_61022</code> 寫「{H(official_text('chat_icon_61022'), terms)}」（「甦」為 U+7526）。"
-        "61023、61024 的 <code>goods_des</code> 寫「聊天視窗」，<code>chat_icon</code> 寫「聊天框」；"
+        "如下照錄官方說明與聊天圖示名，用字差異不統一。"
+        f"例如同一獎勵說明寫「{e(official_text('goods_des_61022'))}」，"
+        f"圖示名寫「{e(official_text('chat_icon_61022'))}」。"
+        "61023、61024 的說明寫「聊天視窗」，圖示名寫「聊天框」；"
         "61031 則相反，"
-        f"<code>goods_des_61031</code> 寫「{H(official_text('goods_des_61031'), terms)}」，"
-        f"<code>chat_icon_61031</code> 寫「{H(official_text('chat_icon_61031'), terms)}」。"
-        "字串已對上，實際開出的物品列仍待補。"
+        f"說明寫「{e(official_text('goods_des_61031'))}」，"
+        f"圖示名寫「{e(official_text('chat_icon_61031'))}」。"
     ))
     add(_render_rewards(data))
     add(p_html(
-        "產建築的村民提示（<code>building_villager_tips_{id}</code>）有官方產量用字，例如 "
-        f"106「{H(official_text('building_villager_tips_106'), terms)}」、"
-        f"107「{H(official_text('building_villager_tips_107'), terms)}」、"
-        f"110「{H(official_text('building_villager_tips_110'), terms)}」、"
-        f"168「{H(official_text('building_villager_tips_168'), terms)}」（此處為 U+52DB）。"
+        "生產建築的村民提示有官方產量用字，例如 "
+        f"「{e(official_text('building_villager_tips_106'))}」、"
+        f"「{e(official_text('building_villager_tips_107'))}」、"
+        f"「{e(official_text('building_villager_tips_110'))}」、"
+        f"「{e(official_text('building_villager_tips_168'))}」。"
         "這些是提示字串，不是類型 999 消耗段的官方名。"
     ))
     add("    </section>")
@@ -1275,35 +1334,19 @@ def render_html(data: TablesData) -> str:
     add('    <section id="civilization">')
     add("      <h2>文明大廳解鎖表</h2>")
     add(p_html(
-        f"<code>citybuild_civilization_hall.json</code> {CIV_COUNT} 列。表檔沒有官方中文表名，本頁只用檔名。"
-        f"<code>hero_lv</code> 從 {data.civ[0]['hero_lv']} 到 {data.civ[-1]['hero_lv']}。"
-        "<code>unlock_building</code> 與 <code>new_unlock_building</code> 寫的是主表建築 id（可為 <code>id</code> 或 <code>id|id</code>）。"
-        f"例如 <code>hero_lv</code> 15 有兩列：id 1000 的 <code>unlock_building</code>／<code>new_unlock_building</code> 為空，"
-        f"id 1001 解鎖 110（{H(data.by_id[110].name, terms)}）；"
-        f"20 解鎖 130（{H(data.by_id[130].name, terms)}）；"
-        f"25 解鎖 106（{H(b106.name, terms)}）。"
-        f"<code>new_unlock_building</code> 有時與 <code>unlock_building</code> 不同，例如 <code>hero_lv</code> 70 一欄為 "
-        f"<code>137|140</code> 對 <code>137|155</code>（{H(data.by_id[137].name, terms)}與兩座{H('秘寶大廳', terms)} id）。"
-        "本頁只錄這些 id，不把它寫成升級優先建議。多數列還有 <code>string_para1</code>／<code>string_para2</code> 屬性原值（如 1093、1218、3、4），不在此展開。"
+        f"文明大廳解鎖表 {CIV_COUNT} 列。表上等級從 {data.civ[0]['hero_lv']} 到 {data.civ[-1]['hero_lv']}，不自行對成玩家等級或賽季號。"
+        "解鎖建築與另一欄解鎖建築寫的是名錄裡的建築（有時一欄寫兩座）。"
+        f"例如表上等級 15 有兩列：一列沒有解鎖建築，一列解鎖{H(data.by_id[110].name, terms)}；"
+        f"20 解鎖{H(data.by_id[130].name, terms)}；"
+        f"25 解鎖{H(b106.name, terms)}。"
+        f"兩欄有時不同，例如表上等級 70 一欄是{H(data.by_id[137].name, terms)}與一座{H('秘寶大廳', terms)}，"
+        f"另一欄是{H(data.by_id[137].name, terms)}與另一座{H('秘寶大廳', terms)}。"
+        "本頁只錄這些建築，不把它寫成升級優先建議。"
     ))
     add(_render_civ_examples(data))
-    sword_restore = {r["restore"] for r in data.sword}
-    sword_attr_empty = all(not is_filled(r.get("attr")) for r in data.sword)
-    war_empty_team = all(not is_filled(r.get("hero_team_id")) for r in data.war)
-    war_empty_attr = all(not is_filled(r.get("attr")) for r in data.war)
-    war_hero_num = {r["hero_num"] for r in data.war}
-    war_min_lv = {r["min_level"] for r in data.war}
     add(p_html(
-        f"<code>citybuild_kingdom_sword.json</code> {SWORD_COUNT} 列，<code>id</code> 從 {data.sword[0]['id']} 到 {data.sword[-1]['id']}，"
-        f"本批 <code>restore</code> 皆為 {next(iter(sword_restore))}，"
-        + ("<code>attr</code> 皆為空。" if sword_attr_empty else "<code>attr</code> 並非全部為空。")
-        + f"表沒有建築 id 欄，不把它逕行當成「{H(b120.name, terms)}」（建築 120）的升級表。"
-    ))
-    add(p_html(
-        f"<code>citybuild_war_center.json</code> {WAR_COUNT} 列，<code>id</code> {data.war[0]['id']}–{data.war[-1]['id']}，"
-        + ("本批 <code>hero_team_id</code>、<code>attr</code> 皆空，" if war_empty_team and war_empty_attr else "本批欄位見原表，")
-        + f"<code>hero_num</code> 與 <code>min_level</code> 皆為 {next(iter(war_hero_num))} 與 {next(iter(war_min_lv))}。"
-        + f"同樣不逕行當成「{H(b119.name, terms)}」升級表。"
+        f"另有兩張表，本批沒有可對上的建築升級內容，不把它們當成「{H(b120.name, terms)}」或「{H(b119.name, terms)}」的升級表。"
+        "檔名與列數見資料說明。"
     ))
     add("    </section>")
 
@@ -1326,13 +1369,15 @@ def render_html(data: TablesData) -> str:
         f"<li>兩張升級表 {LVUP_COUNT}／{LVUP_NEW_COUNT} 列的逐列全表，以及 140／155 合計四千餘列的逐級消耗；"
         f"兩表共有 {SHARED_FIELD_DIFFS} 列的逐欄差異總表（本頁只舉規則與例子）。</li>"
     )
-    extra_bits = "、".join(
-        f"<code>{e(k)}</code>「{H(v, terms)}」" for k, v in data.table_meta["extra_name_keys"]
-    )
+    seen_extra = []
+    for _key, value in data.table_meta["extra_name_keys"]:
+        if value not in seen_extra:
+            seen_extra.append(value)
+    extra_bits = "、".join(f"「{H(v, terms)}」" for v in seen_extra)
     add(
-        "<li>字串表有、但不在主表 126 列的建築名稱鍵，只在此列出，不收入名錄，不自行加上開放狀態："
+        "<li>字串表有、但不在這 126 座名錄裡的建築名，只在此列出官方顯示名，不收入名錄，不自行加上開放狀態："
         + extra_bits
-        + "。</li>"
+        + "。鍵名見資料說明。</li>"
     )
     add("</ul>")
     add("    </section>")
@@ -1351,6 +1396,106 @@ def render_html(data: TablesData) -> str:
         "文明大廳在 <code>citybuild_civilization_hall.json</code>（81 筆）。"
         "<code>citybuild_kingdom_sword.json</code>（82 筆）與 <code>citybuild_war_center.json</code>（66 筆）只作附註。"
         "名稱來自主表該列的 <code>name</code>／<code>des</code> 鍵。</li>"
+    )
+    add(
+        f"<li>可見正文稱「{e(SRC_OLD)}」與「{e(SRC_NEW)}」，分別對應 <code>citybuilding_lvup.json</code>（{LVUP_COUNT} 列）與 "
+        f"<code>citybuilding_lvup_new.json</code>（{LVUP_NEW_COUNT} 列）。"
+        "名錄「定義表上限」與「定義表另一上限」分別對應主表 <code>maxlevel</code>／<code>new_maxlevel</code>。"
+        "不要把 <code>show_type=2</code> 轉成百分比；"
+        "<code>season</code>、<code>kvk_theme_dic</code>、<code>server_list</code>、<code>theme</code> 只照錄，不對成 S2／S3，不自行加上開放狀態。"
+        "<code>buildTime</code> 沒有單位欄，不自行標成秒或分鐘。</li>"
+    )
+    add(
+        "<li>顯示名、說明按該列 <code>name</code>／<code>des</code> 鍵從字串表照錄。"
+        "名稱鍵不一定是 <code>citybuilding_name_{id}</code>。"
+        "例如 id 106 的名稱鍵是 <code>citybuilding_name_6</code>，id 155 與 140 都用 <code>citybuilding_name_140</code>。"
+        f"id 111 的顯示名原文是 <code>{e(b111.name)}</code>，照錄；該列 <code>des</code> 欄為空（不是缺 <code>citybuilding_des_111</code> 這條鍵），可見名錄寫「{e(VISIBLE_EMPTY_DES)}」。"
+        f"id 309 的名稱鍵是 <code>{e(data.by_id[309].name_key)}</code>。"
+        f"建築名「{e(b168.name)}」出自 <code>{e(b168.name_key)}</code>（「勳」為 U+52F3）；"
+        f"說明 <code>{e(b168.des_key)}</code> 寫「{e(b168.des)}」（「勛」為 U+52DB）。"
+        f"村民提示 <code>building_villager_tips_168</code> 寫「{e(official_text('building_villager_tips_168'))}」。</li>"
+    )
+    add(
+        f"<li>主表共 {MAIN_COUNT} 列，編號彼此不重複，範圍不是單純的 101–201（另有 1001–1024、301–309、12902 等）。"
+        f"<code>count</code> 皆為 1。<code>is_discard</code> 為 1 的有 {discard_n} 列，其餘 {MAIN_COUNT - discard_n} 列為 -1。"
+        f"<code>is_building_list</code> 為 1 的有 {list_counts[1]} 列，為 -1 的有 {list_counts[-1]} 列，為 0 的只有 id 181（{e(data.by_id[181].name)}）。"
+        f"<code>initlevel</code> 為 0 的有 {init_counts[0]} 列，為 1 的有 {init_counts[1]} 列。"
+        f"<code>type</code> 沒有官方中文類型名。<code>new_type</code> 僅 id 114（{e(b114.name)}）為 {only_new_type[0].new_type}，其餘為 -1。"
+        f"<code>is_discard</code> 為 1 的 {discard_n} 列，<code>server_list</code> 皆為 {code_json(['999'])}。"
+        f"未標記 <code>is_discard</code> 的 id 164（{e(data.by_id[164].name)}）同樣是 {code_json(['999'])}。"
+        "這些欄位只照錄，不自行加上開放狀態。"
+        f"<code>lvupid</code> 等於自身 <code>id</code> 的有 {MAIN_COUNT - len(shared_lvupid)} 列；其餘與另一座共用升級進度。"
+        "升級表裡仍有這些建築自身 <code>index</code>＝其 <code>id</code> 的列，但對應建築的 <code>lvupid</code> 並不指向那些列。"
+        f"宿舍 id 147–150 與 1001–1024 的名稱鍵都是 <code>citybuilding_name_11</code>，說明鍵都是 <code>citybuilding_des_11</code>（{e(MISSING_TEXT)}）。"
+        f"前四座 <code>is_discard</code> 為 {dorms_front[0].is_discard}、<code>is_building_list</code> 為 {dorms_front[0].is_building_list}；"
+        f"1001–1024 的 <code>is_discard</code> 為 {dorms_back[0].is_discard}、<code>is_building_list</code> 為 {dorms_back[0].is_building_list}。</li>"
+    )
+    extra_fields = "、".join(f"<code>{e(name)}</code>" for name in LVUP_EXTRA_EMPTY_FIELDS)
+    empty_note = "在本批匯出裡這些欄全部為空。" if data.table_meta["lvup_extra_empty"] else "這些欄在本批並非全部為空。"
+    add(
+        "<li>列 <code>id</code> 寫成索引加等級，兩張升級表規則相同。"
+        "多數為 <code>index * 1000 + lv</code>（例如 101 的 0 級是 101000）。"
+        "不是全程使用這個式子的索引有四個，沒有第五個："
+        "140（秘寶大廳）0–40 級仍是 <code>index * 1000 + lv</code>（140000–140040），"
+        "41 級起改為 <code>index * 10000 + lv</code>（41 級 1400041，2076 級 1402076）；"
+        "155（秘寶大廳）全程為 <code>index * 10000 + lv</code>（0 級 1550000，2193 級 1552193），沒有從 <code>* 1000</code> 切換；"
+        f"160（{e(b160.name)}）與 198（升級表有此索引；主表 id 198 {e(b198.name)} 的 <code>lvupid</code> 為 {b198.lvupid}）"
+        "全程為 <code>index * 1000 + lv + 1</code>（160 的 0 級 160001、40 級 160041；198 的 0 級 198001、40 級 198041）。"
+        "其餘 121 個索引皆為 <code>index * 1000 + lv</code>。</li>"
+    )
+    add(
+        f"<li><code>citybuilding_lvup.json</code> 比新表多 12 個欄位（{extra_fields}），{empty_note}"
+        "新表沒有多出來的獨有欄位，但與原表同樣有 <code>pre_building_level_new</code>、"
+        f"<code>pre_building_level_2_new</code> 等欄；其中 <code>pre_building_level_2_new</code> 與對應說明欄在本批為空，"
+        f"<code>pre_building_level_new</code> 有 {pre_new_count} 列有值（索引 {'、'.join(str(i) for i in pre_new_indexes)}）。"
+        f"本批 <code>shine_lv</code>：原升級表有 {len(shine_old['from41_0'])} 個索引自 41 級起為 0，"
+        f"新升級表則為 {len(shine_new['from41_0'])} 個"
+        f"（差異在索引 124 {e(data.by_id[124].name)}：原表的 41–44 級為 0，新表同段為 -1）。"
+        f"兩張表都是 {len(shine_old['from45_1'])} 個索引自 45 級起為 1。</li>"
+    )
+    add(
+        f"<li>兩表差異舉例：原升級表裡 12902（{e(data.by_id[12902].name)}）63 級 "
+        f"<code>cost1</code> 為 {code_json(ex_old.get('cost1'))}、"
+        f"<code>cost2</code>／<code>cost3</code> 為 {code_json(ex_old.get('cost2'))}／{code_json(ex_old.get('cost3'))}、"
+        f"<code>cost4</code> 為 {code_json(ex_old.get('cost4'))}；"
+        f"同 id 在新升級表為 {code_json(ex_new.get('cost1'))}、"
+        f"{code_json(ex_new.get('cost2'))}、{code_json(ex_new.get('cost3'))}、{code_json(ex_new.get('cost4'))}。"
+        f"155 的 184 級，原升級表的 <code>string_para2</code> 為 {code_json(ex155_old.get('string_para2'))}，"
+        f"新升級表為 {code_json(ex155_new.get('string_para2'))}。"
+        f"新升級表 {LVUP_NEW_COUNT} 列裡，消耗形態計次："
+        f"只有 <code>cost1</code> {pat_count(True, False, False, False)} 列；"
+        f"<code>cost1</code>＋<code>cost2</code> {pat_count(True, True, False, False)} 列；"
+        f"再加 <code>cost3</code> {pat_count(True, True, True, False)} 列；"
+        f"四段都有 {pat_count(True, True, True, True)} 列；"
+        f"沒有消耗 {pat_count(False, False, False, False)} 列；"
+        f"只有 <code>cost2</code>＋<code>cost3</code> {pat_count(False, True, True, False)} 列。"
+        f"前置 <code>pre_building_level</code> 寫成 <code>建築id|等級</code>；新升級表有 {pre_filled} 列填了此欄。</li>"
+    )
+    add(
+        f"<li>秘寶大廳升級說明：<code>artifact_atk_up</code>「{e(atk_up)}」、"
+        f"<code>artifact_hp_up</code>「{e(hp_up)}」，以及 "
+        f"<code>uilding_lvup_des_115003</code>（鍵名開頭少一個 b）「{e(uilding)}」。"
+        f"字串表另有 <code>building_lvup_des_115003</code>「{e(building115003)}」，"
+        "本批這兩座的 <code>des</code> 用的是少字母的那個鍵。兩者都是官方鍵，不自行改正。"
+        f"職業大廳 1 級 <code>string_para2</code> 與 <code>group2_string_para2</code> 對應 <code>attribute_name_1237</code>「{e(attr1237)}」；"
+        "與 2026-11-05 的差別見上段來源說明。</li>"
+    )
+    add(
+        "<li>圖鑑獎勵 16 個獨特 <code>reward_id</code> 對得上 <code>goods_des_{id}</code>（鍵名是 <code>des</code> 不是 <code>desc</code>）與 <code>chat_icon_{id}</code>；"
+        "字串表沒有 <code>goods_name_{id}</code> 或 <code>goods_desc_{id}</code>，這些 id 也都不在 live <code>goods.json</code> 表列。"
+        f"61022 的 <code>goods_des_61022</code> 寫「{e(official_text('goods_des_61022'))}」（「蘇」為 U+8607），"
+        f"<code>chat_icon_61022</code> 寫「{e(official_text('chat_icon_61022'))}」（「甦」為 U+7526）。"
+        f"<code>citybuild_kingdom_sword.json</code> {SWORD_COUNT} 列，id 從 {data.sword[0]['id']} 到 {data.sword[-1]['id']}；"
+        f"<code>citybuild_war_center.json</code> {WAR_COUNT} 列，id {data.war[0]['id']}–{data.war[-1]['id']}。"
+        "兩張附註表都沒有可逕行當成對應建築升級表的欄位。</li>"
+    )
+    extra_key_bits = "、".join(
+        f"<code>{e(k)}</code>「{e(v)}」" for k, v in data.table_meta["extra_name_keys"]
+    )
+    add(
+        "<li>字串表有、但不在主表 126 列的建築名稱鍵："
+        + extra_key_bits
+        + "。</li>"
     )
     add(
         "<li>待補：兩張升級表共有 2818 列的逐欄差異總表（本頁只舉規則與例子）；"
