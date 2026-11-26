@@ -2031,7 +2031,7 @@ def render_html(data: TablesData) -> str:
         f"官方界面稱「{H(o.system_name, terms)}」。"
         f"影響力目錄「{H(o.partner_dir, terms)}」底下再分「{H(o.system_name, terms)}」、"
         f"「{H(o.catalog_name, terms)}」、「{H(o.honour_name, terms)}」。"
-        f"{H('英靈不是寵物', terms)}；帕魯、<a href=\"holybeasts.html\">守護魔獸</a>、精靈、魚缸、蝴蝶、乙太牧場不在本頁展開。"
+        f"{H('英靈不是寵物', terms)}；<a href=\"pals.html\">帕魯</a>、<a href=\"holybeasts.html\">守護魔獸</a>、精靈、魚缸、蝴蝶、乙太牧場不在本頁展開。"
         f"英雄四件套裝備見<a href=\"equipment.html\">{H('裝備總表', terms)}</a>，"
         f"領主裝備見<a href=\"lord-equipment.html\">{H('領主裝備總表', terms)}</a>，"
         f"士兵見<a href=\"troops.html\">{H('士兵總表', terms)}</a>，"
@@ -2341,7 +2341,7 @@ def render_html(data: TablesData) -> str:
     add("      <h2>本頁未列入</h2>")
     add("<ul>")
     add(f"<li>{H('英靈', terms)}（見已發佈的<a href=\"valhalla.html\">{H('英靈總表', terms)}</a>，英靈不是寵物）。"
-        "帕魯、<a href=\"holybeasts.html\">守護魔獸</a>、精靈、魚缸、蝴蝶、乙太牧場等伴侶與休閒系統。</li>")
+        "<a href=\"pals.html\">帕魯</a>、<a href=\"holybeasts.html\">守護魔獸</a>、精靈、魚缸、蝴蝶、乙太牧場等伴侶與休閒系統。</li>")
     add("<li>寵物主表沒有穩定的寵物名稱；不以寶箱俗稱覆寫皮膚顯示名。</li>")
     add("<li>升級消耗欄對應的確切道具（口糧／精華／兩者），以及突破消耗各段的含義。</li>")
     add("<li>技能解鎖門檻＝10／20／30／40 的含義；有一項沒有對應官方屬性名的數值，"

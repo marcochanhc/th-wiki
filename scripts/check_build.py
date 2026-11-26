@@ -24,6 +24,7 @@ TROOPS = DOCS / "troops.html"
 ARTIFACTS = DOCS / "artifacts.html"
 PETS = DOCS / "pets.html"
 HOLYBEASTS = DOCS / "holybeasts.html"
+PALS = DOCS / "pals.html"
 RUNES = DOCS / "runes.html"
 TALENTS = DOCS / "talents.html"
 TECH = DOCS / "tech.html"
@@ -72,7 +73,7 @@ TRIBE_NAMES = [
 ]
 CODEX_ITEMS = [
     "專武", "英靈", "造型", "裝備", "領主裝備", "士兵", "秘寶", "寵物", "符文",
-    "天賦", "科技", "裝飾物", "城堡外觀", "守護魔獸",
+    "天賦", "科技", "裝飾物", "城堡外觀", "守護魔獸", "帕魯",
 ]
 GAMEPLAY_TERMS = ("開局", "陣容與羈絆", "PVE", "PVP", "KVK")
 STALE_DEPLOY = ("GitHub Pages 公開部署尚未進行", "公開部署還沒做")
@@ -237,6 +238,7 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
             ("decorations.html", "裝飾物"),
             ("castle.html", "城堡外觀"),
             ("holybeasts.html", "守護魔獸"),
+            ("pals.html", "帕魯"),
         )
         other = codex
         for href, label in published_codex:
@@ -284,7 +286,7 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         "equipment.html", "lord-equipment.html", "troops.html",
         "artifacts.html", "pets.html", "runes.html",
         "talents.html", "tech.html", "decorations.html", "castle.html",
-        "holybeasts.html",
+        "holybeasts.html", "pals.html",
     ):
         if f'href="{href}"' not in index:
             fail(f"index should link to {href}", errors)
@@ -1669,7 +1671,7 @@ def check_pets_page(html: str, errors: list[str]) -> None:
         return
     if "本頁列出官方界面所稱的「寵物」" not in html:
         fail("pets: missing public lede", errors)
-    for href in ("equipment.html", "lord-equipment.html", "troops.html", "artifacts.html", "exclusive.html", "valhalla.html", "holybeasts.html"):
+    for href in ("equipment.html", "lord-equipment.html", "troops.html", "artifacts.html", "exclusive.html", "valhalla.html", "holybeasts.html", "pals.html"):
         if f'href="{href}"' not in html:
             fail(f"pets: should link to {href}", errors)
     t = text_of(html)
@@ -1689,7 +1691,7 @@ def check_runes_page(html: str, errors: list[str]) -> None:
         fail("runes: missing public lede", errors)
     for href in (
         "equipment.html", "lord-equipment.html", "troops.html", "artifacts.html",
-        "pets.html", "holybeasts.html", "exclusive.html", "valhalla.html", "skins.html",
+        "pets.html", "holybeasts.html", "pals.html", "exclusive.html", "valhalla.html", "skins.html",
     ):
         if f'href="{href}"' not in html:
             fail(f"runes: should link to {href}", errors)
@@ -1904,7 +1906,7 @@ def check_holybeasts_page(html: str, errors: list[str]) -> None:
         return
     if "本頁列出官方界面所稱的「守護魔獸」" not in html:
         fail("holybeasts: missing public lede", errors)
-    for href in ("pets.html", "valhalla.html"):
+    for href in ("pets.html", "valhalla.html", "pals.html"):
         if f'href="{href}"' not in html:
             fail(f"holybeasts: should link to {href}", errors)
     t = text_of(html)
@@ -1938,6 +1940,34 @@ def check_holybeasts_page(html: str, errors: list[str]) -> None:
         fail("holybeasts: visible body must not mention 玩家確認", errors)
 
 
+
+def check_pals_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "pals", "Top Heroes Wiki｜帕魯總表", "2026-11-22", errors)
+    if not html:
+        return
+    if "本頁列出官方界面所稱的「帕魯」" not in html:
+        fail("pals: missing public lede", errors)
+    for href in ("pets.html", "holybeasts.html", "valhalla.html"):
+        if f'href="{href}"' not in html:
+            fail(f"pals: should link to {href}", errors)
+    t = text_of(html)
+    vis = visible_before_notes(html)
+    for name in ("礦石史萊姆", "百夫長", "帕魯營地", "帕魯契約", "種族光環"):
+        if name not in t:
+            fail(f"pals: missing official name {name}", errors)
+    for phrase in FORBIDDEN_VISIBLE_ATTRIBUTION:
+        if phrase in vis:
+            fail(f"pals: visible body still has {phrase}", errors)
+    if "部落" in vis:
+        fail("pals: must not write 部落 (official term is 部族)", errors)
+    if "雲海紀行" in vis:
+        fail("pals: must not present 雲海紀行 as a verified official season name", errors)
+    if "玩家確認" in vis:
+        fail("pals: visible body must not mention 玩家確認", errors)
+    if "字串表沒有內容" not in vis:
+        fail("pals: missing-name fields should be marked in the visible body", errors)
+
+
 def check_index_published_catalogs(index: str, errors: list[str]) -> None:
     check_adjacent_term_spans(index, "index", errors)
     t = text_of(index)
@@ -1952,7 +1982,7 @@ def main() -> int:
     errors = []
     for p in (
         INDEX, EXCLUSIVE, VALHALLA, SKINS,
-        EQUIPMENT, LORD_EQUIPMENT, TROOPS, ARTIFACTS, PETS, HOLYBEASTS, RUNES,
+        EQUIPMENT, LORD_EQUIPMENT, TROOPS, ARTIFACTS, PETS, HOLYBEASTS, PALS, RUNES,
         TALENTS, TECH, DECORATIONS, CASTLE,
         JUDGE, NUN, ROSE, INVENTOR,
     ):
@@ -1992,6 +2022,7 @@ def main() -> int:
     artifacts_html = ARTIFACTS.read_text(encoding="utf-8")
     pets_html = PETS.read_text(encoding="utf-8")
     holybeasts_html = HOLYBEASTS.read_text(encoding="utf-8")
+    pals_html = PALS.read_text(encoding="utf-8")
     runes_html = RUNES.read_text(encoding="utf-8")
     talents_html = TALENTS.read_text(encoding="utf-8")
     tech_html = TECH.read_text(encoding="utf-8")
@@ -2008,6 +2039,7 @@ def main() -> int:
     check_artifacts_page(artifacts_html, errors)
     check_pets_page(pets_html, errors)
     check_holybeasts_page(holybeasts_html, errors)
+    check_pals_page(pals_html, errors)
     check_runes_page(runes_html, errors)
     check_talents_page(talents_html, errors)
     check_tech_page(tech_html, errors)
@@ -2023,6 +2055,7 @@ def main() -> int:
         (artifacts_html, "秘寶總表"),
         (pets_html, "寵物總表"),
         (holybeasts_html, "守護魔獸總表"),
+        (pals_html, "帕魯總表"),
         (runes_html, "符文總表"),
         (talents_html, "天賦總表"),
         (tech_html, "科技總表"),

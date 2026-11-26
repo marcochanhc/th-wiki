@@ -595,6 +595,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
             "秘寶": "artifacts.html",
             "寵物": "pets.html",
             "守護魔獸": "holybeasts.html",
+            "帕魯": "pals.html",
             "符文": "runes.html",
             "天賦": "talents.html",
             "科技": "tech.html",
