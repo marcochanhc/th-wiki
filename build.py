@@ -23,6 +23,7 @@ from thwiki.artifact_tables import render_artifact_page
 from thwiki.pet_tables import render_pet_page
 from thwiki.holybeast_tables import render_holybeast_page
 from thwiki.pal_tables import render_pal_page
+from thwiki.citybuilding_tables import render_citybuilding_page
 from thwiki.rune_tables import render_rune_page
 from thwiki.talent_tables import render_talent_page
 from thwiki.tech_tables import render_tech_page
@@ -75,6 +76,7 @@ def main() -> int:
         ("pets.html", render_pet_page),
         ("holybeasts.html", render_holybeast_page),
         ("pals.html", render_pal_page),
+        ("city-buildings.html", render_citybuilding_page),
         ("runes.html", render_rune_page),
         ("talents.html", render_talent_page),
         ("tech.html", render_tech_page),

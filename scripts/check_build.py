@@ -25,6 +25,7 @@ ARTIFACTS = DOCS / "artifacts.html"
 PETS = DOCS / "pets.html"
 HOLYBEASTS = DOCS / "holybeasts.html"
 PALS = DOCS / "pals.html"
+CITY_BUILDINGS = DOCS / "city-buildings.html"
 RUNES = DOCS / "runes.html"
 TALENTS = DOCS / "talents.html"
 TECH = DOCS / "tech.html"
@@ -73,7 +74,7 @@ TRIBE_NAMES = [
 ]
 CODEX_ITEMS = [
     "專武", "英靈", "造型", "裝備", "領主裝備", "士兵", "秘寶", "寵物", "符文",
-    "天賦", "科技", "裝飾物", "城堡外觀", "守護魔獸", "帕魯",
+    "天賦", "科技", "裝飾物", "城堡外觀", "守護魔獸", "帕魯", "城建升級",
 ]
 GAMEPLAY_TERMS = ("開局", "陣容與羈絆", "PVE", "PVP", "KVK")
 STALE_DEPLOY = ("GitHub Pages 公開部署尚未進行", "公開部署還沒做")
@@ -239,6 +240,7 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
             ("castle.html", "城堡外觀"),
             ("holybeasts.html", "守護魔獸"),
             ("pals.html", "帕魯"),
+            ("city-buildings.html", "城建升級"),
         )
         other = codex
         for href, label in published_codex:
@@ -286,7 +288,7 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         "equipment.html", "lord-equipment.html", "troops.html",
         "artifacts.html", "pets.html", "runes.html",
         "talents.html", "tech.html", "decorations.html", "castle.html",
-        "holybeasts.html", "pals.html",
+        "holybeasts.html", "pals.html", "city-buildings.html",
     ):
         if f'href="{href}"' not in index:
             fail(f"index should link to {href}", errors)
@@ -1968,6 +1970,81 @@ def check_pals_page(html: str, errors: list[str]) -> None:
         fail("pals: missing-name fields should be marked in the visible body", errors)
 
 
+
+def check_city_buildings_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "city-buildings", "Top Heroes Wiki｜城建升級總表", "2026-11-22", errors)
+    if not html:
+        return
+    if "本頁列出主城 126 座建築的名稱與說明" not in html:
+        fail("city-buildings: missing public lede", errors)
+    for href in ("castle.html", "decorations.html", "holybeasts.html", "pals.html", "pets.html", "artifacts.html", "tech.html"):
+        if f'href="{href}"' not in html:
+            fail(f"city-buildings: should link to {href}", errors)
+    t = text_of(html)
+    vis = visible_before_notes(html)
+    for name in ("大本營", "部族雕像", "部族兵營", "功勳碑", "職業大廳", "先祖圖騰", "秘寶大廳", "訓練所"):
+        if name not in t:
+            fail(f"city-buildings: missing official name {name}", errors)
+    if "持續產出勛章" not in vis:
+        fail("city-buildings: visible body must keep 勛章 in 功勳碑 description", errors)
+    if "功勳碑" not in vis:
+        fail("city-buildings: visible body must keep 功勳碑", errors)
+    if "index * 1000 + lv" not in vis or "index * 10000 + lv" not in vis:
+        fail("city-buildings: visible body must state both row-id formulas", errors)
+    if "140000–140040" not in vis or "1400041" not in vis or "1550000" not in vis:
+        fail("city-buildings: visible body must state 140/155 row-id examples", errors)
+    if "index * 1000 + lv + 1" not in vis or "160001" not in vis or "198001" not in vis:
+        fail("city-buildings: visible body must state 160/198 row-id rule", errors)
+    if "兩張升級表並列" not in vis:
+        fail("city-buildings: visible body must say the two upgrade tables are shown side by side", errors)
+    if "2818" not in vis:
+        fail("city-buildings: visible body must mention 2818 shared-column diffs", errors)
+    if "7973" not in vis or "8032" not in vis:
+        fail("city-buildings: visible body must mention both upgrade table row counts", errors)
+    if "goods_des" not in vis or "chat_icon" not in vis:
+        fail("city-buildings: visible body must record goods_des / chat_icon mappings", errors)
+    if "復蘇季節" not in vis or "復甦季節" not in vis:
+        fail("city-buildings: visible body must keep 蘇/甦 difference for 61022", errors)
+    if "聊天視窗·甜甜圈" not in vis or "聊天框·甜甜圈" not in vis:
+        fail("city-buildings: visible body must keep 聊天視窗／聊天框 difference for 61023", errors)
+    if "聊天框·豐收" not in vis or "聊天視窗·豐收" not in vis:
+        fail("city-buildings: visible body must keep reversed wording for 61031", errors)
+    if "uilding_lvup_des_115003" not in vis or "秘寶屬性轉化率" not in vis:
+        fail("city-buildings: visible body must keep typo-key uilding_lvup_des_115003", errors)
+    if "全體英雄防禦" not in vis or "building_lvup_des_115003" not in vis:
+        fail("city-buildings: visible body must also record building_lvup_des_115003 全體英雄防禦", errors)
+    if "<color=#00000000>XXX</color>" not in vis:
+        fail("city-buildings: id 111 official colour-tagged name must be quoted as-is", errors)
+    if "字串表沒有內容" not in vis:
+        fail("city-buildings: missing description keys should be marked in the visible body", errors)
+    if "該列 des 欄為空" not in vis:
+        fail("city-buildings: id 111 empty des field should be marked", errors)
+    if "自動加入遊蕩怪物集結（進入冰封之焰賽季)" not in vis:
+        fail("city-buildings: attribute_name_1237 must keep official punctuation", errors)
+    if "40 級起出現光輝" in vis or "建築編號為" in vis or "建築編號為 −1" in vis or "建築編號為 -1" in vis:
+        fail("city-buildings: must not use the forbidden shine_lv / building-number wording", errors)
+    if "41 級起為 0" not in vis or "45 級起為 1" not in vis:
+        fail("city-buildings: shine_lv should be described as 41-level 0 and 45-level 1", errors)
+    if "沒有對上名稱" in vis or "完全未知" in vis:
+        fail("city-buildings: must not say reward strings were unmatched", errors)
+    for phrase in FORBIDDEN_VISIBLE_ATTRIBUTION:
+        if phrase in vis:
+            fail(f"city-buildings: visible body still has {phrase}", errors)
+    if "部落" in vis:
+        fail("city-buildings: must not write 部落 (official term is 部族)", errors)
+    if "雲海紀行" in vis:
+        fail("city-buildings: must not present 雲海紀行 as a verified official season name", errors)
+    if "玩家確認" in vis:
+        fail("city-buildings: visible body must not mention 玩家確認", errors)
+    if "未開放" in vis:
+        fail("city-buildings: must not mark names as 未開放", errors)
+    if "show_type=2" not in vis and "show_type＝2" not in vis:
+        # the reading note uses show_type=2
+        fail("city-buildings: visible body should keep the show_type=2 rule", errors)
+    if "不以其中一張覆寫另一張" not in vis:
+        fail("city-buildings: must say the two tables are not overwritten", errors)
+
+
 def check_index_published_catalogs(index: str, errors: list[str]) -> None:
     check_adjacent_term_spans(index, "index", errors)
     t = text_of(index)
@@ -1982,7 +2059,7 @@ def main() -> int:
     errors = []
     for p in (
         INDEX, EXCLUSIVE, VALHALLA, SKINS,
-        EQUIPMENT, LORD_EQUIPMENT, TROOPS, ARTIFACTS, PETS, HOLYBEASTS, PALS, RUNES,
+        EQUIPMENT, LORD_EQUIPMENT, TROOPS, ARTIFACTS, PETS, HOLYBEASTS, PALS, CITY_BUILDINGS, RUNES,
         TALENTS, TECH, DECORATIONS, CASTLE,
         JUDGE, NUN, ROSE, INVENTOR,
     ):
@@ -2023,6 +2100,7 @@ def main() -> int:
     pets_html = PETS.read_text(encoding="utf-8")
     holybeasts_html = HOLYBEASTS.read_text(encoding="utf-8")
     pals_html = PALS.read_text(encoding="utf-8")
+    city_buildings_html = CITY_BUILDINGS.read_text(encoding="utf-8")
     runes_html = RUNES.read_text(encoding="utf-8")
     talents_html = TALENTS.read_text(encoding="utf-8")
     tech_html = TECH.read_text(encoding="utf-8")
@@ -2040,6 +2118,7 @@ def main() -> int:
     check_pets_page(pets_html, errors)
     check_holybeasts_page(holybeasts_html, errors)
     check_pals_page(pals_html, errors)
+    check_city_buildings_page(city_buildings_html, errors)
     check_runes_page(runes_html, errors)
     check_talents_page(talents_html, errors)
     check_tech_page(tech_html, errors)
@@ -2056,6 +2135,7 @@ def main() -> int:
         (pets_html, "寵物總表"),
         (holybeasts_html, "守護魔獸總表"),
         (pals_html, "帕魯總表"),
+        (city_buildings_html, "城建升級總表"),
         (runes_html, "符文總表"),
         (talents_html, "天賦總表"),
         (tech_html, "科技總表"),
