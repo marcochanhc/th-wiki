@@ -21,6 +21,7 @@ from thwiki.lord_equipment_tables import render_lord_equipment_page
 from thwiki.troop_tables import render_troop_page
 from thwiki.artifact_tables import render_artifact_page
 from thwiki.pet_tables import render_pet_page
+from thwiki.holybeast_tables import render_holybeast_page
 from thwiki.rune_tables import render_rune_page
 from thwiki.talent_tables import render_talent_page
 from thwiki.tech_tables import render_tech_page
@@ -71,6 +72,7 @@ def main() -> int:
         ("troops.html", render_troop_page),
         ("artifacts.html", render_artifact_page),
         ("pets.html", render_pet_page),
+        ("holybeasts.html", render_holybeast_page),
         ("runes.html", render_rune_page),
         ("talents.html", render_talent_page),
         ("tech.html", render_tech_page),

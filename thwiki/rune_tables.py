@@ -1286,7 +1286,7 @@ def render_html(data: TablesData) -> str:
         f"已發佈的<a href=\"exclusive.html\">{H('專武總表', terms)}</a>是英雄專武；"
         f"已發佈的<a href=\"valhalla.html\">{H('英靈總表', terms)}</a>是綁在英雄身上的另一套養成；"
         f"已發佈的<a href=\"skins.html\">{H('造型總表', terms)}</a>是英雄造型。"
-        "帕魯、守護魔獸、精靈、魚缸、蝴蝶、乙太牧場、科技、裝飾物不在本頁展開。"
+        "帕魯、<a href=\"holybeasts.html\">守護魔獸</a>、精靈、魚缸、蝴蝶、乙太牧場、科技、裝飾物不在本頁展開。"
     ))
     add("<ul>")
     add("<li><strong>屬性只錄表上的原值</strong>，不自行換成百分比。"
