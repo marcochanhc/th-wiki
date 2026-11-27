@@ -1260,6 +1260,7 @@ def render_html(data: TablesData) -> str:
         {"id": "star", "label": "升星"},
         {"id": "skills", "label": "技能"},
         {"id": "return", "label": "升星退還"},
+        {"id": "cost-calc", "label": "養成花費試算"},
         {"id": "out-of-scope", "label": "本頁未列入"},
         {"id": "notes", "label": "資料說明"},
     ])
@@ -1577,6 +1578,8 @@ def render_html(data: TablesData) -> str:
     add(tbl["returns"])
     add("    </section>")
 
+    add(render_holybeast_cost_calculator(data))
+
     add('    <section id="out-of-scope">')
     add("      <h2>本頁未列入</h2>")
     add("<ul>")
@@ -1636,12 +1639,123 @@ def render_html(data: TablesData) -> str:
         "本頁不把這些欄位名自行對成「契約加成」或「上陣加成」。</li>")
     add("<li>待補：2000001 與 2000x11 在客戶端的顯示；展示技能升階節點與升星表技能等級在界面上如何對應；"
         "建築消耗欄各段含義；上述兩組屬性欄與界面標題的對應；season／season_1 與賽季日曆。</li>")
+    add("<li>養成花費試算的升級加總，是目前等級之後到目標等級（含）的官方列；升星同樣從目前之後加到目標（含）。"
+        "六隻只換魔晶與契約道具，數量共用。表上另一欄消耗只照錄，不對成賽季編號或臨時擁有／臨時使用。</li>")
     add("</ul>")
     add("    </section>")
 
     body = "\n".join(parts)
-    return page_shell(title, summary, body, depth=0, nav_current="codex")
+    html = page_shell(title, summary, body, depth=0, nav_current="codex")
+    from .upgrade_costs import attach_upgrade_cost_scripts
+    return attach_upgrade_cost_scripts(html, "holybeast-upgrade-costs-data.js", "upgrade-cost.js")
 
 
 def render_holybeast_page(data: TablesData | None = None) -> str:
     return render_html(data or load_tables_data())
+
+
+def build_holybeast_upgrade_cost_payload(data: TablesData) -> dict:
+    o = data.official
+    beasts = []
+    for b in data.beasts:
+        crystal_id = TYPE_CRYSTAL[b.typ]
+        beasts.append({
+            "name": b.name,
+            "crystal": o.goods[crystal_id].name,
+            "contract": o.goods[b.splinter].name,
+        })
+    base = data.beasts[0]
+    level_rows = data.levels[base.bid]
+    crystal = []
+    core = {}
+    for r in level_rows:
+        c_qty = 0
+        for typ, gid, qty in r.cost:
+            if gid == 295:
+                core[str(r.level)] = int(qty)
+            else:
+                c_qty += int(qty)
+        crystal.append(c_qty)
+    stars = []
+    for r in data.stars[base.bid]:
+        stone = 0
+        contract = 0
+        other = 0
+        for typ, gid, qty in r.cost:
+            if gid == 160:
+                stone += int(qty)
+            else:
+                contract += int(qty)
+        for typ, gid, qty in r.season_cost:
+            other += int(qty)
+        row = {"star": r.star, "sub": r.star_sub, "contract": contract, "other": other}
+        if stone:
+            row["stone"] = stone
+        stars.append(row)
+    return {
+        "kind": "holybeast",
+        "beasts": beasts,
+        "coreName": o.goods[295].name,
+        "stoneName": o.goods[160].name,
+        "levels": {"min": 1, "max": 170, "crystal": crystal, "core": core},
+        "stars": stars,
+    }
+
+
+def write_holybeast_upgrade_cost_data(path: Path, data: TablesData | None = None) -> None:
+    from .upgrade_costs import write_data_js
+
+    payload = build_holybeast_upgrade_cost_payload(data or load_tables_data())
+    write_data_js(path, "TH_HOLYBEAST_UPGRADE_COST", payload)
+
+
+def render_holybeast_cost_calculator(data: TablesData) -> str:
+    o = data.official
+    core = o.goods[295].name
+    stone = o.goods[160].name
+    return "\n".join([
+        '    <section id="cost-calc">',
+        "      <h2>養成花費試算</h2>",
+        "<p>六隻守護魔獸的升級數量相同，只是魔晶與契約道具依陣營、魔獸而異。"
+        "選一隻，再選升級或升星，可以加總官方表上已有的消耗。只加總表上原值，不計算折扣，也不補沒有官方列的消耗。</p>",
+        "<p>升級表列的是到達該級的消耗。從目前等級升到目標等級，加總目前之後到目標（含）的各列；尚未升級請把目前等級填 0。"
+        f"「{e(core)}」出現在 20、30 直到 170 級，共 16 級，不是只在其中某一級。</p>",
+        "<p>升星表列的是到達該星、該子階的消耗。從目前之後加總到目標（含）。"
+        f"10 星 1 子階改消耗「{e(stone)}」。"
+        "表上另有一欄消耗時，只照錄原值，作為第二欄官方消耗，不對成賽季編號。</p>",
+        "<p>沒有使用指令時，上面的總表與規則仍可閱讀；試算需要瀏覽器執行本頁指令。</p>",
+        '<form class="upgrade-cost" data-upgrade-cost data-upgrade-source="TH_HOLYBEAST_UPGRADE_COST" action="#" method="get">',
+        "<noscript><p>目前沒有執行指令，無法在這一欄加總。請改看上方的升級與升星規則，或開啟指令後再試。</p></noscript>",
+        "<fieldset>",
+        "<legend>守護魔獸升級與升星</legend>",
+        '<div class="upgrade-cost-grid">',
+        '<div><label for="uc-beast-item">守護魔獸</label>',
+        '<select id="uc-beast-item" data-uc-beast></select></div>',
+        '<div><label for="uc-beast-mode">要加總的項目</label>',
+        '<select id="uc-beast-mode" data-uc-mode>',
+        '<option value="level">升級</option>',
+        '<option value="star">升星</option>',
+        "</select></div>",
+        '<div data-uc-level-fields>',
+        '<label for="uc-beast-from-lv">目前等級</label>',
+        '<input id="uc-beast-from-lv" data-uc-from-lv type="number" inputmode="numeric">',
+        "</div>",
+        '<div data-uc-level-fields>',
+        '<label for="uc-beast-to-lv">目標等級</label>',
+        '<input id="uc-beast-to-lv" data-uc-to-lv type="number" inputmode="numeric">',
+        "</div>",
+        '<div data-uc-star-fields hidden>',
+        '<label for="uc-beast-from-star">目前星級</label>',
+        '<select id="uc-beast-from-star" data-uc-from-star></select>',
+        "</div>",
+        '<div data-uc-star-fields hidden>',
+        '<label for="uc-beast-to-star">目標星級</label>',
+        '<select id="uc-beast-to-star" data-uc-to-star></select>',
+        "</div>",
+        "</div>",
+        '<div class="upgrade-cost-actions"><button type="submit" data-uc-run>加總</button></div>',
+        '<div class="upgrade-cost-result" data-uc-result hidden aria-live="polite"></div>',
+        "</fieldset>",
+        "</form>",
+        "    </section>",
+    ])

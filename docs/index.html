@@ -6,6 +6,7 @@
   <title>Top Heroes Wiki</title>
   <meta name="description" content="Top Heroes 英雄 wiki 總目錄。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表和城堡外觀總表也已公開。">
   <link rel="stylesheet" href="assets/css/site.css">
+  <script src="assets/js/page-filter.js" defer></script>
 </head>
 <body id="top">
   <a class="skip" href="#main">跳到本文</a>
@@ -23,12 +24,20 @@
     </header>
     <section id="heroes">
       <h2>英雄</h2>
+<form class="page-filter" role="search" hidden data-page-filter>
+      <label for="page-filter-q">篩選名稱</label>
+      <div class="page-filter-controls">
+        <input id="page-filter-q" type="search" name="q" autocomplete="off" placeholder="輸入名稱或表上的文字">
+        <button type="button" class="page-filter-clear">清除</button>
+      </div>
+      <p class="page-filter-empty" hidden>沒有符合的項目</p>
+    </form>
       <section id="faction-league"><h3>聯盟</h3><ul class="hero-roster"><li><a href="heroes/10043.html">薔薇公主</a></li><li><a href="heroes/10031.html">審判官</a></li><li><a href="heroes/10050.html">發明家</a></li><li><a href="heroes/10033.html">聖徒</a></li><li><a href="heroes/10046.html">主教</a></li><li><a href="heroes/10027.html">修女</a></li><li><a href="heroes/10018.html">守秘人</a></li><li><a href="heroes/10025.html">火法師</a></li><li><a href="heroes/10030.html">吟遊詩人</a></li><li><a href="heroes/10024.html">觀星學士</a></li><li><a href="heroes/10003.html">牧師</a></li><li><a href="heroes/10004.html">騎士</a></li><li><a href="heroes/10014.html">遊俠</a></li><li><a href="heroes/10029.html">牧羊人（未開放）</a></li><li><a href="heroes/10032.html">老闆娘</a></li><li><a href="heroes/10053.html">鈴蘭女僕</a></li><li><a href="heroes/10001.html">戰士</a></li><li><a href="heroes/10006.html">老法師</a></li><li><a href="heroes/15032.html">15032</a></li><li><a href="heroes/15033.html">15033</a></li></ul></section><section id="faction-nature"><h3>自然</h3><ul class="hero-roster"><li><a href="heroes/10042.html">豪士</a></li><li><a href="heroes/10049.html">中壇元帥</a></li><li><a href="heroes/10051.html">花藝師</a></li><li><a href="heroes/10036.html">森之少女</a></li><li><a href="heroes/10037.html">妖精</a></li><li><a href="heroes/10044.html">喚潮使</a></li><li><a href="heroes/10019.html">樹人守衛</a></li><li><a href="heroes/10035.html">賢者</a></li><li><a href="heroes/10040.html">風行者</a></li><li><a href="heroes/10008.html">德魯伊</a></li><li><a href="heroes/10005.html">舞孃</a></li><li><a href="heroes/10012.html">尋路者</a></li><li><a href="heroes/10013.html">祭司</a></li><li><a href="heroes/10021.html">守望者</a></li><li><a href="heroes/10026.html">石匠</a></li><li><a href="heroes/10054.html">大冒險家</a></li><li><a href="heroes/10002.html">弓箭手</a></li><li><a href="heroes/10007.html">藥劑師</a></li></ul></section><section id="faction-tribe"><h3>部族</h3><ul class="hero-roster"><li><a href="heroes/10039.html">沙漠王子</a></li><li><a href="heroes/10048.html">馴獸師</a></li><li><a href="heroes/10047.html">行者</a></li><li><a href="heroes/10038.html">通靈師</a></li><li><a href="heroes/10045.html">女巫</a></li><li><a href="heroes/10041.html">風暴聖女</a></li><li><a href="heroes/10017.html">蠻鬥士</a></li><li><a href="heroes/10020.html">劍術教官</a></li><li><a href="heroes/10023.html">荒野獵手</a></li><li><a href="heroes/10028.html">術士</a></li><li><a href="heroes/10034.html">薩滿</a></li><li><a href="heroes/10011.html">盜賊</a></li><li><a href="heroes/10015.html">罪犯</a></li><li><a href="heroes/10016.html">鬥者</a></li><li><a href="heroes/10022.html">獵人</a></li><li><a href="heroes/10052.html">暗影牧師</a></li><li><a href="heroes/10009.html">鐵匠</a></li><li><a href="heroes/10010.html">護衛</a></li><li><a href="heroes/15039.html">15039</a></li></ul></section>
     </section>
     <section id="codex">
       <h2>圖鑑</h2>
       <p>專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表和城堡外觀總表已公開。</p>
-      <ul class="codex-index"><li><a href="exclusive.html">專武</a></li><li><a href="valhalla.html">英靈</a></li><li><a href="skins.html">造型</a></li><li><a href="equipment.html">裝備</a></li><li><a href="lord-equipment.html">領主裝備</a></li><li><a href="troops.html">士兵</a></li><li><a href="artifacts.html">秘寶</a></li><li><a href="pets.html">寵物</a></li><li><a href="runes.html">符文</a></li><li><a href="talents.html">天賦</a></li><li><a href="tech.html">科技</a></li><li><a href="decorations.html">裝飾物</a></li><li><a href="castle.html">城堡外觀</a></li><li><a href="holybeasts.html">守護魔獸</a></li><li><a href="pals.html">帕魯</a></li><li><a href="city-buildings.html">城建升級</a></li></ul>
+      <ul class="codex-index"><li><a href="exclusive.html">專武</a></li><li><a href="valhalla.html">英靈</a></li><li><a href="skins.html">造型</a></li><li><a href="equipment.html">裝備</a></li><li><a href="lord-equipment.html">領主裝備</a></li><li><a href="troops.html">士兵</a></li><li><a href="artifacts.html">秘寶</a></li><li><a href="pets.html">寵物</a></li><li><a href="runes.html">符文</a></li><li><a href="talents.html">天賦</a></li><li><a href="tech.html">科技</a></li><li><a href="decorations.html">裝飾物</a></li><li><a href="castle.html">城堡外觀</a></li><li><a href="holybeasts.html">守護魔獸</a></li><li><a href="pals.html">帕魯</a></li><li><a href="city-buildings.html">城建升級</a></li><li><a href="lord-occupations.html">領主職業</a></li></ul>
     </section>
     <section id="about">
       <h2>關於本站</h2>

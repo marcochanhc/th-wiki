@@ -65,12 +65,13 @@ PACK_STRINGS = {
     "2026-11-22-locallow": EXTRACT_STRINGS,
 }
 
-# 已公開圖鑑頁；不自製尚未建立的領主職業頁連結。
+# 已公開圖鑑頁；職業大廳連到領主職業頁。
 BUILDING_LINKS = {
     140: "artifacts.html",
     155: "artifacts.html",
     160: "pets.html",
     178: "holybeasts.html",
+    179: "lord-occupations.html",
     183: "pals.html",
 }
 
@@ -792,9 +793,12 @@ def _data_notes(data: TablesData) -> str:
         "名稱、說明、屬性名與道具文案一律按該列鍵從字串表照錄原字節，不自行改寫。"
         "不要把 `show_type=2` 轉成百分比；官方說明若已有百分比字串，只照錄該字串，與表上原值並列。"
         "`season`、`kvk_theme_dic`、`server_list`、`theme` 只照錄，不對成 S2／S3，不自行加上開放狀態。"
-        "類型 999 的各段沒有官方資源名，只錄原值。"
+        "類型 999 的各段沒有官方資源名，只錄原值。類型 996／997 同樣沒有官方資源名，只錄原值。"
         "`buildTime` 沒有單位欄，不自行標成秒或分鐘。"
         "兩張升級表並列，不以其中一張覆寫另一張。"
+        "養成花費試算只加總目前等級到目標前一級的官方列；目標為該表頂格且頂格列仍有消耗時，該列只照錄、不加進合計。"
+        "共用升級進度的建築依 `lvupid` 查列，不用該建築自身卻未被指向的 `index` 列。"
+        "名錄中的訓練所在兩張升級表都沒有列，試算名單不收。"
     )
 
 
@@ -997,6 +1001,7 @@ def render_html(data: TablesData) -> str:
         {"id": "catalog", "label": "名錄"},
         {"id": "lvup", "label": "兩張升級表"},
         {"id": "costs", "label": "升級消耗、時間與前置", "depth": 1},
+        {"id": "cost-calc", "label": "養成花費試算"},
         {"id": "class-totem", "label": "職業大廳與先祖圖騰"},
         {"id": "treasure", "label": "秘寶大廳"},
         {"id": "production", "label": "生產、功能與圖鑑點"},
@@ -1215,6 +1220,8 @@ def render_html(data: TablesData) -> str:
     ))
     add(p_html("升級時間為整數，表沒有單位欄，本頁不自行標成秒或分鐘。"))
     add("    </section>")
+
+    add(render_city_cost_calculator())
 
     add('    <section id="class-totem">')
     add("      <h2>職業大廳與先祖圖騰</h2>")
@@ -1521,8 +1528,233 @@ def render_html(data: TablesData) -> str:
         f"<p>資料截至 {DATA_CUTOFF}（香港時間）。這不是官方 wiki。</p>",
         f"<p>資料截至 {PAGE_CUTOFF}（香港時間）。這不是官方 wiki。</p>",
     )
+    from .upgrade_costs import attach_upgrade_cost_scripts
+    html = attach_upgrade_cost_scripts(html, "city-upgrade-costs-data.js", "upgrade-cost.js")
     return html
 
 
 def render_citybuilding_page(data: TablesData | None = None) -> str:
     return render_html(data or load_tables_data())
+
+
+def _plain_cost_segment(seg) -> str:
+    segs = _as_segments(seg)
+    if not segs:
+        return ""
+    parts = []
+    for item in segs:
+        if not isinstance(item, (list, tuple)) or len(item) < 3:
+            parts.append(str(item))
+            continue
+        typ, mid, qty = item[0], item[1], item[2]
+        try:
+            typ_n = int(typ)
+        except (TypeError, ValueError):
+            typ_n = typ
+        if typ_n == 2:
+            try:
+                item_id = int(mid)
+            except (TypeError, ValueError):
+                item_id = mid
+            name = official_text(f"goods_name_{item_id}") if isinstance(item_id, int) else ""
+            if name:
+                parts.append(f"{name} ×{qty}")
+                continue
+        parts.append(f"類型 {typ}、第 {mid} 段、數量 {qty}")
+    return "、".join(parts)
+
+
+def _plain_row_costs(row: dict) -> str:
+    bits = [_plain_cost_segment(row.get(key)) for key in ("cost1", "cost2", "cost3", "cost4") if is_filled(row.get(key))]
+    return "、".join(bits)
+
+
+def _pack_city_curve(rows: list[dict]) -> dict:
+    rows = sorted(rows, key=lambda r: int(r["lv"]))
+    times = []
+    costs = []
+    for r in rows:
+        times.append(int(r.get("buildTime") if r.get("buildTime") not in (None, "") else 0))
+        segs = []
+        for key in ("cost1", "cost2", "cost3", "cost4"):
+            for item in _as_segments(r.get(key)):
+                if isinstance(item, (list, tuple)) and len(item) >= 3:
+                    segs.append([int(item[0]), int(item[1]), int(item[2])])
+        costs.append(segs)
+    return {"min": int(rows[0]["lv"]), "t": times, "c": costs}
+
+
+def _curve_key(curve: dict) -> str:
+    return json.dumps(curve, ensure_ascii=False, separators=(",", ":"))
+
+
+def _collect_city_resources(curves: dict[str, dict]) -> dict[str, str | None]:
+    out: dict[str, str | None] = {}
+    for curve in curves.values():
+        for segs in curve["c"]:
+            for typ, mid, _qty in segs:
+                key = f"{typ}:{mid}"
+                if key in out:
+                    continue
+                if typ == 2:
+                    name = official_text(f"goods_name_{mid}")
+                    out[key] = name or None
+                else:
+                    out[key] = None
+    return out
+
+
+def _lookup_rows(table: list[dict], index: int) -> list[dict]:
+    return [r for r in table if int(r["index"]) == int(index)]
+
+
+def build_city_upgrade_cost_payload(data: TablesData) -> dict:
+    curves: dict[str, dict] = {}
+    curve_ids: dict[str, str] = {}
+
+    def intern(rows: list[dict]) -> str | None:
+        if not rows:
+            return None
+        packed = _pack_city_curve(rows)
+        blob = _curve_key(packed)
+        hid = curve_ids.get(blob)
+        if not hid:
+            hid = f"c{len(curves)}"
+            curve_ids[blob] = hid
+            curves[hid] = packed
+        return hid
+
+    prelim = []
+    for b in data.buildings:
+        src = b.lvupid
+        old_rows = _lookup_rows(data.lvup, src)
+        new_rows = _lookup_rows(data.lvup_new, src)
+        if not old_rows and not new_rows:
+            continue
+        old_id = intern(old_rows)
+        new_id = intern(new_rows)
+        shared_name = ""
+        if b.lvupid != b.bid:
+            other = data.by_id.get(b.lvupid)
+            if other and other.name:
+                shared_name = other.name
+        lv0 = None
+        if new_rows:
+            lv0 = next((r for r in new_rows if int(r["lv"]) == 0), None)
+        elif old_rows:
+            lv0 = next((r for r in old_rows if int(r["lv"]) == 0), None)
+        lv0_text = _plain_row_costs(lv0) if lv0 else ""
+        old_rng = None
+        new_rng = None
+        if old_id:
+            c = curves[old_id]
+            old_rng = (c["min"], c["min"] + len(c["t"]) - 1)
+        if new_id:
+            c = curves[new_id]
+            new_rng = (c["min"], c["min"] + len(c["t"]) - 1)
+        prelim.append({
+            "name": b.name,
+            "old": old_id,
+            "new": new_id,
+            "shared": shared_name,
+            "lv0": lv0_text,
+            "old_rng": old_rng,
+            "new_rng": new_rng,
+        })
+
+    # Collapse buildings that share display name, curves and shared-upgrade note.
+    groups: list[dict] = []
+    index = {}
+    for row in prelim:
+        key = (row["name"], row["old"], row["new"], row["shared"])
+        if key in index:
+            continue
+        index[key] = len(groups)
+        groups.append(row)
+
+    name_counts: dict[str, int] = {}
+    for g in groups:
+        name_counts[g["name"]] = name_counts.get(g["name"], 0) + 1
+
+    def range_text(g: dict) -> str:
+        old_rng, new_rng = g["old_rng"], g["new_rng"]
+        if old_rng and new_rng and old_rng == new_rng:
+            return f"升級表 {old_rng[0]}–{old_rng[1]} 級"
+        bits = []
+        if old_rng:
+            bits.append(f"{SRC_OLD} {old_rng[0]}–{old_rng[1]} 級")
+        if new_rng:
+            bits.append(f"{SRC_NEW} {new_rng[0]}–{new_rng[1]} 級")
+        return "、".join(bits)
+
+    items = []
+    for g in groups:
+        label = g["name"]
+        if name_counts[g["name"]] > 1:
+            rng = range_text(g)
+            # If every colliding group has a unique range, use that; else add 0-level costs.
+            collide = [x for x in groups if x["name"] == g["name"]]
+            ranges = [range_text(x) for x in collide]
+            if len(set(ranges)) == len(collide) and rng:
+                label = f"{g['name']}（{rng}）"
+            elif g["lv0"]:
+                label = f"{g['name']}（0 級消耗為{g['lv0']}）"
+            else:
+                label = f"{g['name']}（0 級沒有消耗）"
+        hint = ""
+        if g["shared"]:
+            hint = f"與{g['shared']}共用升級進度，以下加總該共用列。"
+        tables = {}
+        if g["old"]:
+            tables[SRC_OLD] = g["old"]
+        if g["new"]:
+            tables[SRC_NEW] = g["new"]
+        items.append({"label": label, "hint": hint, "tables": tables})
+
+    return {
+        "kind": "city",
+        "tables": [SRC_OLD, SRC_NEW],
+        "resources": _collect_city_resources(curves),
+        "curves": curves,
+        "items": items,
+    }
+
+
+def write_city_upgrade_cost_data(path: Path, data: TablesData | None = None) -> None:
+    from .upgrade_costs import write_data_js
+
+    payload = build_city_upgrade_cost_payload(data or load_tables_data())
+    write_data_js(path, "TH_CITY_UPGRADE_COST", payload)
+
+
+def render_city_cost_calculator() -> str:
+    parts = [
+        '    <section id="cost-calc">',
+        "      <h2>養成花費試算</h2>",
+        "<p>選一座建築，再填目前等級與目標等級，可以加總這段升級在兩張升級表裡已經寫出的消耗與時間。"
+        "只加總表上原值，不計算折扣，也不補沒有官方列的消耗。"
+        f"「{e(official_text('citybuilding_name_103') or '訓練所')}」在兩張升級表都沒有列，所以不會出現在下面的名單裡。</p>",
+        f"<p>從目前等級升到目標等級，加總的是目前等級到目標前一級的各列（也就是在這些等級再升上一級時，表上寫的消耗與時間）。"
+        "目標等級那一列不計入。時間在表上沒有單位，合計時也不自行標成秒或分鐘。"
+        "類型 999、類型 997、類型 996 的各段沒有官方資源名，只錄原值。"
+        f"「{e(SRC_OLD)}」與「{e(SRC_NEW)}」分開顯示，不以其中一張覆寫另一張。</p>",
+        "<p>沒有使用指令時，上面的總表與規則仍可閱讀；試算需要瀏覽器執行本頁指令。</p>",
+        '<form class="upgrade-cost" data-upgrade-cost data-upgrade-source="TH_CITY_UPGRADE_COST" action="#" method="get">',
+        "<noscript><p>目前沒有執行指令，無法在這一欄加總。請改看上方的升級規則與例子，或開啟指令後再試。</p></noscript>",
+        "<fieldset>",
+        "<legend>城建升級</legend>",
+        '<div class="upgrade-cost-grid">',
+        '<div class="upgrade-cost-span"><label for="uc-city-item">建築</label>',
+        '<select id="uc-city-item" data-uc-item></select></div>',
+        '<div><label for="uc-city-from">目前等級</label>',
+        '<input id="uc-city-from" data-uc-from type="number" inputmode="numeric"></div>',
+        '<div><label for="uc-city-to">目標等級</label>',
+        '<input id="uc-city-to" data-uc-to type="number" inputmode="numeric"></div>',
+        "</div>",
+        '<div class="upgrade-cost-actions"><button type="submit" data-uc-run>加總</button></div>',
+        '<div class="upgrade-cost-result" data-uc-result hidden aria-live="polite"></div>',
+        "</fieldset>",
+        "</form>",
+        "    </section>",
+    ]
+    return "\n".join(parts)

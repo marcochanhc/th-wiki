@@ -6,6 +6,7 @@
   <title>Top Heroes Wiki｜領主裝備總表</title>
   <meta name="description" content="七件領主裝備的寫入屬性、品質階段、消耗、三件／六件加成，以及等級階段的特殊列。">
   <link rel="stylesheet" href="assets/css/site.css">
+  <script src="assets/js/page-filter.js" defer></script>
 </head>
 <body id="top">
   <a class="skip" href="#main">跳到本文</a>
@@ -22,6 +23,14 @@
       <p class="lede">本頁列出七件領主裝備的寫入屬性、品質階段、消耗、三件／六件加成，以及等級階段Ⅰ–Ⅵ 的特殊列。英雄裝備已有獨立總表，本頁只交叉引用。</p>
     </header>
     <nav class="toc" aria-label="本頁章節"><h2>本頁章節</h2><ol><li class="d0"><a href="#lead">簡介與閱讀說明</a></li><li class="d0"><a href="#overview">七件裝備</a></li><li class="d0"><a href="#quality">品質與階段</a></li><li class="d0"><a href="#codex">神聖法典</a></li><li class="d0"><a href="#costs">消耗（前六件階段起始列）</a></li><li class="d0"><a href="#master">三件加成與六件加成</a></li><li class="d0"><a href="#stages">等級階段</a></li><li class="d0"><a href="#out-of-scope">本頁未列入</a></li><li class="d0"><a href="#notes">資料說明</a></li></ol></nav>
+<form class="page-filter" role="search" hidden data-page-filter>
+      <label for="page-filter-q">篩選名稱</label>
+      <div class="page-filter-controls">
+        <input id="page-filter-q" type="search" name="q" autocomplete="off" placeholder="輸入名稱或表上的文字">
+        <button type="button" class="page-filter-clear">清除</button>
+      </div>
+      <p class="page-filter-empty" hidden>沒有符合的項目</p>
+    </form>
     <section id="lead">
       <h2>簡介與閱讀說明</h2>
       <p>正文只根據遊戲資料表與官方字串，不評定裝備強弱，也不另外發明連結或名稱。英雄裝備（武器、衣服、鞋子、頭盔）見<a href="equipment.html"><span class="term">裝備總表</span></a>，不把那套表改寫進來。已發佈的<a href="exclusive.html"><span class="term">專武總表</span></a>也不在本頁重複。</p>

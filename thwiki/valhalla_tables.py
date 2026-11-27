@@ -489,6 +489,21 @@ def _hero_link_md(s: SpiritRow) -> str:
     return label
 
 
+
+def _batch_spirit_html(s: SpiritRow, terms: list[str]) -> str:
+    """Spirit short name, with a link on the official hero display name when published."""
+    short = H(s.spirit_short, terms)
+    if s.hero_name is None:
+        marked = H(str(s.hero_id), terms)
+        href = _hero_href_public(s)
+        hero = f'<a href="{e(href)}">{marked}</a>' if href else marked
+        return f"{short}（{hero}）"
+    marked = H(s.hero_label, terms)
+    href = _hero_href_public(s)
+    hero = f'<a href="{e(href)}">{marked}</a>' if href else marked
+    return f"{short}（{hero}，{e(str(s.hero_id))}）"
+
+
 def _cost_segments(levels: list[LevelRow]) -> list[tuple[str, int]]:
     segs: list[tuple[str, int]] = []
     start = levels[0].level
@@ -636,8 +651,8 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
 
     batch_rows = []
     for season, server, group, note in _batch_groups(data.spirits):
-        names = "、".join(f"{s.spirit_short}（{s.hero_label}，{s.hero_id}）" for s in group)
-        batch_rows.append([e(season), e(server), e(str(len(group))), H(names, terms), H(note, terms) if note else "—"])
+        names = "、".join(_batch_spirit_html(s, terms) for s in group)
+        batch_rows.append([e(season), e(server), e(str(len(group))), names, H(note, terms) if note else "—"])
     t_batch = table(["解鎖賽季欄（照錄）", "解鎖伺服器欄（照錄）", "隻數", "英靈", "備註"], batch_rows, mobile="cards", card_title="英靈")
 
     t3_rows = []

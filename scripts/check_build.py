@@ -31,6 +31,7 @@ TALENTS = DOCS / "talents.html"
 TECH = DOCS / "tech.html"
 DECORATIONS = DOCS / "decorations.html"
 CASTLE = DOCS / "castle.html"
+LORD_OCCUPATIONS = DOCS / "lord-occupations.html"
 
 
 def text_of(html: str) -> str:
@@ -74,7 +75,7 @@ TRIBE_NAMES = [
 ]
 CODEX_ITEMS = [
     "專武", "英靈", "造型", "裝備", "領主裝備", "士兵", "秘寶", "寵物", "符文",
-    "天賦", "科技", "裝飾物", "城堡外觀", "守護魔獸", "帕魯", "城建升級",
+    "天賦", "科技", "裝飾物", "城堡外觀", "守護魔獸", "帕魯", "城建升級", "領主職業",
 ]
 GAMEPLAY_TERMS = ("開局", "陣容與羈絆", "PVE", "PVP", "KVK")
 STALE_DEPLOY = ("GitHub Pages 公開部署尚未進行", "公開部署還沒做")
@@ -241,6 +242,7 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
             ("holybeasts.html", "守護魔獸"),
             ("pals.html", "帕魯"),
             ("city-buildings.html", "城建升級"),
+            ("lord-occupations.html", "領主職業"),
         )
         other = codex
         for href, label in published_codex:
@@ -288,7 +290,7 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         "equipment.html", "lord-equipment.html", "troops.html",
         "artifacts.html", "pets.html", "runes.html",
         "talents.html", "tech.html", "decorations.html", "castle.html",
-        "holybeasts.html", "pals.html", "city-buildings.html",
+        "holybeasts.html", "pals.html", "city-buildings.html", "lord-occupations.html",
     ):
         if f'href="{href}"' not in index:
             fail(f"index should link to {href}", errors)
@@ -1166,6 +1168,21 @@ def check_valhalla_page(html: str, errors: list[str]) -> None:
         fail("valhalla: marginal ratios must be labelled 依分欄推算", errors)
     if 'href="heroes/10031.html"' not in html or 'href="heroes/10037.html"' not in html:
         fail("valhalla: missing relative hero links", errors)
+    if "約誓之獅" in html or "契約之獅" in html:
+        fail("valhalla: official spirit name is 誓約之獅", errors)
+    t2 = section_html(html, "t2") or ""
+    t2_heroes = re.findall(r'<td[^>]*data-label="英雄"[^>]*>(.*?)</td>', t2, flags=re.S)
+    if len(t2_heroes) != 15:
+        fail(f"valhalla t2 should have 15 hero cells, got {len(t2_heroes)}", errors)
+    elif any('href="heroes/' not in c for c in t2_heroes):
+        fail("valhalla t2 hero names should link to published hero pages", errors)
+    batch = section_html(html, "t1-batch") or ""
+    if "誓約之獅" not in text_of(batch) or "審判官" not in text_of(batch):
+        fail("valhalla t1-batch should still list 誓約之獅 and 審判官", errors)
+    if 'href="heroes/10031.html"' not in batch:
+        fail("valhalla t1-batch should link 審判官 to heroes/10031.html", errors)
+    if 'href="heroes/10043.html"' not in batch:
+        fail("valhalla t1-batch should link 薔薇公主 to heroes/10043.html", errors)
     names = [
         "英靈「誓約之獅」", "英靈「聖靈天使」", "英靈「發條守衛」", "英靈「聖殿誓騎」", "英靈「聖諭祭司」",
         "英靈「翠竹青龍」", "英靈「蓮身護法」", "英靈「幽影梵蓮」", "英靈「織夢花靈」", "英靈「娜迦女王」",
@@ -1332,6 +1349,12 @@ def check_mobile_catalog_markup(errors: list[str]) -> None:
 
     if static_css != docs_css:
         fail("static/css/site.css and docs/assets/css/site.css should be identical", errors)
+    static_js = ROOT / "static" / "js" / "page-filter.js"
+    docs_js = DOCS / "assets" / "js" / "page-filter.js"
+    if not static_js.is_file() or not docs_js.is_file():
+        fail("page-filter.js should exist in static/js and docs/assets/js", errors)
+    elif static_js.read_text(encoding="utf-8") != docs_js.read_text(encoding="utf-8"):
+        fail("static/js/page-filter.js and docs/assets/js/page-filter.js should be identical", errors)
     for needle, label in (
         ("@media (max-width: 44rem)", "44rem card breakpoint"),
         (".table-wrap.table-cards", "table-cards rules"),
@@ -1380,7 +1403,7 @@ def check_mobile_catalog_markup(errors: list[str]) -> None:
         fail(f"expected 57 hero pages, found {len(hero_pages)}", errors)
     for path in hero_pages:
         html = path.read_text(encoding="utf-8")
-        for needle in ("尚未發佈", "preview-banner"):
+        for needle in ("尚未發佈", "preview-banner", "page-filter.js", "data-page-filter"):
             if needle in html:
                 fail(f"{path.name}: hero page should not contain {needle}", errors)
         if "table-sticky-col" in html:
@@ -1902,6 +1925,111 @@ FORBIDDEN_VISIBLE_ATTRIBUTION = (
 
 
 
+
+def check_page_filter(errors: list[str]) -> None:
+    """Catalog pages and the homepage get a progressive-enhancement in-page filter."""
+    static_js = ROOT / "static" / "js" / "page-filter.js"
+    if not static_js.is_file():
+        fail("missing static/js/page-filter.js", errors)
+        return
+    js = static_js.read_text(encoding="utf-8")
+    if re.search(r"https?://", js) or "cdn" in js.lower():
+        fail("page-filter.js should not load external scripts", errors)
+
+    pages = [
+        (INDEX, "index"),
+        (EXCLUSIVE, "exclusive"),
+        (VALHALLA, "valhalla"),
+        (SKINS, "skins"),
+        (EQUIPMENT, "equipment"),
+        (LORD_EQUIPMENT, "lord-equipment"),
+        (TROOPS, "troops"),
+        (ARTIFACTS, "artifacts"),
+        (PETS, "pets"),
+        (HOLYBEASTS, "holybeasts"),
+        (PALS, "pals"),
+        (CITY_BUILDINGS, "city-buildings"),
+        (RUNES, "runes"),
+        (TALENTS, "talents"),
+        (TECH, "tech"),
+        (DECORATIONS, "decorations"),
+        (CASTLE, "castle"),
+        (LORD_OCCUPATIONS, "lord-occupations"),
+    ]
+    form_ok = re.compile(
+        r"<form\b[^>]*\b(?:data-page-filter\b[^>]*\bhidden|hidden\b[^>]*\bdata-page-filter)\b",
+        flags=re.S,
+    )
+    for path, label in pages:
+        html = path.read_text(encoding="utf-8")
+        if 'src="assets/js/page-filter.js"' not in html:
+            fail(f"{label}: missing local page-filter script", errors)
+        if re.search(r'<script\b[^>]+src="https?://', html):
+            fail(f"{label}: script src must be local, not an external URL", errors)
+        if "篩選名稱" not in html or "清除" not in html or "沒有符合的項目" not in html:
+            fail(f"{label}: missing filter UI labels", errors)
+        if not form_ok.search(html):
+            fail(f"{label}: filter form should start hidden for no-JS readers", errors)
+        if label == "index":
+            league = section_html(html, "faction-league") or ""
+            if "data-page-filter" in league or "篩選名稱" in league:
+                fail("index: filter bar should not sit inside a faction roster list", errors)
+            lede = re.search(r'<p class="lede">(.*?)</p>', html, flags=re.S)
+            if lede and "城堡外觀總表也已公開" not in text_of(lede.group(0)):
+                fail("index: lede must still end by naming 城堡外觀總表 as published", errors)
+
+
+
+def check_catalog_hero_reverse_links(errors: list[str]) -> None:
+    """Hero names in official catalog correspondences must link only to published pages."""
+    published = {f"heroes/{hid}.html" for hid in PUBLISHED_IDS}
+    pages = [
+        (EXCLUSIVE, "exclusive"),
+        (VALHALLA, "valhalla"),
+        (SKINS, "skins"),
+        (EQUIPMENT, "equipment"),
+        (LORD_EQUIPMENT, "lord-equipment"),
+        (INDEX, "index"),
+    ]
+    for path, label in pages:
+        html = path.read_text(encoding="utf-8")
+        hrefs = re.findall(r'href="(heroes/\d+\.html)"', html)
+        for href in hrefs:
+            if href not in published:
+                fail(f"{label}: must not link unbuilt hero page {href}", errors)
+
+    def hero_cells(html: str, *labels: str) -> list[str]:
+        out = []
+        for lab in labels:
+            out.extend(re.findall(rf'<td[^>]*data-label="{re.escape(lab)}"[^>]*>(.*?)</td>', html, flags=re.S))
+        return out
+
+    ex = EXCLUSIVE.read_text(encoding="utf-8")
+    ex_cells = hero_cells(section_html(ex, "t3") or "", "英雄")
+    if len(ex_cells) != 35:
+        fail(f"exclusive t3 should have 35 hero cells, got {len(ex_cells)}", errors)
+    elif any('href="heroes/' not in c for c in ex_cells):
+        fail("exclusive t3 hero names should link to published hero pages", errors)
+    if 'href="heroes/15032.html"' not in "".join(ex_cells):
+        fail("exclusive t3 should link unnamed 15032 to its published page", errors)
+
+    sk = SKINS.read_text(encoding="utf-8")
+    sk_cells = hero_cells(sk, "英雄", "英雄 A", "英雄 B")
+    if not sk_cells:
+        fail("skins: missing hero-column cells", errors)
+    elif any('href="heroes/' not in c for c in sk_cells):
+        fail("skins: hero-column names should link to published hero pages", errors)
+    if "牧羊人" not in text_of("".join(c for c in sk_cells if "10029" in c)):
+        fail("skins: 牧羊人 should remain labelled in the hero column", errors)
+    # 未開放 stays on 牧羊人; 老闆娘 must not be marked 未開放 in that cell
+    for c in sk_cells:
+        tcell = text_of(c)
+        if "牧羊人" in tcell and "未開放" not in tcell:
+            fail("skins: 牧羊人 should still be labelled 未開放", errors)
+        if "老闆娘" in tcell and "未開放" in tcell:
+            fail("skins: 老闆娘 must not be labelled 未開放", errors)
+
+
 def check_visible_no_benchouqu(errors: list[str]) -> None:
     """Visible body (before 資料說明) must not use research-speak 本抽取."""
     paths = sorted(DOCS.glob("*.html")) + sorted((DOCS / "heroes").glob("*.html"))
@@ -2160,7 +2288,7 @@ def check_city_buildings_page(html: str, errors: list[str]) -> None:
         return
     if "本頁列出主城 126 座建築的名稱與說明" not in html:
         fail("city-buildings: missing public lede", errors)
-    for href in ("castle.html", "decorations.html", "holybeasts.html", "pals.html", "pets.html", "artifacts.html", "tech.html"):
+    for href in ("castle.html", "decorations.html", "holybeasts.html", "pals.html", "pets.html", "artifacts.html", "tech.html", "lord-occupations.html"):
         if f'href="{href}"' not in html:
             fail(f"city-buildings: should link to {href}", errors)
     t = text_of(html)
@@ -2243,6 +2371,339 @@ def check_city_buildings_page(html: str, errors: list[str]) -> None:
             fail(f"city-buildings: visible body should not contain technical {tech}", errors)
 
 
+
+def check_lord_occupations_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "lord-occupations", "Top Heroes Wiki｜領主職業總表", "2026-11-22", errors)
+    if not html:
+        return
+    if "本頁列出在「職業大廳」裡可選擇的三個職業：騎士領主、農場主人、學者。" not in html:
+        fail("lord-occupations: missing public lede", errors)
+    for href in ("city-buildings.html", "talents.html", "lord-equipment.html"):
+        if f'href="{href}"' not in html:
+            fail(f"lord-occupations: should link to {href}", errors)
+
+    vis = visible_before_notes(html)
+    notes_m = list(re.finditer(r"<h2\b[^>]*>\s*資料說明\s*</h2>", html))
+    notes = text_of(html[notes_m[-1].start():]) if notes_m else ""
+    main_m = re.search(r"<main\b[^>]*>(.*)<section[^>]*id=\"notes\"", html, flags=re.S)
+    vis_html = main_m.group(1) if main_m else ""
+
+    for name in ("騎士領主", "農場主人", "學者", "職業大廳", "先登集結", "緊急動員", "善假於物",
+                 "來去如風", "高效施工", "靈光乍現", "命定之死", "穀倉啟封", "詛咒祭壇",
+                 "被動技能·庇佑", "被動技能·喋血召鋒", "被動技能·瓶中循環", "觸類旁通",
+                 "翠綠秘藥", "職業重修指南", "職業領主培訓手冊", "職業領主培訓光碟"):
+        if name not in vis:
+            fail(f"lord-occupations: visible body must keep official name {name}", errors)
+
+    for name in ("戰爭領主", "豐饒領主"):
+        if name not in vis:
+            fail(f"lord-occupations: visible body must name talent track {name}", errors)
+    catalog = re.search(r'<section[^>]*id="catalog"[^>]*>.*?(?=<section |</main>)', html, flags=re.S)
+    cat = text_of(catalog.group(0)) if catalog else ""
+    for name in ("戰爭領主", "豐饒領主"):
+        if name in cat:
+            fail(f"lord-occupations: talent track {name} must not appear in the occupation roster", errors)
+    if "這不是領主裝備，也不是領主天賦裡的戰爭領主、豐饒領主" not in vis:
+        fail("lord-occupations: lede must keep talent tracks separate from the three occupations", errors)
+
+    if "職業系統提供的屬性與技能僅在目前賽季生效，賽季結束後將回收。" not in vis:
+        fail("lord-occupations: visible body must quote official professional_info", errors)
+    if "免費重置職業後需過7天才可再次免費重置" not in vis:
+        fail("lord-occupations: visible body must quote official free-reset wording", errors)
+    if "沒有最強的職業！強大的團隊缺一不可！" not in vis:
+        fail("lord-occupations: visible body must quote official 沒有最強的職業 line", errors)
+    if "部族士兵生命" not in vis:
+        fail("lord-occupations: visible body must keep official term 部族士兵生命", errors)
+    if "對珍寶船守衛增傷" not in vis or "500" not in vis or "1500" not in vis:
+        fail("lord-occupations: visible body must keep raw 對珍寶船守衛增傷 values", errors)
+    if re.search(r"對珍寶船守衛增傷.{0,40}5\s*%.{0,20}15\s*%", vis):
+        fail("lord-occupations: must not convert show_type=2 對珍寶船守衛增傷 values to percentages", errors)
+    if "學者紋章·校射" not in vis:
+        fail("lord-occupations: missing official emblem 學者紋章·校射", errors)
+    if "500" not in vis or "400" not in vis:
+        fail("lord-occupations: visible body must keep raw 校射 values 500／400", errors)
+
+    for name in (
+        "屬性紋章·聯盟英雄攻擊", "屬性紋章·帶兵上限", "屬性紋章·石礦",
+        "騎士領主紋章·赦免令", "農場主人紋章·KPI", "農場主人紋章·55%N+25%P+20%K",
+        "學者紋章·I=P/4πr2", "學者紋章·等邊三角形",
+    ):
+        if name not in vis:
+            fail(f"lord-occupations: visible body must keep official emblem {name}", errors)
+
+    if "守城時士兵生命" not in vis:
+        fail("lord-occupations: KPI attribute official name 守城時士兵生命 must be kept", errors)
+    if "自然隊列命中" not in vis:
+        fail("lord-occupations: 屬性紋章·自然英雄命中 must keep official attribute 自然隊列命中", errors)
+    if "石頭採集速度" not in vis:
+        fail("lord-occupations: 屬性紋章·石礦 must keep official attribute 石頭採集速度", errors)
+
+    if "學者-投石機" not in vis or "學者-詛咒祭壇" not in vis:
+        fail("lord-occupations: visible body must keep official scholar building names", errors)
+    if "伐木場" not in vis or "先祖圖騰" not in vis:
+        fail("lord-occupations: 穀倉啟封 must list official building names", errors)
+
+    if "累計登入1天" not in vis or "學者：修建1次哨塔" not in vis:
+        fail("lord-occupations: visible body must keep official task names", errors)
+    if "只照錄標題" not in vis or "不把其中的詞當作已核實的賽季名稱" not in vis:
+        fail("lord-occupations: must not present 雲海紀行 as a verified official season name", errors)
+    if "雲海紀行回收預告" not in vis:
+        fail("lord-occupations: mail title 雲海紀行回收預告 must be quoted as-is", errors)
+
+    emblems = re.search(r'<section[^>]*id="emblems"[^>]*>.*?(?=<section |</main>)', html, flags=re.S)
+    emblems_t = text_of(emblems.group(0)) if emblems else ""
+    if "免費草鞋" in emblems_t or "職業經驗獲取" in emblems_t:
+        fail("lord-occupations: unused emblem names must not enter the current emblem roster", errors)
+    out = re.search(r'<section[^>]*id="out-of-scope"[^>]*>.*?(?=<section |</main>)', html, flags=re.S)
+    out_t = text_of(out.group(0)) if out else ""
+    if "免費草鞋" not in out_t or "職業經驗獲取" not in out_t:
+        fail("lord-occupations: unused emblem names should be recorded as out of the current roster", errors)
+
+    for phrase in ("玩家確認", "由玩家確認"):
+        if phrase in vis:
+            fail("lord-occupations: visible body must not mention 玩家確認", errors)
+    for bad in ("鐵喉", "部落戰靼", "部落戰靽", "豐繖領主", "約誓之獅", "契約之獅"):
+        if bad in html:
+            fail(f"lord-occupations: typo or wrong term {bad}", errors)
+    if "豐饒領主" not in vis:
+        fail("lord-occupations: official talent-track name 豐饒領主 must be kept", errors)
+
+    # Three occupations must not be marked unreleased in the visible body.
+    if re.search(r"(騎士領主|農場主人|學者).{0,12}未開放", vis):
+        fail("lord-occupations: must not mark the three occupations as 未開放", errors)
+
+    if "<code>" in vis_html or "<code " in vis_html:
+        fail("lord-occupations: visible body should not contain <code>", errors)
+    for tech in ("skill_type", "itemPos", "para1", "show_type", "lvup_pre_id", "kvk_theme", "reset_limit", "professional.json"):
+        if tech in vis:
+            fail(f"lord-occupations: visible body should not contain technical {tech}", errors)
+    if re.search(r"\[\s*\d+\s*,\s*\d+\s*\]", vis):
+        fail("lord-occupations: visible body should not contain raw position arrays", errors)
+    if "famer" in vis:
+        fail("lord-occupations: icon typo famer may only appear in data notes", errors)
+    if "famer" not in notes:
+        fail("lord-occupations: data notes must record icon typo famer", errors)
+    if "professional_name_102182" not in notes or "professional_name_101182" not in notes:
+        fail("lord-occupations: data notes must record the 命定之死／穀倉啟封 name-key swap", errors)
+    if "itemPos" not in notes:
+        fail("lord-occupations: data notes must record the itemPos-only tree difference", errors)
+    if "show_type=2" not in notes and "show_type＝2" not in notes:
+        fail("lord-occupations: data notes must keep the show_type=2 rule", errors)
+    if "reject" not in notes:
+        fail("lord-occupations: data notes must record the empty reject column", errors)
+    if "DATA_CUTOFF" not in notes and "paths.DATA_CUTOFF" not in notes:
+        fail("lord-occupations: data notes should state DATA_CUTOFF is unchanged", errors)
+
+    for sec, label in (
+        ("catalog", "三個職業"),
+        ("levels", "職業等級"),
+        ("attrs", "屬性提升"),
+        ("emblems", "紋章與基座"),
+        ("tasks", "職業任務"),
+        ("reset", "重置、回收與道具"),
+        ("talents", "領主天賦志向"),
+    ):
+        chunk = re.search(
+            rf'<section[^>]*id="{sec}"[^>]*>.*?(?=<section |</main>)',
+            html,
+            flags=re.S,
+        )
+        body = chunk.group(0) if chunk else ""
+        if "table-cards" not in body:
+            fail(f"lord-occupations: {label} should keep table-cards", errors)
+        if "data-label=" not in body:
+            fail(f"lord-occupations: {label} cards should keep data-label", errors)
+        if "card-title" not in body:
+            fail(f"lord-occupations: {label} cards should keep card-title", errors)
+
+    # Do not dump the 80/108/413/78 full tables into the visible body.
+    if vis.count("職業等級提升") > 10:
+        fail("lord-occupations: visible body looks like it dumped repeated full task rows", errors)
+    # 80-row level table would repeat many individual levels in sequence; the page should use bands.
+    if re.search(r">1</td>\s*<td[^>]*>1000</td>.*?>2</td>\s*<td[^>]*>1000</td>.*?>3</td>", html, flags=re.S):
+        fail("lord-occupations: must not dump all 80 level rows in the visible table", errors)
+
+
+
+def check_upgrade_cost_calculators(errors: list[str]) -> None:
+    """Static upgrade-cost calculators on city-buildings and holybeasts pages."""
+    static_js = ROOT / "static" / "js" / "upgrade-cost.js"
+    docs_js = DOCS / "assets" / "js" / "upgrade-cost.js"
+    city_data = DOCS / "assets" / "js" / "city-upgrade-costs-data.js"
+    beast_data = DOCS / "assets" / "js" / "holybeast-upgrade-costs-data.js"
+    if not static_js.is_file() or not docs_js.is_file():
+        fail("upgrade-cost.js should exist in static/js and docs/assets/js", errors)
+        return
+    if static_js.read_text(encoding="utf-8") != docs_js.read_text(encoding="utf-8"):
+        fail("static/js/upgrade-cost.js and docs/assets/js/upgrade-cost.js should be identical", errors)
+    js = static_js.read_text(encoding="utf-8")
+    if re.search(r"https?://", js) or "cdn" in js.lower():
+        fail("upgrade-cost.js should not load external scripts", errors)
+    for path, label in ((city_data, "city-upgrade-costs-data.js"), (beast_data, "holybeast-upgrade-costs-data.js")):
+        if not path.is_file():
+            fail(f"missing {label}", errors)
+            return
+        text = path.read_text(encoding="utf-8")
+        if re.search(r"https?://", text):
+            fail(f"{label} should not load external scripts", errors)
+
+    city_html = CITY_BUILDINGS.read_text(encoding="utf-8")
+    beast_html = HOLYBEASTS.read_text(encoding="utf-8")
+    city_vis = visible_before_notes(city_html)
+    beast_vis = visible_before_notes(beast_html)
+
+    for html, label, data_name, cutoff in (
+        (city_html, "city-buildings", "city-upgrade-costs-data.js", "2026-11-22"),
+        (beast_html, "holybeasts", "holybeast-upgrade-costs-data.js", "2026-11-05"),
+    ):
+        if 'id="cost-calc"' not in html or "養成花費試算" not in html:
+            fail(f"{label}: missing 養成花費試算 section", errors)
+        if "<noscript>" not in html or "目前沒有執行指令，無法在這一欄加總" not in html:
+            fail(f"{label}: calculator should keep a no-JS message", errors)
+        if f'src="assets/js/{data_name}"' not in html or 'src="assets/js/upgrade-cost.js"' not in html:
+            fail(f"{label}: missing local upgrade-cost scripts", errors)
+        if re.search(r'<script\b[^>]+src="https?://', html):
+            fail(f"{label}: script src must be local, not an external URL", errors)
+        if 'src="assets/js/page-filter.js"' not in html or "data-page-filter" not in html:
+            fail(f"{label}: page filter must still be present", errors)
+        footer = re.search(r'<footer class="site-footer">.*?</footer>', html, flags=re.S)
+        if not footer or f"資料截至 {cutoff}" not in text_of(footer.group(0)):
+            fail(f"{label}: footer cutoff should remain {cutoff}", errors)
+
+    if "不以其中一張覆寫另一張" not in city_vis:
+        fail("city-buildings: calculator section must keep the two upgrade tables separate", errors)
+    if "不自行標成秒或分鐘" not in city_vis:
+        fail("city-buildings: calculator must not invent a unit for build time", errors)
+    if "類型 999" not in city_vis:
+        fail("city-buildings: calculator must keep 類型 999 wording", errors)
+    if "訓練所" not in city_vis:
+        fail("city-buildings: calculator should mention 訓練所 has no upgrade rows", errors)
+    if "玩家確認" in city_vis:
+        fail("city-buildings: calculator must not mention 玩家確認", errors)
+
+    if "20、30 直到 170 級" not in beast_vis:
+        fail("holybeasts: calculator must keep 魔核 on levels 20, 30, …, 170", errors)
+    if "16 級出現" in beast_vis or "16 級出現" in beast_html:
+        fail("holybeasts: must not say 魔核 appears at level 16", errors)
+    if "作為第二欄官方消耗，不對成賽季編號" not in beast_vis:
+        fail("holybeasts: calculator must keep the extra cost column as a second official column, not a season label", errors)
+    notes_m = list(re.finditer(r"<h2\b[^>]*>\s*資料說明\s*</h2>", beast_html))
+    notes = text_of(beast_html[notes_m[-1].start():]) if notes_m else ""
+    if "不對成賽季編號或臨時擁有／臨時使用" not in notes:
+        fail("holybeasts: data notes must still record that the extra cost column is not 臨時擁有／臨時使用", errors)
+    if "玩家確認" in beast_vis:
+        fail("holybeasts: calculator must not mention 玩家確認", errors)
+
+    for label, html in (("city-buildings", city_html), ("holybeasts", beast_html)):
+        for bad in ("鐵喉", "部落戰靼", "部落戰靽", "豐繖領主", "約誓之獅", "契約之獅", "類垇", "若要偔", "升級表兩級皆無消耗"):
+            if bad in html:
+                fail(f"{label}: typo or wrong term {bad}", errors)
+
+    # Independent official-table sums versus packed JS data.
+    import json as _json
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from thwiki.citybuilding_tables import EXTRACT_DATA as CITY_DATA, SRC_OLD, SRC_NEW, load_tables_data, build_city_upgrade_cost_payload
+    from thwiki.holybeast_tables import EXTRACT_DATA as BEAST_DATA, load_tables_data as load_beast_data, build_holybeast_upgrade_cost_payload
+    from thwiki.upgrade_costs import sum_city_range, sum_beast_levels, sum_beast_stars
+
+    def official_city_sum(table, index, lo, hi):
+        rows = [r for r in table if int(r["index"]) == index]
+        acc = {}
+        time = 0
+        for r in rows:
+            lv = int(r["lv"])
+            if lo <= lv < hi:
+                time += int(r.get("buildTime") or 0)
+                for key in ("cost1", "cost2", "cost3", "cost4"):
+                    v = r.get(key)
+                    if not v:
+                        continue
+                    segs = v if isinstance(v, list) and v and isinstance(v[0], (list, tuple)) else [v]
+                    if isinstance(v, list) and len(v) >= 3 and not isinstance(v[0], (list, tuple)):
+                        segs = [v]
+                    for s in segs:
+                        if isinstance(s, (list, tuple)) and len(s) >= 3:
+                            k = (int(s[0]), int(s[1]))
+                            acc[k] = acc.get(k, 0) + int(s[2])
+        return time, acc
+
+    city_lvup = _json.loads((CITY_DATA / "citybuilding_lvup.json").read_text(encoding="utf-8-sig"))
+    city_new = _json.loads((CITY_DATA / "citybuilding_lvup_new.json").read_text(encoding="utf-8-sig"))
+    official_old = official_city_sum(city_lvup, 106, 0, 10)
+    official_new = official_city_sum(city_new, 106, 0, 10)
+    city_payload = build_city_upgrade_cost_payload(load_tables_data())
+    wood = next((it for it in city_payload["items"] if it["label"] == "伐木場"), None)
+    if not wood:
+        fail("city-buildings: packed calculator data missing 伐木場", errors)
+    else:
+        packed_old = sum_city_range(city_payload["curves"][wood["tables"][SRC_OLD]], 0, 10)
+        packed_new = sum_city_range(city_payload["curves"][wood["tables"][SRC_NEW]], 0, 10)
+        if (packed_old.get("time"), packed_old.get("costs")) != (official_old[0], official_old[1]):
+            fail(f"city-buildings: 伐木場 0→10 原升級表 packed {packed_old} != official {official_old}", errors)
+        if (packed_new.get("time"), packed_new.get("costs")) != (official_new[0], official_new[1]):
+            fail(f"city-buildings: 伐木場 0→10 新升級表 packed {packed_new} != official {official_new}", errors)
+
+    beast_levels = _json.loads((BEAST_DATA / "holybeast_level.json").read_text(encoding="utf-8-sig"))
+    rows = [r for r in beast_levels if int(r["holy_id"]) == 1001 and 20 <= int(r["level"]) <= 21]
+    official_crystal = official_core = 0
+    for r in rows:
+        for bit in str(r.get("cost") or "").split(","):
+            parts = [p for p in bit.split("|") if p]
+            if len(parts) >= 3:
+                if int(parts[1]) == 295:
+                    official_core += int(parts[2])
+                else:
+                    official_crystal += int(parts[2])
+    beast_payload = build_holybeast_upgrade_cost_payload(load_beast_data())
+    packed_beast = sum_beast_levels(beast_payload["levels"], 19, 21)
+    if packed_beast.get("crystal") != official_crystal or packed_beast.get("core") != official_core:
+        fail(f"holybeasts: 19→21 packed {packed_beast} != official crystal={official_crystal} core={official_core}", errors)
+    if packed_beast.get("core_levels") != [20]:
+        fail("holybeasts: 19→21 must include 魔核 on level 20 only", errors)
+
+    # Node runs the same official examples through the published JS.
+    import shutil
+    import subprocess
+    node = shutil.which("node")
+    if not node:
+        fail("node is required to verify upgrade-cost.js sums", errors)
+        return
+    script = f"""
+const api = require({str(docs_js)!r});
+const city = require({str(city_data)!r});
+const beast = require({str(beast_data)!r});
+const wood = city.items.find((it) => it.label === "伐木場");
+const oldC = api.sumCityRange(city.curves[wood.tables[{SRC_OLD!r}]], 0, 10, city.resources);
+const newC = api.sumCityRange(city.curves[wood.tables[{SRC_NEW!r}]], 0, 10, city.resources);
+const lv = api.sumBeastLevels(beast, 19, 21);
+function costMap(sum) {{
+  const out = {{}};
+  for (const line of sum.costs) out[line] = true;
+  return {{time: sum.time, costs: sum.costs}};
+}}
+console.log(JSON.stringify({{
+  oldTime: oldC.time, oldCosts: oldC.costs,
+  newTime: newC.time, newCosts: newC.costs,
+  crystal: lv.crystal, core: lv.core, coreLevels: lv.coreLevels,
+  oldOk: oldC.ok, newOk: newC.ok, lvOk: lv.ok
+}}));
+"""
+    proc = subprocess.run([node, "-e", script], capture_output=True, text=True)
+    if proc.returncode != 0:
+        fail(f"upgrade-cost.js node check failed: {proc.stderr or proc.stdout}", errors)
+        return
+    got = _json.loads(proc.stdout)
+    if got.get("oldTime") != official_old[0] or got.get("newTime") != official_new[0]:
+        fail(f"upgrade-cost.js 伐木場 times {got.get('oldTime')}/{got.get('newTime')} != {official_old[0]}/{official_new[0]}", errors)
+    if "類型 999、第 4 段、數量 61,843" not in got.get("oldCosts", []) or "類型 999、第 5 段、數量 61,843" not in got.get("oldCosts", []):
+        fail(f"upgrade-cost.js 伐木場 原升級表 costs {got.get('oldCosts')}", errors)
+    if "類型 999、第 4 段、數量 33,313" not in got.get("newCosts", []) or "類型 999、第 5 段、數量 33,313" not in got.get("newCosts", []):
+        fail(f"upgrade-cost.js 伐木場 新升級表 costs {got.get('newCosts')}", errors)
+    if got.get("crystal") != official_crystal or got.get("core") != official_core or got.get("coreLevels") != [20]:
+        fail(f"upgrade-cost.js 19→21 {got}", errors)
+
+
 def check_index_published_catalogs(index: str, errors: list[str]) -> None:
     check_adjacent_term_spans(index, "index", errors)
     t = text_of(index)
@@ -2258,7 +2719,7 @@ def main() -> int:
     for p in (
         INDEX, EXCLUSIVE, VALHALLA, SKINS,
         EQUIPMENT, LORD_EQUIPMENT, TROOPS, ARTIFACTS, PETS, HOLYBEASTS, PALS, CITY_BUILDINGS, RUNES,
-        TALENTS, TECH, DECORATIONS, CASTLE,
+        TALENTS, TECH, DECORATIONS, CASTLE, LORD_OCCUPATIONS,
         JUDGE, NUN, ROSE, INVENTOR,
     ):
         if not p.exists():
@@ -2304,6 +2765,7 @@ def main() -> int:
     tech_html = TECH.read_text(encoding="utf-8")
     decorations_html = DECORATIONS.read_text(encoding="utf-8")
     castle_html = CASTLE.read_text(encoding="utf-8")
+    lord_occupations_html = LORD_OCCUPATIONS.read_text(encoding="utf-8")
     check_index(index, it, errors)
     check_index_published_catalogs(index, errors)
     check_exclusive_page(exclusive_html, errors)
@@ -2322,6 +2784,7 @@ def main() -> int:
     check_tech_page(tech_html, errors)
     check_decorations_page(decorations_html, errors)
     check_castle_page(castle_html, errors)
+    check_lord_occupations_page(lord_occupations_html, errors)
     for html, label in (
         (exclusive_html, "專武總表"),
         (valhalla_html, "英靈總表"),
@@ -2617,6 +3080,9 @@ def main() -> int:
     if re.search(r"顯示.?50.{0,12}10050|10050.{0,12}顯示.?50", jt + nt + rt + vt + it):
         fail("must not claim display 50 equals internal id 10050", errors)
 
+    check_page_filter(errors)
+    check_upgrade_cost_calculators(errors)
+    check_catalog_hero_reverse_links(errors)
     check_visible_no_benchouqu(errors)
     check_attribution_cleanup(errors)
     check_hero_valhalla_attrs(errors)

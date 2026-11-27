@@ -6,6 +6,9 @@
   <title>Top Heroes Wiki｜守護魔獸總表</title>
   <meta name="description" content="官方界面所稱的守護魔獸：6 隻名稱、契約與材料、升級與升星規則與關鍵節點、展示技能原文，以及升星退還規則。">
   <link rel="stylesheet" href="assets/css/site.css">
+  <script src="assets/js/page-filter.js" defer></script>
+  <script src="assets/js/holybeast-upgrade-costs-data.js" defer></script>
+  <script src="assets/js/upgrade-cost.js" defer></script>
 </head>
 <body id="top">
   <a class="skip" href="#main">跳到本文</a>
@@ -17,7 +20,15 @@
   </header>
   <main id="main" class="page">
       <p class="lede">本頁列出官方界面所稱的「守護魔獸」：6 隻的名稱、契約與材料、升級與升星規則與關鍵節點、展示技能原文，以及升星退還規則。這不是寵物，寵物見已發佈的寵物總表。野外或 PVE 怪物不在本頁。</p>
-    <nav class="toc" aria-label="本頁章節"><h2>本頁章節</h2><ol><li class="d0"><a href="#lead">簡介與閱讀說明</a></li><li class="d0"><a href="#scope">範圍與解鎖</a></li><li class="d0"><a href="#catalog">名錄</a></li><li class="d0"><a href="#materials">契約與材料</a></li><li class="d0"><a href="#upgrade">升級</a></li><li class="d0"><a href="#star">升星</a></li><li class="d0"><a href="#skills">技能</a></li><li class="d0"><a href="#return">升星退還</a></li><li class="d0"><a href="#out-of-scope">本頁未列入</a></li><li class="d0"><a href="#notes">資料說明</a></li></ol></nav>
+    <nav class="toc" aria-label="本頁章節"><h2>本頁章節</h2><ol><li class="d0"><a href="#lead">簡介與閱讀說明</a></li><li class="d0"><a href="#scope">範圍與解鎖</a></li><li class="d0"><a href="#catalog">名錄</a></li><li class="d0"><a href="#materials">契約與材料</a></li><li class="d0"><a href="#upgrade">升級</a></li><li class="d0"><a href="#star">升星</a></li><li class="d0"><a href="#skills">技能</a></li><li class="d0"><a href="#return">升星退還</a></li><li class="d0"><a href="#cost-calc">養成花費試算</a></li><li class="d0"><a href="#out-of-scope">本頁未列入</a></li><li class="d0"><a href="#notes">資料說明</a></li></ol></nav>
+<form class="page-filter" role="search" hidden data-page-filter>
+      <label for="page-filter-q">篩選名稱</label>
+      <div class="page-filter-controls">
+        <input id="page-filter-q" type="search" name="q" autocomplete="off" placeholder="輸入名稱或表上的文字">
+        <button type="button" class="page-filter-clear">清除</button>
+      </div>
+      <p class="page-filter-empty" hidden>沒有符合的項目</p>
+    </form>
     <section id="lead">
       <h2>簡介與閱讀說明</h2>
 <p>正文只根據遊戲資料表與官方字串，不評定守護魔獸強弱，也不排行。官方界面稱「<span class="term">守護魔獸</span>」。這不是寵物；寵物見已發佈的<a href="pets.html"><span class="term">寵物總表</span></a>。<a href="pals.html">帕魯</a>、精靈、魚缸、蝴蝶、乙太牧場不在本頁展開。已發佈的<a href="valhalla.html"><span class="term">英靈總表</span></a>是綁在英雄身上的另一套養成，不是守護魔獸。野外或 PVE 怪物不在本頁。</p>
@@ -153,6 +164,46 @@
 <p>50 列與升星表 0 星 1 子階至 10 星 0 子階逐列對得上：原消耗等於該列升星消耗數量，現消耗等於該列另一個消耗欄數量。兩邊數量相同時（0 星 1–2 子階），沒有退還道具；自 0 星 3 子階起，退還「<span class="term">契約印記</span>」。5 星 0 子階兩邊數量同為 120，退還數量仍維持前一列的 346，不是清零。10 星 0 子階退還 1,446。10 星 1 子階起升星表兩邊消耗已相同，退還表不再列表。</p>
 <div class="table-wrap table-sticky-col"><table><caption>50 列全列。兩邊數量相同的列沒有退還道具。</caption><thead><tr><th>星</th><th>子階</th><th><span class="term">原消耗</span></th><th><span class="term">現消耗</span></th><th><span class="term">退還獎勵</span></th></tr></thead><tbody><tr><td>0</td><td>1</td><td>6</td><td>6</td><td>無</td></tr><tr><td>0</td><td>2</td><td>8</td><td>8</td><td>無</td></tr><tr><td>0</td><td>3</td><td>12</td><td>10</td><td><span class="term">契約印記</span> ×2</td></tr><tr><td>0</td><td>4</td><td>16</td><td>12</td><td><span class="term">契約印記</span> ×6</td></tr><tr><td>1</td><td>0</td><td>24</td><td>14</td><td><span class="term">契約印記</span> ×16</td></tr><tr><td>1</td><td>1</td><td>48</td><td>18</td><td><span class="term">契約印記</span> ×46</td></tr><tr><td>1</td><td>2</td><td>48</td><td>20</td><td><span class="term">契約印記</span> ×74</td></tr><tr><td>1</td><td>3</td><td>48</td><td>24</td><td><span class="term">契約印記</span> ×98</td></tr><tr><td>1</td><td>4</td><td>48</td><td>28</td><td><span class="term">契約印記</span> ×118</td></tr><tr><td>2</td><td>0</td><td>48</td><td>34</td><td><span class="term">契約印記</span> ×132</td></tr><tr><td>2</td><td>1</td><td>72</td><td>40</td><td><span class="term">契約印記</span> ×164</td></tr><tr><td>2</td><td>2</td><td>72</td><td>46</td><td><span class="term">契約印記</span> ×190</td></tr><tr><td>2</td><td>3</td><td>72</td><td>52</td><td><span class="term">契約印記</span> ×210</td></tr><tr><td>2</td><td>4</td><td>72</td><td>58</td><td><span class="term">契約印記</span> ×224</td></tr><tr><td>3</td><td>0</td><td>72</td><td>64</td><td><span class="term">契約印記</span> ×232</td></tr><tr><td>3</td><td>1</td><td>96</td><td>70</td><td><span class="term">契約印記</span> ×258</td></tr><tr><td>3</td><td>2</td><td>96</td><td>76</td><td><span class="term">契約印記</span> ×278</td></tr><tr><td>3</td><td>3</td><td>96</td><td>82</td><td><span class="term">契約印記</span> ×292</td></tr><tr><td>3</td><td>4</td><td>96</td><td>88</td><td><span class="term">契約印記</span> ×300</td></tr><tr><td>4</td><td>0</td><td>96</td><td>94</td><td><span class="term">契約印記</span> ×302</td></tr><tr><td>4</td><td>1</td><td>120</td><td>100</td><td><span class="term">契約印記</span> ×322</td></tr><tr><td>4</td><td>2</td><td>120</td><td>106</td><td><span class="term">契約印記</span> ×336</td></tr><tr><td>4</td><td>3</td><td>120</td><td>112</td><td><span class="term">契約印記</span> ×344</td></tr><tr><td>4</td><td>4</td><td>120</td><td>118</td><td><span class="term">契約印記</span> ×346</td></tr><tr><td>5</td><td>0</td><td>120</td><td>120</td><td><span class="term">契約印記</span> ×346</td></tr><tr><td>5</td><td>1</td><td>144</td><td>124</td><td><span class="term">契約印記</span> ×366</td></tr><tr><td>5</td><td>2</td><td>144</td><td>128</td><td><span class="term">契約印記</span> ×382</td></tr><tr><td>5</td><td>3</td><td>144</td><td>132</td><td><span class="term">契約印記</span> ×394</td></tr><tr><td>5</td><td>4</td><td>144</td><td>136</td><td><span class="term">契約印記</span> ×402</td></tr><tr><td>6</td><td>0</td><td>144</td><td>140</td><td><span class="term">契約印記</span> ×406</td></tr><tr><td>6</td><td>1</td><td>168</td><td>144</td><td><span class="term">契約印記</span> ×430</td></tr><tr><td>6</td><td>2</td><td>168</td><td>148</td><td><span class="term">契約印記</span> ×450</td></tr><tr><td>6</td><td>3</td><td>168</td><td>152</td><td><span class="term">契約印記</span> ×466</td></tr><tr><td>6</td><td>4</td><td>168</td><td>156</td><td><span class="term">契約印記</span> ×478</td></tr><tr><td>7</td><td>0</td><td>168</td><td>160</td><td><span class="term">契約印記</span> ×486</td></tr><tr><td>7</td><td>1</td><td>192</td><td>164</td><td><span class="term">契約印記</span> ×514</td></tr><tr><td>7</td><td>2</td><td>192</td><td>168</td><td><span class="term">契約印記</span> ×538</td></tr><tr><td>7</td><td>3</td><td>192</td><td>172</td><td><span class="term">契約印記</span> ×558</td></tr><tr><td>7</td><td>4</td><td>192</td><td>176</td><td><span class="term">契約印記</span> ×574</td></tr><tr><td>8</td><td>0</td><td>192</td><td>180</td><td><span class="term">契約印記</span> ×586</td></tr><tr><td>8</td><td>1</td><td>240</td><td>184</td><td><span class="term">契約印記</span> ×642</td></tr><tr><td>8</td><td>2</td><td>240</td><td>188</td><td><span class="term">契約印記</span> ×694</td></tr><tr><td>8</td><td>3</td><td>240</td><td>192</td><td><span class="term">契約印記</span> ×742</td></tr><tr><td>8</td><td>4</td><td>240</td><td>196</td><td><span class="term">契約印記</span> ×786</td></tr><tr><td>9</td><td>0</td><td>240</td><td>200</td><td><span class="term">契約印記</span> ×826</td></tr><tr><td>9</td><td>1</td><td>336</td><td>204</td><td><span class="term">契約印記</span> ×958</td></tr><tr><td>9</td><td>2</td><td>336</td><td>208</td><td><span class="term">契約印記</span> ×1,086</td></tr><tr><td>9</td><td>3</td><td>336</td><td>212</td><td><span class="term">契約印記</span> ×1,210</td></tr><tr><td>9</td><td>4</td><td>336</td><td>216</td><td><span class="term">契約印記</span> ×1,330</td></tr><tr><td>10</td><td>0</td><td>336</td><td>220</td><td><span class="term">契約印記</span> ×1,446</td></tr></tbody></table></div>
     </section>
+    <section id="cost-calc">
+      <h2>養成花費試算</h2>
+<p>六隻守護魔獸的升級數量相同，只是魔晶與契約道具依陣營、魔獸而異。選一隻，再選升級或升星，可以加總官方表上已有的消耗。只加總表上原值，不計算折扣，也不補沒有官方列的消耗。</p>
+<p>升級表列的是到達該級的消耗。從目前等級升到目標等級，加總目前之後到目標（含）的各列；尚未升級請把目前等級填 0。「魔核」出現在 20、30 直到 170 級，共 16 級，不是只在其中某一級。</p>
+<p>升星表列的是到達該星、該子階的消耗。從目前之後加總到目標（含）。10 星 1 子階改消耗「魔源之石」。表上另有一欄消耗時，只照錄原值，作為第二欄官方消耗，不對成賽季編號。</p>
+<p>沒有使用指令時，上面的總表與規則仍可閱讀；試算需要瀏覽器執行本頁指令。</p>
+<form class="upgrade-cost" data-upgrade-cost data-upgrade-source="TH_HOLYBEAST_UPGRADE_COST" action="#" method="get">
+<noscript><p>目前沒有執行指令，無法在這一欄加總。請改看上方的升級與升星規則，或開啟指令後再試。</p></noscript>
+<fieldset>
+<legend>守護魔獸升級與升星</legend>
+<div class="upgrade-cost-grid">
+<div><label for="uc-beast-item">守護魔獸</label>
+<select id="uc-beast-item" data-uc-beast></select></div>
+<div><label for="uc-beast-mode">要加總的項目</label>
+<select id="uc-beast-mode" data-uc-mode>
+<option value="level">升級</option>
+<option value="star">升星</option>
+</select></div>
+<div data-uc-level-fields>
+<label for="uc-beast-from-lv">目前等級</label>
+<input id="uc-beast-from-lv" data-uc-from-lv type="number" inputmode="numeric">
+</div>
+<div data-uc-level-fields>
+<label for="uc-beast-to-lv">目標等級</label>
+<input id="uc-beast-to-lv" data-uc-to-lv type="number" inputmode="numeric">
+</div>
+<div data-uc-star-fields hidden>
+<label for="uc-beast-from-star">目前星級</label>
+<select id="uc-beast-from-star" data-uc-from-star></select>
+</div>
+<div data-uc-star-fields hidden>
+<label for="uc-beast-to-star">目標星級</label>
+<select id="uc-beast-to-star" data-uc-to-star></select>
+</div>
+</div>
+<div class="upgrade-cost-actions"><button type="submit" data-uc-run>加總</button></div>
+<div class="upgrade-cost-result" data-uc-result hidden aria-live="polite"></div>
+</fieldset>
+</form>
+    </section>
     <section id="out-of-scope">
       <h2>本頁未列入</h2>
 <ul>
@@ -175,6 +226,7 @@
 <li>定義在 <code>holybeast.json</code>（6 筆），升級在 <code>holybeast_level.json</code>（1,020 筆，每隻 1–170 級），升星在 <code>holybeast_star.json</code>（606 筆，每隻 101 列），退還在 <code>holybeast_return.json</code>（50 筆）。展示技能與升星表列出的技能 id 全部能在 <code>hero_component.json</code> 對上（26 個 id）。名稱來自主表名稱鍵。消耗欄原始寫法是 <code>2|道具id|數量</code>。</li>
 <li>升級屬性 <code>attr_01</code>–<code>attr_03</code> 匯總為 <code>AttrAllList</code>，<code>attr_11</code>–<code>attr_13</code> 匯總為 <code>AttrTeamList</code>；升星屬性在 <code>attr_01</code>–<code>attr_03</code>（匯總為 <code>AttrTeamList</code>）。本頁不把這些欄位名自行對成「契約加成」或「上陣加成」。</li>
 <li>待補：2000001 與 2000x11 在客戶端的顯示；展示技能升階節點與升星表技能等級在界面上如何對應；建築消耗欄各段含義；上述兩組屬性欄與界面標題的對應；season／season_1 與賽季日曆。</li>
+<li>養成花費試算的升級加總，是目前等級之後到目標等級（含）的官方列；升星同樣從目前之後加到目標（含）。六隻只換魔晶與契約道具，數量共用。表上另一欄消耗只照錄，不對成賽季編號或臨時擁有／臨時使用。</li>
 </ul>
     </section>
   </main>

@@ -85,12 +85,62 @@ def site_nav_items(prefix: str) -> list[tuple[str, str, str]]:
     return items
 
 
-def page_shell(title: str, summary: str, body: str, depth: int, nav_current: str = "") -> str:
+def page_filter_bar() -> str:
+    return """<form class="page-filter" role="search" hidden data-page-filter>
+      <label for="page-filter-q">篩選名稱</label>
+      <div class="page-filter-controls">
+        <input id="page-filter-q" type="search" name="q" autocomplete="off" placeholder="輸入名稱或表上的文字">
+        <button type="button" class="page-filter-clear">清除</button>
+      </div>
+      <p class="page-filter-empty" hidden>沒有符合的項目</p>
+    </form>"""
+
+
+def insert_page_filter(body: str, bar: str) -> str:
+    """Place the filter after the toc, or on the homepage after the 英雄 heading."""
+    toc_start = body.find('<nav class="toc"')
+    if toc_start != -1:
+        end = body.find("</nav>", toc_start)
+        if end != -1:
+            end += len("</nav>")
+            return body[:end] + "\n" + bar + body[end:]
+    heroes = body.find('<section id="heroes">')
+    if heroes != -1:
+        h2 = body.find("<h2>英雄</h2>", heroes)
+        if h2 != -1:
+            end = h2 + len("<h2>英雄</h2>")
+            return body[:end] + "\n" + bar + body[end:]
+    head = body.find('<header class="entry-head">')
+    if head != -1:
+        end = body.find("</header>", head)
+        if end != -1:
+            end += len("</header>")
+            return body[:end] + "\n" + bar + body[end:]
+    return bar + "\n" + body
+
+
+def page_shell(
+    title: str,
+    summary: str,
+    body: str,
+    depth: int,
+    nav_current: str = "",
+    page_filter: bool | None = None,
+) -> str:
     prefix = asset_prefix(depth)
+    if page_filter is None:
+        page_filter = depth == 0
+    if page_filter:
+        body = insert_page_filter(body, page_filter_bar())
     nav_html = []
     for key, href, label in site_nav_items(prefix):
         cls = ' class="current"' if key == nav_current else ""
         nav_html.append(f'<a href="{href}"{cls}>{e(label)}</a>')
+    filter_script = (
+        f'\n  <script src="{prefix}assets/js/page-filter.js" defer></script>'
+        if page_filter
+        else ""
+    )
     return f"""<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -98,7 +148,7 @@ def page_shell(title: str, summary: str, body: str, depth: int, nav_current: str
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{e(title)}</title>
   <meta name="description" content="{e(summary)}">
-  <link rel="stylesheet" href="{prefix}assets/css/site.css">
+  <link rel="stylesheet" href="{prefix}assets/css/site.css">{filter_script}
 </head>
 <body id="top">
   <a class="skip" href="#main">跳到本文</a>
@@ -597,6 +647,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
             "守護魔獸": "holybeasts.html",
             "帕魯": "pals.html",
             "城建升級": "city-buildings.html",
+            "領主職業": "lord-occupations.html",
             "符文": "runes.html",
             "天賦": "talents.html",
             "科技": "tech.html",

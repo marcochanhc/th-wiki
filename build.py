@@ -21,9 +21,10 @@ from thwiki.lord_equipment_tables import render_lord_equipment_page
 from thwiki.troop_tables import render_troop_page
 from thwiki.artifact_tables import render_artifact_page
 from thwiki.pet_tables import render_pet_page
-from thwiki.holybeast_tables import render_holybeast_page
+from thwiki.holybeast_tables import render_holybeast_page, write_holybeast_upgrade_cost_data
 from thwiki.pal_tables import render_pal_page
-from thwiki.citybuilding_tables import render_citybuilding_page
+from thwiki.citybuilding_tables import render_citybuilding_page, write_city_upgrade_cost_data
+from thwiki.lord_occupation_tables import render_lord_occupation_page
 from thwiki.rune_tables import render_rune_page
 from thwiki.talent_tables import render_talent_page
 from thwiki.tech_tables import render_tech_page
@@ -39,6 +40,11 @@ def copy_assets():
     css_dst = assets / "css"
     css_dst.mkdir(parents=True)
     shutil.copy2(STATIC_DIR / "css" / "site.css", css_dst / "site.css")
+    js_src = STATIC_DIR / "js" / "page-filter.js"
+    js_dst = assets / "js"
+    js_dst.mkdir(parents=True)
+    shutil.copy2(js_src, js_dst / "page-filter.js")
+    shutil.copy2(STATIC_DIR / "js" / "upgrade-cost.js", js_dst / "upgrade-cost.js")
     # Portraits are reserved placeholders for now; do not copy lead art into docs/.
 
 
@@ -77,6 +83,7 @@ def main() -> int:
         ("holybeasts.html", render_holybeast_page),
         ("pals.html", render_pal_page),
         ("city-buildings.html", render_citybuilding_page),
+        ("lord-occupations.html", render_lord_occupation_page),
         ("runes.html", render_rune_page),
         ("talents.html", render_talent_page),
         ("tech.html", render_tech_page),
@@ -87,6 +94,12 @@ def main() -> int:
         out = DOCS_DIR / name
         out.write_text(renderer(), encoding="utf-8")
         print(f"wrote {out.relative_to(PROJECT_ROOT)}")
+
+    js_dir = DOCS_DIR / "assets" / "js"
+    write_city_upgrade_cost_data(js_dir / "city-upgrade-costs-data.js")
+    print(f"wrote { (js_dir / 'city-upgrade-costs-data.js').relative_to(PROJECT_ROOT) }")
+    write_holybeast_upgrade_cost_data(js_dir / "holybeast-upgrade-costs-data.js")
+    print(f"wrote { (js_dir / 'holybeast-upgrade-costs-data.js').relative_to(PROJECT_ROOT) }")
 
     index = DOCS_DIR / "index.html"
     index.write_text(render_home(pages), encoding="utf-8")

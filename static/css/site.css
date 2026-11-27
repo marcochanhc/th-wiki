@@ -380,3 +380,156 @@ li { margin: 0.2rem 0; }
     margin-bottom: 0.1rem;
   }
 }
+
+
+/* In-page name filter. Hidden until JS removes the hidden attribute. */
+.page-filter {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.8rem 1.1rem 0.9rem;
+  margin: 0.6rem 0 1.2rem;
+}
+.page-filter[hidden],
+.page-filter-empty[hidden] {
+  display: none !important;
+}
+.page-filter label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+.page-filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.6rem;
+  align-items: center;
+}
+.page-filter input[type="search"] {
+  flex: 1 1 12rem;
+  min-width: 0;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.page-filter button {
+  font: inherit;
+  font-size: 1rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+.page-filter button:hover {
+  color: var(--link-hover);
+}
+.page-filter-empty {
+  color: var(--muted);
+  margin: 0.55rem 0 0;
+}
+
+/* Keep filtered-out rows/cards hidden even when card/sticky rules set display. */
+.table-wrap.table-cards tr[hidden],
+.table-wrap.table-sticky-col tr[hidden],
+.table-wrap tr[hidden],
+.table-wrap[hidden],
+.hero-roster > li[hidden],
+main section[hidden],
+main h3[hidden],
+main h4[hidden] {
+  display: none !important;
+}
+
+/* Static upgrade-cost calculator (progressive enhancement; no network). */
+.upgrade-cost {
+  margin: 1.25rem 0 1.75rem;
+  padding: 1rem 1rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.upgrade-cost fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.upgrade-cost legend {
+  font-weight: 650;
+  padding: 0;
+  margin: 0 0 0.65rem;
+}
+.upgrade-cost-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem 1rem;
+}
+@media (min-width: 44rem) {
+  .upgrade-cost-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .upgrade-cost-grid .upgrade-cost-span {
+    grid-column: 1 / -1;
+  }
+}
+.upgrade-cost label {
+  display: block;
+  font-weight: 650;
+  margin: 0 0 0.3rem;
+}
+.upgrade-cost select,
+.upgrade-cost input[type="number"] {
+  font: inherit;
+  font-size: 1rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.upgrade-cost-actions {
+  margin-top: 0.9rem;
+}
+.upgrade-cost button {
+  font: inherit;
+  font-size: 1rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+.upgrade-cost button:hover {
+  color: var(--link-hover);
+}
+.upgrade-cost-result {
+  margin: 0.9rem 0 0;
+}
+.upgrade-cost-result[hidden] {
+  display: none !important;
+}
+.upgrade-cost-result h3,
+.upgrade-cost-result h4 {
+  margin: 0.7rem 0 0.35rem;
+}
+.upgrade-cost-result p,
+.upgrade-cost-result li {
+  margin: 0.25rem 0;
+}
+.upgrade-cost-hint {
+  color: var(--muted);
+  margin: 0.35rem 0 0;
+}
+.upgrade-cost noscript p {
+  margin: 0.5rem 0 0;
+}
