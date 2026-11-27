@@ -1009,7 +1009,6 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         level_rows.append([
             str(lv),
             str(r.limit_star),
-            e(r.season_1),
             H(cost_label(r.cost, o.goods), terms),
             fmt_int(r.fightforce),
             attr_pair_cell(r.attr_01, r.attr_02),
@@ -1027,7 +1026,6 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         [
             "等級",
             "升星門檻",
-            "season_1",
             "消耗",
             "戰力",
             f"{atk1}／{hp1}",
@@ -1055,7 +1053,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             attr_cell(r.attr_01),
             attr_cell(r.attr_02),
             attr_cell(r.attr_03) if star >= 1 else "無",
-            e(r.skill_level),
+            "、".join(b for b in str(r.skill_level).split("|") if b != "") or "無",
             fmt_int(r.fightforce),
             H(cost_label(r.cost, o.goods), terms),
             H(cost_label(r.season_cost, o.goods), terms),
@@ -1072,7 +1070,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             "升星技能等級",
             "戰力",
             "消耗",
-            "season_cost_1",
+            "另一欄消耗",
             "官方星級說明",
         ],
         star_rows,
@@ -1092,18 +1090,18 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     )
 
     skill_level_rows = [
-        ["0", e("1|0|0|1"), "第一段為 1 級；第四段為 1 級；其餘為 0"],
-        ["1–6", e("1|0|0|2") + " 至 " + e("1|0|0|7"), "僅第四段每星 +1，6 星到 7"],
-        ["7–8", e("1|0|1|7") + "、" + e("1|0|2|7"), "第三段在 7 星為 1、8 星為 2"],
-        ["9", e("1|1|2|7"), "第二段在 9 星為 1"],
-        ["10–19", e("1|1|3|7"), "第三段在 10 星為 3"],
-        ["20", e("1|2|3|7"), "第二段在 20 星為 2"],
+        ["0", "1", "0", "0", "1", "第一段為 1 級；第四段為 1 級；其餘為 0"],
+        ["1–6", "1", "0", "0", "2 至 7", "僅第四段每星 +1，6 星到 7"],
+        ["7–8", "1", "0", "1 至 2", "7", "第三段在 7 星為 1、8 星為 2"],
+        ["9", "1", "1", "2", "7", "第二段在 9 星為 1"],
+        ["10–19", "1", "1", "3", "7", "第三段在 10 星為 3"],
+        ["20", "1", "2", "3", "7", "第二段在 20 星為 2"],
     ]
     skill_levels = table(
-        ["星", "skill_level", "變化"],
+        ["星", "第一段", "第二段", "第三段", "第四段", "變化"],
         skill_level_rows,
         mobile="sticky",
-        caption="等級只在整星 0 子階改變。四段對應升星表列出的技能 id，與主表展示技能不是同一組。",
+        caption="等級只在整星 0 子階改變。四段對應升星表列出的技能，與主表展示技能不是同一組。各段編號見資料說明。",
     )
 
     ret_rows = []
@@ -1112,18 +1110,15 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             ret_cell = H(cost_label(r.return_items, o.goods), terms)
         else:
             ret_cell = "無"
-        new = "無" if r.return_num_new in (None, "", -1, "-1") else fmt_int(r.return_num_new)
         ret_rows.append([
-            str(r.rid),
             str(r.star),
             str(r.star_sub),
             fmt_int(r.cost_origin),
             fmt_int(r.cost_change),
             ret_cell,
-            new,
         ])
     returns = table(
-        ["id", "星", "子階", H(o.return_origin, terms), H(o.return_now, terms), H(o.return_reward, terms), "return_num_new"],
+        ["星", "子階", H(o.return_origin, terms), H(o.return_now, terms), H(o.return_reward, terms)],
         ret_rows,
         mobile="sticky",
         caption="50 列全列。兩邊數量相同的列沒有退還道具。",
@@ -1144,12 +1139,12 @@ def _skill_block(skill: SkillDef, terms: list[str]) -> str:
         body = "字串表沒有名稱與說明，本頁不編造技能名。"
         if skill.skill_field not in (None, "", [], -1):
             body += "組件在，且另有指向欄，但不把它寫成已命名的展示技能。"
-        return f"<li><strong>{e('（沒有官方技能名）')}</strong>（{skill.sid}，maxlv {skill.maxlv}）<p>{e(body)}</p></li>"
+        return (
+            f"<li><strong>{e('（沒有官方技能名）')}</strong>（最高 {skill.maxlv} 級）"
+            f"<p>{e(body)}</p></li>"
+        )
     title = H(skill.name, terms)
-    extra = ""
-    if skill.name_from:
-        extra = f"；名稱與說明鍵沿用 {skill.name_from}"
-    parts = [f"<li><p><strong>{title}</strong>（{skill.sid}，maxlv {skill.maxlv}{extra}）</p>"]
+    parts = [f"<li><p><strong>{title}</strong>（最高 {skill.maxlv} 級）</p>"]
     items = []
     for seg in skill.segments:
         if not seg.filled:
@@ -1360,7 +1355,7 @@ def render_html(data: TablesData) -> str:
         "主表 6 筆全部入冊，品質欄皆為 5；這批字串沒有對應的官方品質顯示名。"
         "名稱都能對上字串。"
         f"類型為 1／2／3 的三隻，官方名稱前綴分別是{H('聯盟', terms)}／{H('部族', terms)}／{H('自然', terms)}。"
-        "前三隻的 season 欄為 `holybeast`，後三隻為 `holybeast_2`，只照錄，不對成賽季編號。"
+        "前三隻與後三隻的系統欄原值不同，只照錄，不對成賽季編號。原值見資料說明。"
         "六隻的展示技能升階節點相同。"
     ))
     add(tbl["catalog"])
@@ -1373,9 +1368,9 @@ def render_html(data: TablesData) -> str:
         + "六隻共用。"
     ))
     add(p_html(
-        "升星表另列一組技能 id，與主表展示技能不完全相同。"
-        "其中 2000001 與各魔獸的 2000x11 在字串表沒有名稱與說明；組件在，但不把它們改寫成展示技能名。"
-        "細節見資料說明與技能節。"
+        "升星表另列一組技能，與主表展示技能不完全相同。"
+        "其中兩類在字串表沒有名稱與說明；組件在，但不把它們改寫成展示技能名。"
+        "編號與細節見資料說明與技能節。"
     ))
     add("    </section>")
 
@@ -1413,8 +1408,8 @@ def render_html(data: TablesData) -> str:
     add("      <h2>升級</h2>")
     add(p_html(
         "六隻都是 1–170 級，每隻 170 列，共 1,020 筆。把陣營對應的屬性與魔晶對齊後，"
-        "六隻的等級、升星門檻、season_1、戰力、消耗數量與屬性原值全部相同。"
-        "season_1 在 1–120 級為 `2|0`，121–170 級為 `5|7`，只照錄。"
+        "六隻的等級、升星門檻、戰力、消耗數量與屬性原值全部相同。"
+        "另有一欄只照錄原值，不對成賽季編號，見資料說明。"
         "本頁不整表傾印，只寫規則與關鍵節點。"
     ))
     add(p_html(
@@ -1460,8 +1455,8 @@ def render_html(data: TablesData) -> str:
     add(p_html(
         "每隻 101 列，星級 0–20，共 606 筆。0–19 星各有 5 個子階，20 星只有 1 列。"
         "把契約道具、技能與增傷屬性按陣營對齊後，六隻的星、子階、轉化率、戰力、魔獸等級上限、技能等級、"
-        "season／season_1、需求等級、城堡等級欄、消耗數量與屬性原值全部相同。"
-        "城堡等級欄全表為 -1。"
+        "需求等級、消耗數量與屬性原值全部相同。"
+        "其餘欄位原值見資料說明，只照錄，不對成賽季編號。"
     ))
     add(p_html(
         f"{H(o.leve_add, terms)}："
@@ -1476,7 +1471,7 @@ def render_html(data: TablesData) -> str:
         "至 10 星 0 子階為 17500，10 星 1 子階起至 20 星維持 17500。原值照錄，不自行當百分比。"
     ))
     add(p_html(
-        "season／season_1 在 0 星 0 子階至 10 星 0 子階為 2／`2|0`；自 10 星 1 子階起改為 5／`5|7`，只照錄。"
+        "有一組時間欄在 10 星 0 子階與 10 星 1 子階之間改值，只照錄原值，不對成賽季編號，見資料說明。"
         "需求等級全表只有 10 星 1 子階為 120，其餘為 -1。"
         f"這一列六隻的消耗都是「{H(o.goods[160].name, terms)}」10 個，兩邊消耗欄相同，戰力仍為 4,219,740（與 10 星 0 子階相同）。"
         f"界面有「{H(o.breakthrough, terms)}」與「{H(o.need_level, terms)}」。"
@@ -1504,13 +1499,13 @@ def render_html(data: TablesData) -> str:
     ))
     add(p_html(
         "升星表的技能等級只在整星 0 子階改變，同一星的 1–4 子階維持不變。"
-        "以第一隻為例，四段對應 2000001、位階壓制、該營共鳴，以及沒有官方名的 2000x11："
+        "以第一隻為例，四段對應升星表列出的技能（含沒有官方名的技能），編號見資料說明："
     ))
     add(tbl["skill_levels"])
     add(p_html(
-        "主表寫的是展示技能的星級節點（四個展示技能分別為 `0|1|3|5`、`2|4|6`、`7|8|10`、`9|20`），"
-        "與上表不是同一組 id，本頁分開照錄，不自行對成同一條升級軌。"
-        "2000001 全表都是 1 級，字串表沒有技能名。"
+        "主表寫的是展示技能的星級節點，與上表不是同一組技能，本頁分開照錄，不自行對成同一條升級軌。"
+        "各節點原值見資料說明。"
+        "升星表另有一項沒有官方名稱的技能，全表都是 1 級。"
         f"界面另有「{H(o.star_full, terms)}」。"
     ))
     add("    </section>")
@@ -1521,23 +1516,22 @@ def render_html(data: TablesData) -> str:
         "展示技能的解鎖與升階節點見主表。"
         "下列每隻先列展示技能名與上限，再寫基礎與後續升階追加。參數已代入。"
         f"共用的「{H('位階壓制', terms)}」只在本節開頭寫一次。"
-        "沒有官方名稱的升星技能 id 在此註明，不編造名稱，也不把它寫成該魔獸第一個展示技能。"
+        "沒有官方名稱的升星技能在此註明，不編造名稱，也不把它寫成該魔獸第一個展示技能。"
     ))
     shared = data.skills[2000002]
-    add(f"      <h3 id=\"skill-shared\">{H(shared.name, terms)}（2000002，六隻共用）</h3>")
+    add(f"      <h3 id=\"skill-shared\">{H(shared.name, terms)}（六隻共用）</h3>")
     add("<ul>" + _skill_block(shared, terms) + "</ul>")
 
     for b in data.beasts:
         add(f'      <h3 id="skill-{b.bid}">{H(b.name, terms)}</h3>')
         add(p_html("展示技能：" + "、".join(
             (H(data.skills[sid].name, terms) if data.skills[sid].named else e("字串表沒有名稱與說明"))
-            + f"（{sid}）"
             for sid in b.show_skill
         ) + "。"))
         items = []
         for sid in b.show_skill:
             if sid == 2000002:
-                items.append(f"<li>{H(shared.name, terms)}（2000002）：見上節。</li>")
+                items.append(f"<li>{H(shared.name, terms)}：見上節。</li>")
             else:
                 items.append(_skill_block(data.skills[sid], terms))
         add("<ul>" + "".join(items) + "</ul>")
@@ -1545,12 +1539,12 @@ def render_html(data: TablesData) -> str:
         unnamed = 2000000 + (b.bid // 1000) * 100 + 11
         if unnamed in data.skills:
             add(p_html(
-                f"升星表另有 {unnamed}：字串表沒有名稱與說明；組件在，且指向欄指向該魔獸第一個展示技能，"
-                f"maxlv 為 {data.skills[unnamed].maxlv}。本頁不把它寫成「"
+                "升星表另有一項：字串表沒有名稱與說明；組件在，且指向該魔獸第一個展示技能，"
+                f"最高 {data.skills[unnamed].maxlv} 級。本頁不把它寫成「"
                 + (H(data.skills[b.show_skill[0]].name, terms) if data.skills[b.show_skill[0]].named else "")
-                + "」。"
+                + "」。編號見資料說明。"
             ))
-    add(p_html("另外，升星表六隻皆有 2000001：字串表沒有名稱與說明，全表都是 1 級。本頁不編造技能名。"))
+    add(p_html("另外，升星表六隻皆另有一項：字串表沒有名稱與說明，全表都是 1 級。本頁不編造技能名。編號見資料說明。"))
     add("    </section>")
 
     add('    <section id="return">')
@@ -1593,17 +1587,44 @@ def render_html(data: TablesData) -> str:
         + "</a>），以及<a href=\"pals.html\">帕魯</a>、精靈、魚缸、蝴蝶、乙太牧場等其他伴侶與休閒系統；野外或 PVE 怪物。</li>")
     add("<li>升級 1,020 筆、升星 606 筆的逐列全表（規則與關鍵節點已寫；退還 50 筆已全列）。</li>")
     add("<li>功能開啟表沒有守護魔獸專用開啟列；影響力跳轉的名稱與說明為空。建築消耗欄各段的枚舉定義。</li>")
-    add("<li>升星表裡沒有官方名稱的技能 id 在客戶端如何與展示技能合併顯示。</li>")
-    add("<li>season／season_1 與賽季日曆的對應（不標未開放）；預告、紀念與禮包的推出時程。</li>")
+    add("<li>升星表裡沒有官方名稱的技能在客戶端如何與展示技能合併顯示。</li>")
+    add("<li>時間欄與賽季日曆的對應（不標未開放）；預告、紀念與禮包的推出時程。</li>")
     add(f"<li>「{H(o.goods[297].name, terms)}」的實際開出內容，以及契約、魔晶、魔核、魔源之石、契約印記在活動或商店中的取得表。</li>")
     add("<li>與英雄技能、站位的搭配模擬，以及轉化公式代入面板後的戰鬥結算。</li>")
-    add("<li>品質 5 的專用顯示名（本批沒有這類鍵）。</li>")
+    add("<li>品質 5 的專用顯示名（本批沒有這類顯示名）。</li>")
     add("</ul>")
     add("    </section>")
 
     add('    <section id="notes">')
     add("      <h2>資料說明</h2>")
     add(p_html(_data_notes(data)))
+    add(p_html(
+        "以下補錄正文改寫後移入的欄位名與原值，只照錄，不對成賽季號，"
+        "也不把 holybeast 與 holybeast_2、或 season／season_1 的 2／2|0 與 5／5|7，對成臨時擁有／臨時使用，"
+        "也不把 season_effect 與 season_effect2 那樣對應。"
+        "主表前三隻（1001、2001、3001）的 season 欄為 <code>holybeast</code>，"
+        "後三隻（4001、5001、6001）為 <code>holybeast_2</code>。"
+        "升級表 season_1 在 1–120 級為 <code>2|0</code>，121–170 級為 <code>5|7</code>。"
+        "升星表 season／season_1 在 0 星 0 子階至 10 星 0 子階為 2／<code>2|0</code>（306 筆）；"
+        "自 10 星 1 子階起改為 5／<code>5|7</code>（300 筆）。"
+        "升星表城堡等級欄全表為 -1。"
+        "season_cost_1 是升星表另一欄消耗，正文已用官方道具名列出。"
+    ))
+    add(p_html(
+        "升星表 skill_level 原值（只在整星 0 子階改變）："
+        "0 星 <code>1|0|0|1</code>；1–6 星 <code>1|0|0|2</code> 至 <code>1|0|0|7</code>；"
+        "7 星 <code>1|0|1|7</code>、8 星 <code>1|0|2|7</code>；9 星 <code>1|1|2|7</code>；"
+        "10–19 星 <code>1|1|3|7</code>；20 星 <code>1|2|3|7</code>。"
+        "以第一隻為例，四段對應 2000001、位階壓制（2000002）、該營共鳴，以及沒有官方名的 2000x11。"
+        "主表展示技能的星級節點為 <code>0|1|3|5</code>、<code>2|4|6</code>、<code>7|8|10</code>、<code>9|20</code>，"
+        "與升星表 skill ／ skill_level 不是同一組 id。"
+        "2000001 全表都是 1 級，字串表沒有技能名。"
+        "各魔獸升星表另有 2000111／2000211／2000311／2000411／2000511／2000611，"
+        "字串表沒有名稱與說明；組件指向欄指向該魔獸第一個展示技能，maxlv 為 7。"
+        "4001／5001／6001 的第三個展示技能（2000403／2000503／2000603）名稱與說明鍵沿用 2000103／2000203／2000303，不是缺名。"
+        "共用技能 2000002 為「位階壓制」。"
+        "退還表有 id 欄；return_num_new 的數字與退還獎勵數量相同，正文只列官方退還獎勵。"
+    ))
     add("<ul>")
     add("<li>定義在 <code>holybeast.json</code>（6 筆），升級在 <code>holybeast_level.json</code>（1,020 筆，每隻 1–170 級），"
         "升星在 <code>holybeast_star.json</code>（606 筆，每隻 101 列），退還在 <code>holybeast_return.json</code>（50 筆）。"

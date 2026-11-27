@@ -1941,6 +1941,52 @@ def check_holybeasts_page(html: str, errors: list[str]) -> None:
     if "玩家確認" in vis:
         fail("holybeasts: visible body must not mention 玩家確認", errors)
 
+    notes_m = list(re.finditer(r"<h2\b[^>]*>\s*資料說明\s*</h2>", html))
+    notes = text_of(html[notes_m[-1].start():]) if notes_m else ""
+    main_m = re.search(r"<main\b[^>]*>(.*)<section[^>]*id=\"notes\"", html, flags=re.S)
+    vis_html = main_m.group(1) if main_m else ""
+    if "<code>" in vis_html or "<code " in vis_html:
+        fail("holybeasts: visible body should not contain <code>", errors)
+    if "`" in text_of(vis_html):
+        fail("holybeasts: visible body should not use backticks around keys or raw values", errors)
+    for tech in (
+        "season_1", "season_cost_1", "return_num_new", "skill_level",
+        "holybeast_2", "2|0", "5|7", "0|1|3|5", "maxlv",
+        "名稱與說明鍵沿用", "臨時擁有", "臨時使用",
+    ):
+        if tech in vis:
+            fail(f"holybeasts: visible body should not contain technical {tech}", errors)
+    for fact in (
+        "holybeast_2", "2|0", "5|7", "0|1|3|5",
+        "2000403", "2000103", "117|30", "[999, 4, 100]",
+    ):
+        if fact not in notes:
+            fail(f"holybeasts: data notes must keep {fact}", errors)
+    if "魔獸祭壇" not in vis:
+        fail("holybeasts: visible body must keep official building name 魔獸祭壇", errors)
+    for name in ("聯盟魔晶", "部族魔晶", "自然魔晶"):
+        if name not in vis:
+            fail(f"holybeasts: visible body must keep official good name {name}", errors)
+    if "16 級出現" in notes:
+        fail("holybeasts: must not say 魔核 appears at level 16", errors)
+    for sec, cls, label in (
+        ("catalog", "table-cards", "名錄"),
+        ("materials", "table-cards", "契約與材料"),
+        ("upgrade", "table-sticky-col", "升級"),
+        ("star", "table-sticky-col", "升星"),
+        ("return", "table-sticky-col", "升星退還"),
+    ):
+        chunk = re.search(
+            rf'<section[^>]*id="{sec}"[^>]*>.*?(?=<section |</main>)',
+            html,
+            flags=re.S,
+        )
+        body = chunk.group(0) if chunk else ""
+        if cls not in body:
+            fail(f"holybeasts: {label} should keep {cls}", errors)
+        if cls == "table-cards" and "data-label=" not in body:
+            fail(f"holybeasts: {label} cards should keep data-label", errors)
+
 
 
 def check_pals_page(html: str, errors: list[str]) -> None:
@@ -1968,6 +2014,59 @@ def check_pals_page(html: str, errors: list[str]) -> None:
         fail("pals: visible body must not mention 玩家確認", errors)
     if "字串表沒有內容" not in vis:
         fail("pals: missing-name fields should be marked in the visible body", errors)
+
+    notes_m = list(re.finditer(r"<h2\b[^>]*>\s*資料說明\s*</h2>", html))
+    notes = text_of(html[notes_m[-1].start():]) if notes_m else ""
+    main_m = re.search(r"<main\b[^>]*>(.*)<section[^>]*id=\"notes\"", html, flags=re.S)
+    vis_html = main_m.group(1) if main_m else ""
+    if "<code>" in vis_html or "<code " in vis_html:
+        fail("pals: visible body should not contain <code>", errors)
+    if "`" in text_of(vis_html):
+        fail("pals: visible body should not use backticks around keys or raw values", errors)
+    if "核對：star 存在於" in html or "核對：star" in html:
+        fail("pals: data notes must not contain the generator debug dictionary sentence", errors)
+    for tech in (
+        "pal_type_1", "palname_", "desc1", "desc2", "show_type",
+        "return_num_new", "pal_catch_open_season", "luckCostArray",
+        "117|25", "[999, 4, 50]", "func_open_param", "sameweight",
+    ):
+        if tech in vis:
+            fail(f"pals: visible body should not contain technical {tech}", errors)
+    for fact in ("117|25", "117|26", "117|40", "[999, 4, 50]", "pal_type_1", "183|0"):
+        if fact not in notes:
+            fail(f"pals: data notes must keep {fact}", errors)
+    if "帕魯營地" not in vis:
+        fail("pals: visible body must keep official building name 帕魯營地", errors)
+    for name in ("冰霜", "魔人", "野獸", "亡靈", "軍團"):
+        if name not in vis:
+            fail(f"pals: visible body must keep official tag label {name}", errors)
+    if "提高捕獲帕魯的機率" not in vis:
+        fail("pals: visible body must keep official attribute 提高捕獲帕魯的機率", errors)
+    if "部族" not in vis:
+        fail("pals: visible body must keep official term 部族", errors)
+    if "帕魯營地10級解鎖" not in vis:
+        fail("pals: official unlock string 帕魯營地10級解鎖 must be quoted as-is", errors)
+    for sec, cls, label in (
+        ("camp", "table-cards", "帕魯營地升級"),
+        ("catalog", "table-cards", "名錄"),
+        ("tags", "table-cards", "標籤"),
+        ("catch", "table-cards", "捕捉與權重"),
+        ("fuse", "table-cards", "融合"),
+        ("teams", "table-cards", "隊伍與位置"),
+        ("star", "table-cards", "升星"),
+        ("aura", "table-cards", "光環"),
+        ("materials", "table-cards", "材料與道具"),
+    ):
+        chunk = re.search(
+            rf'<section[^>]*id="{sec}"[^>]*>.*?(?=<section |</main>)',
+            html,
+            flags=re.S,
+        )
+        body = chunk.group(0) if chunk else ""
+        if cls not in body:
+            fail(f"pals: {label} should keep {cls}", errors)
+        if "data-label=" not in body:
+            fail(f"pals: {label} cards should keep data-label", errors)
 
 
 

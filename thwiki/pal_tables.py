@@ -209,6 +209,36 @@ def unwrap_pipe(raw):
     return str(raw)
 
 
+
+def fmt_unknown_cost(raw) -> str:
+    if raw in (None, "", [], -1):
+        return "無"
+    if isinstance(raw, list) and len(raw) >= 3 and _int(raw[0]) == 999:
+        return f"類型 999、第 {e(str(raw[1]))} 段、數量 {fmt_int(raw[2])}"
+    return "沒有官方資源名，原值見資料說明"
+
+
+def fmt_costs_visible(*raws) -> str:
+    parts = [fmt_unknown_cost(r) for r in raws]
+    parts = [p for p in parts if p != "無"]
+    return "、".join(parts) if parts else "無"
+
+
+def fmt_pre_visible(raw, castle_name: str, terms: list[str]) -> str:
+    text = raw if isinstance(raw, str) else unwrap_pipe(raw)
+    if not text:
+        return "無"
+    parts = str(text).split("|")
+    if len(parts) == 2 and parts[0] == str(CASTLE_INDEX):
+        return f"{H(castle_name, terms)} {e(parts[1])} 級"
+    return "前置原值見資料說明"
+
+
+def fmt_skill_levels_visible(raw) -> str:
+    bits = [b for b in str(raw).split("|") if b != ""]
+    return "、".join(bits) if bits else "無"
+
+
 @dataclass
 class Goods:
     gid: int
@@ -882,20 +912,21 @@ def _extend_adjacent_terms(terms: list[str], texts: list[str]) -> list[str]:
 
 
 def _quality_label(q: int, official: Official) -> str:
-    name = official.qualities.get(q, "")
-    return f"{q}（{name}）" if name else str(q)
+    return official.qualities.get(q, str(q))
 
 
 def _tag_label(tag_id: int, tags: list[Tag]) -> str:
     for t in tags:
         if t.typ == 1 and t.tag_id == tag_id:
-            return f"{tag_id}（{t.title}）" if t.title else str(tag_id)
+            return t.title or str(tag_id)
     return str(tag_id)
 
 
 def _attr_plain(attr_id: int, value: int, names: dict[int, str]) -> str:
-    name = names.get(attr_id) or f"屬性{attr_id}"
-    return f"{name}（{attr_id}）{value}"
+    name = names.get(attr_id)
+    if not name:
+        return str(value)
+    return f"{name} {value}"
 
 
 def _skill_level_curves(pals: list[PalInfo]) -> dict[int, dict]:
@@ -945,11 +976,12 @@ def _upgrade_nodes(levels: dict[int, str]) -> list[str]:
 def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     o = data.official
     names = data.attr_names
+    castle = o.castle_name
 
     camp_rows = []
     for row in data.camp:
         if row.para2 and row.attr_val is not None:
-            para = f"<code>{e(row.para2)}</code>（{fmt_int(row.attr_val)}）"
+            para = fmt_int(row.attr_val)
         else:
             para = "無"
         time_cell = "無" if row.build_time in (None, "", -1) else fmt_int(row.build_time)
@@ -957,22 +989,18 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             str(row.level),
             para,
             fmt_int(row.fightforce),
-            f"<code>{e(row.pre)}</code>" if row.pre else "無",
-            cost_cell(row.cost1),
-            cost_cell(row.cost2),
-            cost_cell(row.cost3),
+            fmt_pre_visible(row.pre, castle, terms),
+            fmt_costs_visible(row.cost1, row.cost2, row.cost3),
             time_cell,
         ])
     camp = table(
         [
             "級",
-            "string_para2（1249 原值）",
-            "fightforce",
-            "pre_building_level",
-            "cost1",
-            "cost2",
-            "cost3",
-            "buildTime",
+            H(names[1249], terms) + "（原值）",
+            "戰力",
+            "前置",
+            "消耗",
+            "時間（表上原值，無單位）",
         ],
         camp_rows,
         mobile="cards",
@@ -985,18 +1013,12 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             str(pal.pid),
             H(pal.name, terms),
             H(_quality_label(pal.quality, o), terms),
-            str(pal.typ),
             H(_tag_label(pal.tag, data.tags), terms),
             str(pal.item),
-            str(pal.unit_id),
-            str(pal.team_scale),
             H(_attr_plain(pal.star.general_id, pal.star.general0, names), terms),
         ])
     catalog = table(
-        [
-            "id", "名稱", "品質", "type", "標籤", "道具",
-            "unit_id", "team_scale", "英雄屬性加成（0 星原值）",
-        ],
+        ["編號", "名稱", "品質", "標籤", "道具", H(official_text("pal_detail_1"), terms) + "（0 星原值）"],
         catalog_rows,
         mobile="cards",
         card_title="名稱",
@@ -1006,13 +1028,12 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     for ex in data.extras:
         desc = MISSING_TEXT if ex.desc_missing else ex.item_desc
         extra_rows.append([
-            f"<code>{e(ex.name_key)}</code>",
             H(ex.name, terms),
             str(ex.gid) if ex.gid else "無",
             H(desc, terms) if not ex.desc_missing else e(MISSING_TEXT),
         ])
     extras = table(
-        ["名稱鍵", "名稱", "道具", "道具說明"],
+        ["名稱", "道具", "道具說明"],
         extra_rows,
         mobile="cards",
         card_title="名稱",
@@ -1021,14 +1042,11 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     tag_rows = []
     for t in data.tags:
         tag_rows.append([
-            str(t.tid),
-            str(t.typ),
-            str(t.tag_id),
-            f"{H(t.title, terms)}（<code>{e(t.title_key)}</code>）" if t.title else e(MISSING_TEXT),
-            f"{H(t.desc, terms)}（<code>{e(t.desc_key)}</code>）" if t.desc else e(MISSING_TEXT),
+            H(t.title, terms) if t.title else e(MISSING_TEXT),
+            H(t.desc, terms) if t.desc else e(MISSING_TEXT),
         ])
     tags = table(
-        ["id", "type", "tag_id", "名稱", "說明"],
+        ["名稱", "說明"],
         tag_rows,
         mobile="cards",
         card_title="名稱",
@@ -1060,7 +1078,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         else:
             shown = f"<code>{e(raw_json(val) if not isinstance(val, str) else val)}</code>"
         catch_rows.append([f"<code>{e(field)}</code>", shown])
-    catch = table(["欄位", "原值"], catch_rows, mobile="cards", card_title="欄位")
+    notes_catch = table(["欄位", "原值"], catch_rows, mobile="cards", card_title="欄位")
 
     mail_specs = [
         ("loot_war_mail_id", 600052, "mail_title_600052", "mail_desc_600052"),
@@ -1069,9 +1087,14 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         ("catch_end_mail", 600055, "mail_title_600055", "pal_catch_reward_mail_text"),
     ]
     mail_rows = []
+    mail_note_rows = []
     for field, mid, title_key, body_key in mail_specs:
         title = official_text(title_key) if has_string(title_key) else ""
         body = official_text(body_key) if has_string(body_key) else ""
+        mail_rows.append([
+            H(title, terms) if title else e(MISSING_TEXT),
+            H(body, terms) if body else e(MISSING_TEXT),
+        ])
         bits = []
         if title:
             bits.append(f"標題「{H(title, terms)}」（<code>{e(title_key)}</code>）")
@@ -1081,38 +1104,34 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             bits.append(f"正文「{H(body, terms)}」（<code>{e(body_key)}</code>）")
         else:
             bits.append(f"正文鍵 <code>{e(body_key)}</code>：{e(MISSING_TEXT)}")
-        mail_rows.append([f"<code>{e(field)}</code>", str(mid), "；".join(bits)])
-    mails = table(["欄位", "id", "標題／正文"], mail_rows, mobile="cards", card_title="欄位")
+        mail_note_rows.append([f"<code>{e(field)}</code>", str(mid), "；".join(bits)])
+    mails = table(["標題", "正文"], mail_rows, mobile="cards", card_title="標題")
+    notes_mails = table(["欄位", "id", "標題／正文"], mail_note_rows, mobile="cards", card_title="欄位")
 
     roll_rows = []
     for row in data.rolls:
         roll_rows.append([
-            str(row.get("id")),
             str(row.get("group_id")),
-            str(row.get("weight")),
             str(row.get("reward_id")),
+            str(row.get("weight")),
         ])
     rolls = table(
-        ["id", "group_id", "weight", "reward_id"],
+        ["組", "獎勵編號", "權重（原值）"],
         roll_rows,
         mobile="cards",
-        card_title="id",
+        card_title="獎勵編號",
     )
 
     fuse_rows = []
     for row in data.fuses:
         q = _int(row["quality"])
         fuse_rows.append([
-            str(row.get("id")),
             H(_quality_label(q, o), terms),
             str(row.get("higherweight")),
             str(row.get("luck")),
-            str(row.get("sameweight")),
-            "無" if row.get("luckcost") in (None, "", -1) else raw_json(row.get("luckcost")),
-            f"<code>{e(raw_json(row.get('luckCostArray')))}</code>",
         ])
     fuses = table(
-        ["id", "品質", "higherweight", "luck", "sameweight", "luckcost", "luckCostArray"],
+        ["品質", "權重原值", "幸運值"],
         fuse_rows,
         mobile="cards",
         card_title="品質",
@@ -1123,22 +1142,19 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         desc_key = row.get("desc")
         if desc_key:
             desc = official_text(desc_key)
-            desc_cell = f"{H(desc, terms)}（<code>{e(desc_key)}</code>）" if desc else e(MISSING_TEXT)
+            desc_cell = H(desc, terms) if desc else e(MISSING_TEXT)
         else:
             desc_cell = e(MISSING_TEXT)
         team_rows.append([
             str(row.get("id")),
-            str(row.get("type")),
-            str(row.get("conditon")),
-            f"<code>{e(row.get('para'))}</code>",
             str(row.get("pal_num")),
             desc_cell,
         ])
     teams = table(
-        ["id", "type", "conditon", "para", "pal_num", "說明"],
+        ["隊伍", "人數", "說明"],
         team_rows,
         mobile="cards",
-        card_title="id",
+        card_title="隊伍",
     )
 
     pos_rows = []
@@ -1149,20 +1165,16 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             desc_cell = H(desc, terms) if desc else e(MISSING_TEXT)
         else:
             desc_cell = e(MISSING_TEXT)
-        para = row.get("para")
         pos_rows.append([
-            str(row.get("id")),
             str(row.get("teamid")),
             str(row.get("type")),
-            str(row.get("conditon")),
-            "無" if para in (None, "", -1) else f"<code>{e(para)}</code>",
             desc_cell,
         ])
     teampos = table(
-        ["id", "teamid", "type", "conditon", "para", "說明"],
+        ["隊伍", "站位", "說明"],
         pos_rows,
         mobile="cards",
-        card_title="id",
+        card_title="隊伍",
     )
 
     power = _power_curves(data.pals)
@@ -1190,7 +1202,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
             ),
         ])
     stars = table(
-        ["id", "名稱", "品質", "攻擊 0／5 星", "生命值 0／5 星", "英雄屬性加成 0／5 星"],
+        ["編號", "名稱", "品質", "攻擊 0／5 星", "生命值 0／5 星", H(official_text("pal_detail_1"), terms) + " 0／5 星"],
         star_rows,
         mobile="cards",
         card_title="名稱",
@@ -1202,7 +1214,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         lv = curves[q]["levels"]
         sl_rows.append(
             [H(_quality_label(q, o), terms), str(curves[q]["n"])]
-            + [f"<code>{e(lv[st])}</code>" for st in range(6)]
+            + [fmt_skill_levels_visible(lv[st]) for st in range(6)]
         )
     skill_levels = table(
         ["品質", "技能數", "0 星", "1 星", "2 星", "3 星", "4 星", "5 星"],
@@ -1211,20 +1223,50 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         card_title="品質",
     )
 
-    aura_rows = []
+    # Visible aura: collapse five unnamed groups with identical values into 3 rows.
+    by_count: dict[int, dict] = {}
     for row in data.auras:
         desc_key = row.get("desc")
         desc = official_text(desc_key) if desc_key else ""
-        attr = row.get("attr")
+        req = str(row.get("require") or "")
+        parts = req.split("|")
+        count = _int(parts[1]) if len(parts) >= 2 else 0
+        attr_pairs = parse_pipe_pairs(row.get("attr"))
+        vals = {aid: val for aid, val in attr_pairs}
+        entry = {"desc": desc, "atk": vals.get(62), "hp": vals.get(63), "raw": row}
+        if count not in by_count:
+            by_count[count] = entry
+        else:
+            if (by_count[count]["atk"] != entry["atk"] or by_count[count]["hp"] != entry["hp"]
+                    or by_count[count]["desc"] != entry["desc"]):
+                raise RuntimeError(f"aura values for count {count} are not uniform")
+    aura_rows = []
+    for count in sorted(by_count):
+        item = by_count[count]
         aura_rows.append([
-            str(row.get("id")),
-            f"<code>{e(row.get('require'))}</code>",
-            f"<code>{e(desc_key)}</code>",
-            f"<code>{e(attr)}</code>",
+            str(count),
+            H(item["desc"], terms) if item["desc"] else e(MISSING_TEXT),
+            fmt_int(item["atk"]) if item["atk"] is not None else "無",
+            fmt_int(item["hp"]) if item["hp"] is not None else "無",
         ])
     auras = table(
-        ["id", "require", "說明鍵", "屬性原值（62、63）"],
+        ["同種族隻數", "官方說明", H(names[62], terms) + "（原值）", H(names[63], terms) + "（原值）"],
         aura_rows,
+        mobile="cards",
+        card_title="同種族隻數",
+    )
+
+    aura_note_rows = []
+    for row in data.auras:
+        aura_note_rows.append([
+            str(row.get("id")),
+            f"<code>{e(row.get('require'))}</code>",
+            f"<code>{e(row.get('desc'))}</code>",
+            f"<code>{e(row.get('attr'))}</code>",
+        ])
+    notes_auras = table(
+        ["id", "require", "說明鍵", "屬性原值（62、63）"],
+        aura_note_rows,
         mobile="cards",
         card_title="id",
     )
@@ -1235,26 +1277,26 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         g = o.goods[gid]
         desc = e(MISSING_TEXT) if g.desc_missing else H(g.desc, terms)
         name = e(MISSING_TEXT) if g.name_missing else H(g.name, terms)
-        mat_rows.append([str(gid), name, desc])
+        mat_rows.append([name, desc])
     materials = table(
-        ["道具 id", "名稱", "說明"],
+        ["名稱", "說明"],
         mat_rows,
         mobile="cards",
         card_title="名稱",
     )
 
-    arena_rows = []
+    arena_note_rows = []
     for aid in ARENA_ACTIVITY_IDS:
         row = data.activities[aid]
-        arena_rows.append([
+        arena_note_rows.append([
             str(aid),
-            str(row.get("is_open")),
+            f"<code>{e(row.get('is_open'))}</code>",
             f"<code>{e(row.get('take_effect_time'))}</code>",
             f"<code>{e(row.get('server_list'))}</code>",
         ])
-    arena_acts = table(
+    notes_arena = table(
         ["id", "is_open", "take_effect_time", "server_list"],
-        arena_rows,
+        arena_note_rows,
         mobile="cards",
         card_title="id",
     )
@@ -1264,7 +1306,6 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         "catalog": catalog,
         "extras": extras,
         "tags": tags,
-        "catch": catch,
         "mails": mails,
         "rolls": rolls,
         "fuses": fuses,
@@ -1275,7 +1316,10 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
         "skill_levels": skill_levels,
         "auras": auras,
         "materials": materials,
-        "arena_acts": arena_acts,
+        "notes_catch": notes_catch,
+        "notes_mails": notes_mails,
+        "notes_auras": notes_auras,
+        "notes_arena": notes_arena,
         "skill_curves": curves,
     }
 
@@ -1283,10 +1327,10 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
 def _skill_block(skill: SkillDef, terms: list[str]) -> str:
     if not skill.named:
         return (
-            f"<li><strong>{e('（沒有官方技能名）')}</strong>（{skill.sid}，maxlv {skill.maxlv}）"
+            f"<li><strong>{e('（沒有官方技能名）')}</strong>"
             f"<p>{e(MISSING_NAME_DESC)}</p></li>"
         )
-    parts = [f"<li><strong>{H(skill.name, terms)}</strong>（{skill.sid}，maxlv {skill.maxlv}）"]
+    parts = [f"<li><strong>{H(skill.name, terms)}</strong>"]
     items = []
     for seg in skill.segments:
         if seg.level == 1:
@@ -1303,6 +1347,8 @@ def _skill_block(skill: SkillDef, terms: list[str]) -> str:
         items.append(f"<li>{e(label)}：{body}{e(leftover)}</li>")
     parts.append("<ul>" + "".join(items) + "</ul></li>")
     return "".join(parts)
+
+
 
 
 def _pack_same(tc: dict, name: str, labels: tuple[str, ...]) -> bool:
@@ -1341,13 +1387,10 @@ def _data_notes(data: TablesData) -> str:
     else:
         seven_note = "七張共有帕魯主表在四批裡的存在與位元組對照見各檔說明，並非全部相同。"
 
-    star_ex = tc["pal_star.json"]["exists"]
-    aura_ex = tc["pal_aura.json"]["exists"]
     star_note = (
         "`pal_star.json` 與 `pal_aura.json` 只出現在 2026-11-22 LocalLow 與現行 `data/`，兩批位元組相同；"
         "2026-11-05 解壓快照與 2026-11-22 StreamingAssets 都沒有這兩張表。"
         "本頁從 LocalLow 歸檔讀取這兩張，不把它們寫成 11-05 也有。"
-        f"（核對：star 存在於 {star_ex}；aura 存在於 {aura_ex}。）"
     )
 
     strings_note = (
@@ -1421,12 +1464,17 @@ def _data_notes(data: TablesData) -> str:
     )
 
 
+
 def render_html(data: TablesData) -> str:
     from .render import page_shell, toc_list
 
     o = data.official
     terms = data.terms
     tbl = _build_html_tables(data, terms)
+    func = data.function
+    b = data.building
+    catch1 = data.activities[5002001]
+    catch2 = data.activities[5002002]
     title = "Top Heroes Wiki｜帕魯總表"
     lede = (
         f"本頁列出官方界面所稱的「{o.system_name}」：55 隻的名稱、標籤、捕捉與權重、融合、隊伍與位置、"
@@ -1467,59 +1515,44 @@ def render_html(data: TablesData) -> str:
         f"這不是守護魔獸；守護魔獸見已發佈的<a href=\"holybeasts.html\">{H('守護魔獸總表', terms)}</a>。"
         f"已發佈的<a href=\"valhalla.html\">{H('英靈總表', terms)}</a>是綁在英雄身上的另一套養成，不是帕魯。"
         "精靈、魚缸、蝴蝶、乙太牧場不在本頁展開。"
+        "對照路徑、筆數與欄位原值見資料說明。"
     ))
     add("<ul>")
     add("<li><strong>本頁只寫官方所稱的「"
         + H(o.system_name, terms)
         + "」這套，共 55 隻。</strong>"
         "下面會列出名稱、標籤、捕捉與權重、融合、隊伍與位置、升星規則與關鍵節點、技能原文，以及光環。"
-        "升星 330 筆不整表傾印。對照路徑與筆數見資料說明。</li>")
+        "升星 330 筆不整表傾印。</li>")
     add("<li>名稱依遊戲裡看得到的顯示名書寫。沒有官方名稱或說明的欄位會註明「字串表沒有內容」或「字串表沒有名稱與說明」，不編造。"
         f"官方用語是「{H(o.system_name, terms)}」「{H('部族', terms)}」。"
         "官方用字不一致時照錄，不自行改寫。"
-        "主表 type 為 1–5，字串表沒有這欄的中文名（"
-        + "、".join(f"<code>pal_type_{i}</code>" for i in range(1, 6))
-        + " 是標籤「"
+        "主表有一欄類型編號為 1–5，字串表沒有這欄的中文名；"
         + "、".join(H(t.title, terms) for t in data.tags if t.typ == 1 and t.tag_id <= 5)
-        + "」等，不是 type 欄的名稱），不編造陣營或地圖名。</li>")
+        + " 是標籤名稱，不是那一欄的名稱，不編造陣營或地圖名。</li>")
     add("<li><strong>不要從時間或賽季欄位、預告或紀念文案自動標未開放，也不把預告當成已推出證明。</strong>"
-        "相關欄位與文案只照錄，不把鍵名裡的 s2、數字自行對成賽季號。"
-        "主表與升星表的 season 皆為 0。主表沒有 unlocktime。"
+        "相關欄位與文案只照錄，不把欄位裡的數字自行對成賽季號。"
         "屬性只錄表上的原值，不自行換成百分比。"
         "官方文案若已有百分比，只照錄字串，不與表上原值換算成同一個數字。</li>")
-    add("<li>技能文案以技能表 <code>desc1</code>、<code>desc2</code> 填入對應參數後照錄。"
-        "desc1 是基礎效果，desc2 是升至 2 級的追加說明，不是另寫一條完整技能。"
-        "這批帕魯技能沒有 desc3–desc5。若文案某個佔位未出現，不自行挪位。"
-        "多名技能共用同一名稱鍵時，仍各錄各的參數與文案，不以同名視為同一條。"
-        "名稱鍵與技能 id 不必相同。</li>")
+    add("<li>技能文案以官方基礎效果與升至 2 級的追加說明填入對應參數後照錄。"
+        "追加說明不是另寫一條完整技能。這批帕魯技能沒有第三段到第五段說明。"
+        "若文案某個佔位未出現，不自行挪位。"
+        "多名技能共用同一名稱時，仍各錄各的參數與文案，不以同名視為同一條。</li>")
     add("</ul>")
     add("    </section>")
 
     add('    <section id="scope">')
     add("      <h2>範圍與解鎖</h2>")
     add(p_html(
-        f"官方界面稱「{H(o.system_name, terms)}」（<code>pal_list_1</code>、<code>pal_attr_1</code>）。"
-        f"影響力目錄在「{H(o.partner_dir, terms)}」底下有「{H(o.system_name, terms)}」一項"
-        f"（id 32100，名稱鍵 <code>pal_list_1</code>，type_name 為 <code>PAL</code>，jump 為 {JUMP_ID}）。"
-        f"jump.json {JUMP_ID} 的 name／desc 為空，go_target 為空，task_guide 為 {e(str(data.jump.get('task_guide')))}，"
-        f"city_lv 為 {e(str(data.jump.get('city_lv')))}，season 為空。"
+        f"官方界面稱「{H(o.system_name, terms)}」。"
+        f"影響力目錄在「{H(o.partner_dir, terms)}」底下有「{H(o.system_name, terms)}」一項。"
+        f"開啟提示寫「{H(o.func_tips, terms)}」。"
+        "開啟條件的欄位原值見資料說明；117 的官方名稱是「"
+        + H(o.castle_name, terms)
+        + "」。"
     ))
-    func = data.function
-    add(p_html(
-        f"function.json id {FUNCTION_ID} 的開啟面板是 <code>{e(func.get('openPanel'))}</code>，"
-        f"func_open_param 為 <code>{e(func.get('func_open_param'))}</code>"
-        f"（117 的官方名稱是「{H(o.castle_name, terms)}」），"
-        f"condition_type 為 {e(str(func.get('condition_type')))}、value 為 {e(str(func.get('value')))}（{H(o.camp_name, terms)}），"
-        f"提示字串「{H(o.func_tips, terms)}」。"
-        "名稱欄為空，字串表沒有對應內容。"
-    ))
-    b = data.building
     add(p_html(
         f"建築 {BUILDING_INDEX} 的官方名稱是「{H(o.camp_name, terms)}」，升級說明「{H(o.camp_des, terms)}」。"
-        f"maxlevel／new_maxlevel 皆為 {e(str(b.get('maxlevel')))}。"
-        f"主表 season_range_1 為 <code>{e(b.get('season_range_1'))}</code>，"
-        f"open_season_day 為 <code>{e(raw_json(b.get('open_season_day')))}</code>，只照錄。"
-        f"建造費用欄 costs 為 <code>{e(raw_json(b.get('costs')))}</code>。"
+        "最高等級與建造費用原值見資料說明，只照錄，不對成賽季號。"
         "升級表見下節。"
         f"界面另寫：「{H(o.star_hint, terms)}」；「{H(o.build_hint, terms)}」；「{H(o.func_locked, terms)}」。"
         "分頁標題為「"
@@ -1529,33 +1562,16 @@ def render_html(data: TablesData) -> str:
         + "」。"
         "本頁不把這些前置自行寫成唯一開啟條件，也不把「"
         + H(o.filters[2], terms)
-        + "」篩選自行寫成 type 1–5 的中文名。"
-    ))
-    catch1 = data.activities[5002001]
-    catch2 = data.activities[5002002]
-    add(p_html(
-        f"活動「{H(o.catch_title, terms)}」（名稱鍵 <code>pal_catch_title</code>）說明：「{H(o.catch_desc, terms)}」。"
-        "activity.json 有兩列共用此名稱與說明："
-        f"id 5002001（type {e(str(catch1.get('type')))}，is_open {e(str(catch1.get('is_open')))}，"
-        f"season {e(str(catch1.get('season')))}，condition 為 <code>{e(catch1.get('condition'))}</code>，"
-        f"take_effect_time 為 <code>{e(catch1.get('take_effect_time'))}</code>，"
-        f"server_list 為 <code>{e(catch1.get('server_list'))}</code>，"
-        f"form_list 為 <code>{e(catch1.get('form_list'))}</code>，"
-        f"info／faq 為 {e(str(catch1.get('info')))}，與捕捉參數表 activity_info／activity_desc 對得上）；"
-        f"id 5002002（type {e(str(catch2.get('type')))}，is_open {e(str(catch2.get('is_open')))}，"
-        f"season {e(str(catch2.get('season')))}，condition 同樣為 <code>{e(catch2.get('condition'))}</code>，"
-        f"take_effect_time 為 <code>{e(catch2.get('take_effect_time'))}</code>，"
-        f"server_list 為 <code>{e(catch2.get('server_list'))}</code>，"
-        f"form_list 為 <code>{e(catch2.get('form_list'))}</code>）。"
-        "season、server_list、take_effect_time、is_open 只照錄，不自行對成賽季號或顯示伺服器，也不據此標已推出或未開放。"
+        + "」篩選自行寫成類型 1–5 的中文名。"
     ))
     add(p_html(
-        f"活動「{H(o.arena_name, terms)}」（<code>activity_name_5001022</code>）在 activity.json 有五列共用此名稱鍵，"
-        "describe 皆為 <code>activity_desc_5001022</code>（字串表沒有內容），"
-        "type 皆為 10089，season 皆為 5，condition 皆為 <code>2|117|12</code>，"
-        "info／faq 皆為 35013，form_list 皆為 208："
+        f"活動「{H(o.catch_title, terms)}」說明：「{H(o.catch_desc, terms)}」。"
+        "活動表有兩列共用此名稱與說明。時間、伺服器與開關欄只照錄，不自行對成賽季號或顯示伺服器，也不據此標已推出或未開放。原值見資料說明。"
     ))
-    add(tbl["arena_acts"])
+    add(p_html(
+        f"活動「{H(o.arena_name, terms)}」在活動表有五列共用此名稱，說明字串表沒有內容。"
+        "五列的類型、條件與其他欄位原值見資料說明，只照錄，不自行對成賽季號。"
+    ))
     add(p_html(
         f"亂鬥玩法說明標題是「{H(official_text('palu_arena_info_title'), terms)}」。官方說明："
     ))
@@ -1573,38 +1589,38 @@ def render_html(data: TablesData) -> str:
     add(p_html(
         f"亂鬥界面另有{arena_keys}，以及{arena_tips}。"
         f"道具 522 名稱「{H(g522.name, terms)}」，說明「{H(g522.desc, terms)}」。"
-        f"機器人名稱鍵為「{H(official_text('palu_arena_robot_name'), terms)}」。"
-        "升星表另有 power 欄，本頁不把 power 與「"
+        f"機器人名稱是「{H(official_text('palu_arena_robot_name'), terms)}」。"
+        "升星表另有戰力欄，本頁不把該欄與「"
         + H(official_text("palu_arena_activity_key1"), terms)
         + "」自行寫成同一顯示，也不把心形圖標當戰力。"
-        "亂鬥用的獨立對戰數值表本頁未另列，見文末。"
+        "亂鬥用的獨立對戰數值表本頁未另列，見資料說明。"
     ))
     add(p_html(
-        f"鍵 <code>season_preview_title_406</code> 的標題是「{H(o.preview_title, terms)}」，"
-        f"鍵 <code>season_preview_desc_413</code> 的說明是「{H(o.preview_desc, terms)}」。"
-        f"鍵 <code>season_memo_s2_photo1_text3</code> 的文案是「{H(o.memo_text, terms)}」。"
-        "標題與說明是遊戲原文，只照錄鍵名與正文，不是已推出或未開放的判斷，也不把鍵名裡的數字或 s2 自行對成賽季號。"
+        f"預告標題是「{H(o.preview_title, terms)}」，"
+        f"說明是「{H(o.preview_desc, terms)}」。"
+        f"紀念文案是「{H(o.memo_text, terms)}」。"
+        "標題與說明是遊戲原文，只照錄，不是已推出或未開放的判斷，也不把文案裡的數字自行對成賽季號。"
     ))
     add("    </section>")
 
     add('    <section id="camp">')
     add(f"      <h2>{e(o.camp_name)}升級</h2>")
     add(p_html(
-        f"升級在 citybuilding_lvup.json（建築 index {BUILDING_INDEX}，0–40 級，共 41 筆）。"
-        "citybuilding_lvup_new.json 同一建築的這 41 筆，在兩表共有欄位上與這張表相同。"
-        "des 全為空。string_para1 全為空。"
-        "0 級沒有 string_para2；1–40 級的 string_para2 為 1249|{n}|1，n 從 100 起每級加 100，至 40 級為 4000。"
-        f"1249 的官方名稱是「{H(data.attr_names[1249], terms)}」，show_type 為 2，只錄原值，不自行換成百分比。"
-        "這與捕捉參數表的 pal_catch_chance=6000 不是同一欄，本頁不自行合併。"
+        f"升級表列建築「{H(o.camp_name, terms)}」0–40 級，共 41 筆（檔名見資料說明）。"
+        "說明欄全為空。"
+        "1–40 級的捕捉機率原值從 100 起每級加 100，至 40 級為 4000。"
+        f"官方名稱是「{H(data.attr_names[1249], terms)}」，只錄原值，不自行換成百分比。"
+        "這與捕捉參數表裡另一個機率欄不是同一欄，本頁不自行合併。"
     ))
     add(p_html(
-        "0–25 級的 pre_building_level 皆為 <code>117|25</code>；26–40 級改為 <code>117|{該級}</code>。"
-        "0 級 cost1 為 <code>[999, 4, 50]</code>，沒有 cost2／cost3，buildTime 為 3，fightforce 為 0。"
-        "1 級 cost1／cost2 為 <code>[999, 4, 100]</code>／<code>[999, 5, 100]</code>，沒有 cost3，buildTime 為 100，fightforce 為 300。"
-        "2 級起有 cost1／cost2／cost3（第三段為 <code>[999, 6, …]</code>）。"
-        "40 級沒有 cost1–cost4，也沒有 buildTime。"
-        "999 與 4／5／6 在字串表沒有對應的道具或資源名稱，本頁只錄原值，待補。"
-        f"第 2、3 支帕魯隊伍的解鎖說明寫在 pal_team.json（「{H(official_text('pal_edit_2'), terms)}」「{H(official_text('pal_edit_3'), terms)}」），不在這張升級表裡。"
+        f"0–25 級的前置是「{H(o.castle_name, terms)}」25 級；"
+        f"26–40 級的前置是「{H(o.castle_name, terms)}」同級。"
+        "消耗沒有官方資源名，表上寫成類型 999、第 4／5／6 段與數量，只錄原值，待補。"
+        "0 級消耗為類型 999、第 4 段、數量 50，時間 3，戰力 0。"
+        "1 級消耗為類型 999、第 4 段與第 5 段、數量各 100，時間 100，戰力 300。"
+        "2 級起有第 4、5、6 段。"
+        "40 級沒有消耗，也沒有時間。"
+        f"第 2、3 支帕魯隊伍的解鎖說明寫在隊伍表（「{H(official_text('pal_edit_2'), terms)}」「{H(official_text('pal_edit_3'), terms)}」），不在這張升級表裡。"
     ))
     add(tbl["camp"])
     add("    </section>")
@@ -1612,41 +1628,37 @@ def render_html(data: TablesData) -> str:
     add('    <section id="catalog">')
     add("      <h2>名錄</h2>")
     add(p_html(
-        f"pal.json {PAL_COUNT} 筆。55 筆的 season 皆為 0、unlocknum 皆為 1、weight 皆為 100，"
-        "damage_volume／volume／model_scale 皆為 -1。"
-        "不把 season=0 自行解釋成賽季編號或未開放。"
-        "主表 weight 與捕捉權重表的 weight 不是同一張表。"
-        "tag 與 tagInt 數值一致（1–4）。"
-        "type 為 1–5，各 11 筆（id 的萬位與 type 一致），字串表沒有 type 欄的中文名，不編造陣營或地圖名。"
-        "quality 用 pal_quality_{n}：「"
-        + "、".join(f"{q} {H(name, terms)}" for q, name in o.qualities.items())
-        + f"」（字串另有 pal_quality_6「{H(o.quality_6, terms)}」，主表 55 筆沒有品質 6）。"
+        f"主表 {PAL_COUNT} 筆。"
+        "主表有一欄類型編號為 1–5，各 11 筆，字串表沒有這欄的中文名，不編造陣營或地圖名。"
+        "品質名稱為「"
+        + "、".join(H(name, terms) for name in o.qualities.values())
+        + f"」（字串另有「{H(o.quality_6, terms)}」，主表 55 筆沒有這個品質）。"
         "品質分佈：普通 10、優秀 10、稀有 20、史詩 10、傳說 5。"
         "標籤分佈：冰霜 15、魔人 32、野獸 3、亡靈 5。"
-        "主表沒有標籤 5「"
+        "主表沒有標籤「"
         + H(next(t.title for t in data.tags if t.tid == 5), terms)
-        + "」，也沒有把 pal_tag 裡 type=2 的"
+        + "」，也沒有把標籤表裡職能類的"
         + "／".join(H(t.title, terms) for t in data.tags if t.typ == 2)
-        + "寫進 tag 欄。"
+        + "寫進標籤欄。"
+        "其餘欄位原值見資料說明；不把時間或賽季欄自行解釋成賽季編號或未開放。"
     ))
     add(p_html(
-        "道具 80001–80055 的 goods_name_* 與對應帕魯名相同。"
+        "道具 80001–80055 的名稱與對應帕魯名相同。"
         "說明多數為「可用來啟用○○帕魯，同時也是帕魯升星和融合的材料。」"
         "其中 80043（"
         + H(next(p.name for p in data.pals if p.item == 80043), terms)
         + "）、80052（"
         + H(next(p.name for p in data.pals if p.item == 80052), terms)
         + "）兩條寫「素材」而不是「材料」，照錄不改。"
-        "這 55 個道具 id 以及 519、522、163001–163008、163101 在 goods.json 裡對不上可用的列，名稱與說明一律取自字串表。"
+        "這 55 個道具編號以及 519、522、163001–163008、163101 在道具表裡對不上可用的列，名稱與說明一律取自字串表。"
         "下表「"
         + H(official_text("pal_detail_1"), terms)
-        + "」是升星表 generalattr 的屬性名與 0 星原值（各星為 0 星原值乘以 星+1，見升星節）。"
-        "unit_id 與技能 id 前綴一致。team_scale 只錄原值，字串表沒有這一欄的名稱。"
+        + "」是升星表英雄加成屬性的名稱與 0 星原值（各星為 0 星原值乘以 星+1，見升星節）。"
     ))
     add(tbl["catalog"])
     add(p_html(
-        "字串表另有 20 條 palname_* 與 goods_name_80056–goods_name_80075，"
-        "這些鍵不在 pal.json 的 55 筆裡，也不在 pal_star.json，不把它們算進本名錄，也不因此標未開放或已實裝。"
+        "字串表另有 20 個名稱與對應道具名（道具 80056–80075），"
+        "這些名稱不在這 55 筆主表裡，也不在升星表，不把它們算進本名錄，也不因此標未開放或已實裝。"
         "對應關係依道具名稱與帕魯名稱字串相同來並列："
     ))
     add(tbl["extras"])
@@ -1655,9 +1667,9 @@ def render_html(data: TablesData) -> str:
     add('    <section id="tags">')
     add("      <h2>標籤</h2>")
     add(p_html(
-        "pal_tag.json 9 筆。欄位名是 titile（表上的拼法）。"
-        "type=1 的說明寫「與其他○○帕魯同時上陣可獲得屬性加成」；type=2 是職能說明。"
-        "主表 tag 只用到 1–4。光環表按主表 type（1–5）計同種族隻數，不是按這組元素標籤計，見光環節。"
+        "標籤表 9 筆。"
+        "一類說明寫「與其他○○帕魯同時上陣可獲得屬性加成」；另一類是職能說明。"
+        "主表標籤只用到前四種元素標籤。光環表按主表類型編號 1–5 計同種族隻數，不是按這組元素標籤計，見光環節。"
     ))
     add(tbl["tags"])
     add("    </section>")
@@ -1665,10 +1677,11 @@ def render_html(data: TablesData) -> str:
     add('    <section id="catch">')
     add("      <h2>捕捉與權重</h2>")
     add(p_html(
-        "pal_catch_param.json 僅 1 筆全域設定。官方說明在 pal_catch_intro_*"
-        f"（標題「{H(official_text('pal_catch_intro_title'), terms)}」）。"
-        "以下先照錄說明，再並列表上原值；表上沒有標成百分比的欄，不自行換算。"
+        "捕捉參數表僅 1 筆全域設定。"
+        f"官方說明標題是「{H(official_text('pal_catch_intro_title'), terms)}」。"
+        "以下先照錄說明；表上沒有標成百分比的欄，不自行換算。"
         "說明字串若已寫出百分比，仍只照錄字串，不用原值去對齊成同一個數字。"
+        "參數欄位名與原值見資料說明。"
     ))
     add(p_html(
         f"<strong>{H(official_text('pal_catch_intro_subtitle1'), terms)}／"
@@ -1689,24 +1702,22 @@ def render_html(data: TablesData) -> str:
         f"界面另有「{H(official_text('pal_catch_auto_warrior_text'), terms)}」、"
         f"「{H(official_text('pal_catch_auto_enable_btn'), terms)}」、"
         f"「{H(official_text('pal_catch_auto_palace_btn'), terms)}」。"
-        "無法發起劫掠、無法發起捕捉的提示字串鍵為 pal_catch_cant_loot_*、pal_catch_cant_*，本頁不逐條展開。"
+        "無法發起劫掠、無法發起捕捉的提示，本頁不逐條展開。"
     ))
-    add(p_html("pal_catch_param 表上原值（欄位名照錄）："))
-    add(tbl["catch"])
     add(p_html(
-        "說明字串「每日可以成功劫掠3次」與 pal_loot_time_max=3 數字相同；"
-        "「以及30%的紅水晶」是說明字串裡已寫出的百分比，表上 pal_loot_percent 仍只記 3000。"
-        "pal_catch_open_season=4 只照錄，不對成賽季號。"
-        "pal_per_catch_amount、palace_pal_per_catch_amount、pal_catch_chance 等與「每採滿一定數量的紅水晶就有機率捕捉」的確切對應，表沒有標註，見文末。"
-        "crystal_pal_reward_icon／palace_pal_reward_icon、alliance_resource_id、other_kingdom_reward_id、ocean_server_march_gate_id 在字串表沒有對應名稱。"
+        "說明字串「每日可以成功劫掠3次」與表上成功劫掠次數上限 3 數字相同；"
+        "「以及30%的紅水晶」是說明字串裡已寫出的百分比，表上對應欄仍只記 3000。"
+        "開放相關欄的原值只照錄，不對成賽季號。"
+        "每次捕捉數量、機率等與「每採滿一定數量的紅水晶就有機率捕捉」的確切對應，表沒有標註，見資料說明。"
+        "若干獎勵圖示與資源編號在字串表沒有對應名稱。"
     ))
-    add(p_html("郵件 id 與字串："))
+    add(p_html("相關郵件標題與正文："))
     add(tbl["mails"])
     add(p_html(
-        "pal_roll_weight.json 30 筆。crystal_pal_reward_weight_id=1、guild_pal_reward_weight_id=2 對應這張表的 group_id。"
-        "group_id 1 有 20 筆：reward_id 604011101–604011110 的 weight 各為 900，604011111–604011120 的 weight 各為 100。"
-        "group_id 2 有 10 筆：reward_id 同樣是 604011111–604011120，weight 皆為 100。"
-        "這些 reward_id 在字串表沒有名稱或說明，本頁不把它們自行對成普通或優秀品質。"
+        "權重表 30 筆。第一組 20 筆：獎勵編號 604011101–604011110 的權重各為 900，604011111–604011120 的權重各為 100。"
+        "第二組 10 筆：獎勵編號同樣是 604011111–604011120，權重皆為 100。"
+        "這些獎勵編號在字串表沒有名稱或說明，本頁不把它們自行對成普通或優秀品質。"
+        "兩組與捕捉參數欄的對應見資料說明。"
     ))
     add(tbl["rolls"])
     add("    </section>")
@@ -1725,10 +1736,10 @@ def render_html(data: TablesData) -> str:
     add(p_html(f"{H(official_text('pal_info_tab_3'), terms)}："))
     add(f"<blockquote>{highlight_lines(official_text('pal_info_3'), terms)}</blockquote>")
     add(p_html(
-        "pal_fuse.json 4 筆，對應品質 1–4。higherweight 為 4500／3500／2500／1500，只錄原值，不用來對齊說明字串裡的百分比。"
-        "luck 為 1／3／10／50，與幸運值說明裡的數字相同。"
-        "sameweight 全為 -1，luckcost 為空，luckCostArray 為 <code>[]</code>。"
-        f"主表沒有品質 5（{H(o.qualities[5], terms)}）或品質 6（{H(o.quality_6, terms)}）的融合列。"
+        "融合表 4 筆，對應品質普通到史詩。權重原值為 4500／3500／2500／1500，只錄原值，不用來對齊說明字串裡的百分比。"
+        "幸運值為 1／3／10／50，與幸運值說明裡的數字相同。"
+        f"主表沒有品質「{H(o.qualities[5], terms)}」或「{H(o.quality_6, terms)}」的融合列。"
+        "其餘欄位原值見資料說明。"
     ))
     add(tbl["fuses"])
     g519 = o.goods[519]
@@ -1749,15 +1760,15 @@ def render_html(data: TablesData) -> str:
     add('    <section id="teams">')
     add("      <h2>隊伍與位置</h2>")
     add(p_html(
-        "pal_team.json 3 筆，每隊 pal_num 為 6，type 為 1，conditon（表上的拼法）為 1，para 皆為 <code>183|0</code>。"
-        f"第 1 隊 desc 為空，{MISSING_TEXT}。"
+        "隊伍表 3 筆，每隊 6 人。"
+        f"第 1 隊說明{MISSING_TEXT}。"
         f"第 2 隊說明「{H(official_text('pal_edit_2'), terms)}」，"
         f"第 3 隊說明「{H(official_text('pal_edit_3'), terms)}」。"
+        "前置欄原值見資料說明。"
     ))
     add(tbl["teams"])
     add(p_html(
-        "pal_teampos.json 18 筆，三隊各 6 個站位（teamid 1–3，每隊 type 1–6），"
-        "conditon 皆為 1，para、desc 皆為空，站位含義字串表沒有內容。"
+        "站位表 18 筆，三隊各 6 個站位，站位含義字串表沒有內容。"
         "編輯界面字串："
         f"「{H(official_text('pal_edit_6'), terms)}」；"
         f"「{H(official_text('pal_edit_9'), terms)}」；"
@@ -1771,7 +1782,7 @@ def render_html(data: TablesData) -> str:
         + "」「".join(H(official_text(f"pal_list_{i}"), terms) for i in range(2, 5))
         + "」。詳情頁標題有「"
         + "」「".join(H(official_text(f"pal_detail_{i}"), terms) for i in range(1, 7))
-        + "」；pal_detail_5 與 pal_detail_6 文案同為「"
+        + "」；後兩項文案同為「"
         + H(official_text("pal_detail_5"), terms)
         + "」。"
     ))
@@ -1781,36 +1792,33 @@ def render_html(data: TablesData) -> str:
     add('    <section id="star">')
     add("      <h2>升星</h2>")
     add(p_html(
-        "pal_star.json 330 筆只在 LocalLow 出現，每隻 6 列，星級 0–5，55 隻都有、沒有缺列。"
-        "season 全表為 0，只照錄。attrdesc 全為空，字串表沒有內容。"
-        "cost 全表為 1，沒有寫道具 id。"
-        "對應帕魯的道具說明寫「同時也是帕魯升星和融合的材料」（80043、80052 為「素材」）；0 星列的 cost 同樣為 1。"
-        "主表 unlocknum 皆為 1。"
+        "升星表 330 筆，每隻 6 列，星級 0–5，55 隻都有、沒有缺列。"
+        "消耗欄全表為 1，沒有寫道具編號。對應帕魯的道具說明寫「同時也是帕魯升星和融合的材料」（80043、80052 為「素材」）；0 星列的消耗同樣為 1。"
         f"界面有「{H(official_text('pal_detail_4'), terms)}」「{H(official_text('pal_detail_3'), terms)}」「{H(official_text('pal_detail_5'), terms)}」，"
         f"以及「{H(official_text('pal_not_enough'), terms)}」。"
         f"另有道具 163101 名稱「{H(o.goods[163101].name, terms)}」，說明「{H(o.goods[163101].desc, terms)}」。"
-        f"主表與升星表都沒有品質 6 的列。"
+        f"主表與升星表都沒有品質「{H(o.quality_6, terms)}」的列。"
+        "其餘欄位原值見資料說明。"
     ))
-    add(p_html("power 只依品質分組，同一品質 55 筆裡同星的值全部相同："))
+    add(p_html("戰力只依品質分組，同一品質 55 筆裡同星的值全部相同："))
     add(tbl["powers"])
     add(p_html(
-        "generalattr 每隻只掛一種屬性，六個星級的原值為 0 星原值的 1–6 倍。0 星原值見名錄。"
-        f"屬性 3／4 的官方名是「{H(data.attr_names[3], terms)}」「{H(data.attr_names[4], terms)}」；"
-        "3003／4003／5003、3004／4004／5004 是"
+        "英雄加成屬性每隻只掛一種，六個星級的原值為 0 星原值的 1–6 倍。0 星原值見名錄。"
+        f"這一欄用到的官方名是「{H(data.attr_names[3], terms)}」「{H(data.attr_names[4], terms)}」，以及"
         f"{H(data.attr_names[3003], terms)}／{H(data.attr_names[4003], terms)}／{H(data.attr_names[5003], terms)}、"
         f"{H(data.attr_names[3004], terms)}／{H(data.attr_names[4004], terms)}／{H(data.attr_names[5004], terms)}。"
-        "show_type 皆為 1，只錄原值。"
+        "只錄原值。"
     ))
     add(p_html(
-        f"combatattr 全表都是屬性 3「{H(data.attr_names[3], terms)}」與 4「{H(data.attr_names[4], terms)}」。"
+        f"戰鬥屬性全表都是「{H(data.attr_names[3], terms)}」與「{H(data.attr_names[4], terms)}」。"
         "同一隻在 1–5 星的攻擊、生命值，分別是 0 星原值再加 0 星原值的 10%、20%、30%、40%、50%。"
         "生命值都是整數。攻擊若出現非整數，表上記的是四捨五入後的整數（例如 0 星攻擊 375，1 星為 413，2 星為 450）。"
         "本頁以表上原值為準，不另用公式改寫。各隻 0 星與 5 星如下。"
     ))
     add(tbl["stars"])
     add(p_html(
-        "技能數量與 skill_level 只依品質，55 隻同一品質的曲線全部相同。"
-        "技能 id 本身每隻不同，見技能節。所有技能 maxlv 皆為 2，skill_level 只出現 1 或 2："
+        "技能數量與各星等級只依品質，55 隻同一品質的曲線全部相同。"
+        "技能本身每隻不同，見技能節。這批技能最高 2 級，各星只出現 1 或 2 級："
     ))
     add(tbl["skill_levels"])
     node_bits = []
@@ -1825,13 +1833,12 @@ def render_html(data: TablesData) -> str:
     add('    <section id="skills">')
     add("      <h2>技能</h2>")
     add(p_html(
-        "下列每隻先列技能 id，再寫名稱、maxlv、desc1（基礎）與 desc2（升至 2 級追加）。"
-        "參數已代入。百分比是官方文案用字，不是本頁用表上原值換算的。"
+        "下列每隻先寫技能名稱，再寫基礎效果與升至 2 級的追加說明。"
+        "這批技能最高 2 級。參數已代入。百分比是官方文案用字，不是本頁用表上原值換算的。"
+        "技能編號見資料說明。"
     ))
     for pal in data.pals:
-        add(f'      <h3 id="pal-{pal.pid}">{H(pal.name, terms)}（{pal.pid}）</h3>')
-        ids = "、".join(str(s.sid) for s in pal.skills)
-        add(p_html(f"技能 id：{ids}。"))
+        add(f'      <h3 id="pal-{pal.pid}">{H(pal.name, terms)}</h3>')
         add("<ul>")
         for skill in pal.skills:
             add(_skill_block(skill, terms))
@@ -1841,18 +1848,16 @@ def render_html(data: TablesData) -> str:
     add('    <section id="aura">')
     add("      <h2>光環</h2>")
     add(p_html(
-        "pal_aura.json 15 筆只在 LocalLow 出現。"
+        "光環表 15 筆。"
         f"官方標題是「{H(official_text('pal_aura_8'), terms)}」，"
         f"另寫「{H(official_text('pal_aura_7'), terms)}」。"
-        "require 寫成 a|b：左欄為 1–5，與主表 type 相同；右欄為 4、5 或 6。"
-        f"說明鍵 pal_aura_4／pal_aura_5／pal_aura_6 寫「{H(official_text('pal_aura_4'), terms)}」"
+        f"說明寫「{H(official_text('pal_aura_4'), terms)}」"
         "（5、6 隻同此句式，隻數改為 5 或 6）。"
-        "本頁不把左欄 1–5 自行寫成種族中文名。"
+        "光環按主表類型編號 1–5 計同種族隻數，不是按元素標籤計。本頁不把 1–5 自行寫成種族中文名。"
     ))
     add(p_html(
-        f"15 筆的屬性都是 62「{H(data.attr_names[62], terms)}」與 63「{H(data.attr_names[63], terms)}」，"
-        "show_type 皆為 2，只錄原值。"
-        "同一隻數的五個 type 原值完全相同：4 隻為 62／63 各 1500，5 隻各 2500，6 隻各 3500。"
+        f"15 筆的屬性都是「{H(data.attr_names[62], terms)}」與「{H(data.attr_names[63], terms)}」，只錄原值。"
+        "同一隻數的五個類型原值完全相同：4 隻各 1500，5 隻各 2500，6 隻各 3500。"
     ))
     add(tbl["auras"])
     add("    </section>")
@@ -1860,13 +1865,13 @@ def render_html(data: TablesData) -> str:
     add('    <section id="materials">')
     add("      <h2>材料與道具</h2>")
     add(p_html(
-        "名稱、說明一律取自 strings_zh.json。goods.json 對不上這些 id 的可用列，見名錄節。"
+        "名稱、說明一律取自官方字串表。道具表對不上這些編號的可用列，見名錄節。"
         "80001–80055 見名錄；80056–80075 見名錄後未入冊的 20 個名稱。"
         f"163002 與 163004 名稱同為「{H(o.goods[163002].name, terms)}」，"
         f"163003 與 163005 名稱同為「{H(o.goods[163003].name, terms)}」；"
         "163002／163003／163006 的說明是「獲得一個○○品質的隨機帕魯。」，"
         "163001／163007／163008 的說明是「獲得隨機○○帕魯信物」，"
-        "163004、163005 的說明鍵字串表沒有內容。"
+        "163004、163005 的說明字串表沒有內容。"
         f"163006 與 163007 名稱同為「{H(o.goods[163006].name, terms)}」，說明用字不同"
         f"（前者「{H(o.goods[163006].desc, terms)}」，後者「{H(o.goods[163007].desc, terms)}」）。"
     ))
@@ -1885,15 +1890,15 @@ def render_html(data: TablesData) -> str:
         + H("英靈總表", terms)
         + "</a>）。</li>"
     )
-    add("<li>map_slg_underpalace.json（檔名含 pal，內容為地圖實例，未繫在帕魯表上）。</li>")
-    add("<li>字串表有、但不在 pal.json／pal_star.json 的 20 個 palname_* 與道具 80056–80075；不把它們算進名錄，也不標未開放。</li>")
+    add("<li>一張內容為地圖實例、未繫在帕魯表上的地圖表（檔名見資料說明）。</li>")
+    add("<li>字串表有、但不在主表或升星表的 20 個名稱與道具 80056–80075；不把它們算進名錄，也不標未開放。</li>")
     add("<li>升星 330 筆的逐列全表；本頁改寫規則、0 星／5 星原值與技能文案。</li>")
-    add("<li>pal_roll_weight 的 reward_id 604011101–604011120，以及捕捉參數裡的 crystal_pal_reward_icon、palace_pal_reward_icon、alliance_resource_id、other_kingdom_reward_id、ocean_server_march_gate_id：字串表沒有名稱。</li>")
-    add("<li>主表 type 1–5 的中文名；pal_teampos 站位 type 1–6 的含義；升級消耗 <code>[999, 4, …]</code> 等段的資源名稱。</li>")
-    add("<li>pal_per_catch_amount、pal_catch_chance、營地屬性 1249 與說明文案「每採滿一定數量的紅水晶就有機率捕捉」之間的確切對應。</li>")
-    add("<li>activity_desc_5001022（字串表沒有內容）；亂鬥的獨立對戰、積分與排名獎勵數值表。</li>")
-    add("<li>goods.json 的可用道具列（本批該檔為欄位序號殘件）。</li>")
-    add("<li>season、season_range_1、open_season_day、take_effect_time、活動 server_list 與賽季日曆或顯示伺服器的對應（不標未開放，不斷言顯示伺服器編號等於表上區間）。</li>")
+    add("<li>權重表的獎勵編號 604011101–604011120，以及捕捉參數裡若干獎勵圖示與資源編號：字串表沒有名稱。</li>")
+    add("<li>主表類型編號 1–5 的中文名；站位 1–6 的含義；升級消耗類型 999、第 4／5／6 段的資源名稱。</li>")
+    add("<li>每次捕捉數量、捕捉機率、營地「提高捕獲帕魯的機率」與說明文案「每採滿一定數量的紅水晶就有機率捕捉」之間的確切對應。</li>")
+    add("<li>亂鬥活動說明（字串表沒有內容）；亂鬥的獨立對戰、積分與排名獎勵數值表。</li>")
+    add("<li>道具表的可用道具列（本批該檔為欄位序號殘件）。</li>")
+    add("<li>時間、賽季與伺服器欄與賽季日曆或顯示伺服器的對應（不標未開放，不斷言顯示伺服器編號等於表上區間）。</li>")
     add("<li>與英雄技能、站位的搭配模擬，以及把屬性原值或官方百分比文案代入之後的戰鬥結算。不編造閉合戰鬥公式，不評定強弱或養成順序。</li>")
     add("</ul>")
     add("    </section>")
@@ -1901,6 +1906,102 @@ def render_html(data: TablesData) -> str:
     add('    <section id="notes">')
     add("      <h2>資料說明</h2>")
     add(p_html(_data_notes(data)))
+    add(p_html(
+        "以下補錄正文改寫後移入的欄位名與原值，只照錄，不另行對成賽季號或系統名。"
+        "主表與升星表的 season 皆為 0。主表沒有 unlocktime。主表 unlocknum 皆為 1，weight 皆為 100，"
+        "damage_volume／volume／model_scale 皆為 -1。tag 與 tagInt 數值一致（1–4）。"
+        "unit_id 與技能 id 前綴一致。team_scale 只錄原值，字串表沒有這一欄的名稱。"
+        "名稱來自主表 palname_* 鍵。字串表另有 20 條 palname_* 與 goods_name_80056–goods_name_80075，不在 pal.json 的 55 筆裡。"
+        "主表 type 為 1–5，字串表沒有這欄的中文名；"
+        "<code>pal_type_1</code> 至 <code>pal_type_5</code> 是標籤「"
+        + "、".join(H(t.title, terms) for t in data.tags if t.typ == 1 and t.tag_id <= 5)
+        + "」，不是 type 欄的名稱，不編造陣營或地圖名。"
+        "品質用 pal_quality_{n}；字串另有 pal_quality_6。"
+    ))
+    add(p_html(
+        f"影響力目錄項 id 32100，名稱鍵 <code>pal_list_1</code>，type_name 為 <code>PAL</code>，jump 為 {JUMP_ID}。"
+        f"jump.json {JUMP_ID} 的 name／desc 為空，go_target 為空，task_guide 為 {e(str(data.jump.get('task_guide')))}，"
+        f"city_lv 為 {e(str(data.jump.get('city_lv')))}，season 為空。"
+        f"function.json id {FUNCTION_ID} 的開啟面板是 <code>{e(func.get('openPanel'))}</code>，"
+        f"func_open_param 為 <code>{e(func.get('func_open_param'))}</code>"
+        f"（117 的官方名稱是「{H(o.castle_name, terms)}」），"
+        f"condition_type 為 {e(str(func.get('condition_type')))}、value 為 {e(str(func.get('value')))}（{H(o.camp_name, terms)}）。"
+        "名稱欄為空，字串表沒有對應內容。"
+    ))
+    add(p_html(
+        f"建築 {BUILDING_INDEX} 的 maxlevel／new_maxlevel 皆為 {e(str(b.get('maxlevel')))}。"
+        f"主表 season_range_1 為 <code>{e(b.get('season_range_1'))}</code>，"
+        f"open_season_day 為 <code>{e(raw_json(b.get('open_season_day')))}</code>，只照錄。"
+        f"建造費用欄 costs 為 <code>{e(raw_json(b.get('costs')))}</code>。"
+        "citybuilding_lvup.json 與 citybuilding_lvup_new.json 同一建築的這 41 筆，在兩表共有欄位上相同。"
+        "des 全為空。string_para1 全為空。"
+        "0 級沒有 string_para2；1–40 級的 string_para2 為 1249|{n}|1，n 從 100 起每級加 100，至 40 級為 4000。"
+        "1249 的 show_type 為 2。"
+        "捕捉參數表的 pal_catch_chance=6000 與營地 1249 不是同一欄。"
+    ))
+    add(p_html(
+        "0–25 級的 pre_building_level 皆為 <code>117|25</code>；"
+        "26–40 級分別為 <code>117|26</code> 至 <code>117|40</code>（表上是各級的具體值，不是寫成 117|{該級} 的省略）。"
+        "0 級 cost1 為 <code>[999, 4, 50]</code>，沒有 cost2／cost3，buildTime 為 3，fightforce 為 0。"
+        "1 級 cost1／cost2 為 <code>[999, 4, 100]</code>／<code>[999, 5, 100]</code>，沒有 cost3，buildTime 為 100，fightforce 為 300。"
+        "2 級起有 cost1／cost2／cost3（第三段為 <code>[999, 6, …]</code>）。"
+        "40 級沒有 cost1–cost4，也沒有 buildTime（表上 buildTime 為 -1）。"
+        "999 與 4／5／6 在字串表沒有對應的道具或資源名稱。"
+    ))
+    add(p_html(
+        f"活動名稱鍵 pal_catch_title。兩列："
+        f"id 5002001（type {e(str(catch1.get('type')))}，is_open {e(str(catch1.get('is_open')))}，"
+        f"season {e(str(catch1.get('season')))}，condition 為 <code>{e(catch1.get('condition'))}</code>，"
+        f"take_effect_time 為 <code>{e(catch1.get('take_effect_time'))}</code>，"
+        f"server_list 為 <code>{e(catch1.get('server_list'))}</code>，"
+        f"form_list 為 <code>{e(catch1.get('form_list'))}</code>，"
+        f"info／faq 為 {e(str(catch1.get('info')))}，與捕捉參數表 activity_info／activity_desc 對得上）；"
+        f"id 5002002（type {e(str(catch2.get('type')))}，is_open {e(str(catch2.get('is_open')))}，"
+        f"season {e(str(catch2.get('season')))}，condition 同樣為 <code>{e(catch2.get('condition'))}</code>，"
+        f"take_effect_time 為 <code>{e(catch2.get('take_effect_time'))}</code>，"
+        f"server_list 為 <code>{e(catch2.get('server_list'))}</code>，"
+        f"form_list 為 <code>{e(catch2.get('form_list'))}</code>）。"
+        f"活動「{H(o.arena_name, terms)}」五列：名稱鍵 activity_name_5001022，describe 皆為 activity_desc_5001022（字串表沒有內容），"
+        "type 皆為 10089，season 皆為 5，condition 皆為 <code>2|117|12</code>，"
+        "info／faq 皆為 35013，form_list 皆為 208。各列 is_open、take_effect_time、server_list 如下："
+    ))
+    add(tbl["notes_arena"])
+    add(p_html(
+        "預告標題鍵 season_preview_title_406，說明鍵 season_preview_desc_413，紀念文案鍵 season_memo_s2_photo1_text3。"
+        "只照錄鍵名與正文，不把鍵名裡的數字或 s2 自行對成賽季號。"
+    ))
+    add(p_html("pal_catch_param 表上原值（欄位名照錄）："))
+    add(tbl["notes_catch"])
+    add(p_html(
+        "crystal_pal_reward_weight_id=1、guild_pal_reward_weight_id=2 對應權重表的 group_id。"
+        "crystal_pal_reward_icon／palace_pal_reward_icon、alliance_resource_id、other_kingdom_reward_id、ocean_server_march_gate_id 在字串表沒有對應名稱。"
+        "無法發起劫掠、無法發起捕捉的提示字串鍵為 pal_catch_cant_loot_*、pal_catch_cant_*，本頁不逐條展開。"
+    ))
+    add(p_html("郵件欄位、id 與字串鍵："))
+    add(tbl["notes_mails"])
+    add(p_html(
+        "融合表 sameweight 全為 -1，luckcost 為空，luckCostArray 為 <code>[]</code>。"
+        "隊伍表 type 為 1，conditon（表上的拼法）為 1，para 皆為 <code>183|0</code>。"
+        "站位表 conditon 皆為 1，para、desc 皆為空。標籤表欄位名是 titile（表上的拼法）。"
+        "升星表 season 全表為 0；attrdesc 全為空，字串表沒有內容。"
+        "combatattr 的 3／4 與 generalattr 的 3003／4003／5003、3004／4004／5004、以及部分列的 3／4，show_type 皆為 1。"
+        "光環的 62／63 與營地升級的 1249，show_type 為 2。"
+        "技能表 desc1 是基礎效果，desc2 是升至 2 級的追加說明；這批帕魯技能沒有 desc3–desc5。名稱鍵與技能 id 不必相同。"
+        "詳情頁 pal_detail_5 與 pal_detail_6 文案相同。"
+        "各隻技能 id 如下。"
+    ))
+    skill_bits = []
+    for pal in data.pals:
+        ids = "、".join(str(s.sid) for s in pal.skills)
+        skill_bits.append(f"{H(pal.name, terms)}（{pal.pid}）：{ids}")
+    add(p_html("；".join(skill_bits) + "。"))
+    add(p_html("光環表 require、說明鍵與屬性原值："))
+    add(tbl["notes_auras"])
+    add(p_html(
+        "光環 require 寫成 a|b：左欄為 1–5，與主表 type 相同；右欄為 4、5 或 6。"
+        "說明鍵 pal_aura_4／pal_aura_5／pal_aura_6。"
+        "本頁不收 map_slg_underpalace.json（檔名含 pal，內容是地圖實例，沒有繫在帕魯系統上）。"
+    ))
     add("<ul>")
     add(
         "<li>定義在 <code>pal.json</code>（55 筆），捕捉全域在 <code>pal_catch_param.json</code>（1 筆），"
