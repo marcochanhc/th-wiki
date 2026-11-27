@@ -1378,8 +1378,8 @@ def render_html(data: TablesData) -> str:
         f"{H(attr_label(13104, data.attr_by), terms)}」／「{H(attr_label(14104, data.attr_by), terms)}」／「{H(attr_label(15104, data.attr_by), terms)}」）。"
         f"公式用語仍不能從表寫死只對「{H(attr_label(10103, data.attr_by), terms)}」這一條。"
         f"「{H(table_name_label(10105, data.attr_by), terms)}」／「{H(table_name_label(10106, data.attr_by), terms)}」"
-        "這兩項，本抽取沒有來源把數值寫進去，不能當成這條百分比欄的候選。"
-        f"「{H(attr_label(10003, data.attr_by), terms)}」／「{H(attr_label(10004, data.attr_by), terms)}」是點數屬性，本抽取幾乎沒有來源寫入。"
+        "這兩項，這份資料沒有來源把數值寫進去，不能當成這條百分比欄的候選。"
+        f"「{H(attr_label(10003, data.attr_by), terms)}」／「{H(attr_label(10004, data.attr_by), terms)}」是點數屬性，這份資料幾乎沒有來源寫入。"
         f"「{H(attr_label(10103, data.attr_by), terms)}」與分營條如何疊加，表沒有說明。</p>"
     )
     add("    </section>")
@@ -1528,7 +1528,7 @@ def render_html(data: TablesData) -> str:
     add('      <h3 id="march">行軍造型（面板有提到，不是本篇主體）</h3>')
     add(
         f"<p>同一張聯盟士兵生命面板，另 20% 標示來自行軍造型。「{H(o.march_name, terms)}」是屬性來源分類，說明為「{H(o.march_desc, terms)}」。"
-        f"要對上這 20%，需要唯一的{H(attr_label(13104, data.attr_by), terms)}＝2000 表列；本抽取在行軍／世界造型相關表裡沒有這項屬性。不要把這 20% 強行對成：</p>"
+        f"要對上這 20%，需要唯一的{H(attr_label(13104, data.attr_by), terms)}＝2000 表列；這份資料在行軍／世界造型相關表裡沒有這項屬性。不要把這 20% 強行對成：</p>"
     )
     add("<ul>")
     add(f"<li>{H(o.shield_name, terms)}（說明為「{H(o.shield_desc, terms)}」，不是一筆{H(attr_label(13104, data.attr_by), terms)}＝2000 或{H(attr_label(10104, data.attr_by), terms)}＝2000 的行軍造型列）</li>")

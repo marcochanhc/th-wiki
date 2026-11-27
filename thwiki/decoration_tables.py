@@ -1278,7 +1278,7 @@ def _deco_note(deco: Decoration, data: TablesData, *, html: bool = False) -> str
         if deco.group_id == CRYSTAL_ID:
             bits.append("每日獎勵第 1 級 4,000、滿級 15 為 96,000；類型 999 與中段 6 沒有官方名稱")
         elif deco.group_id in ELITE_IDS:
-            bits.append(f"每日獎勵 {deco.reward}（本抽取沒有物品名）")
+            bits.append("每日獎勵沒有官方名稱（原值見資料說明）")
         elif deco.group_id == TREE_ID:
             bits.append("每日獎勵 驚喜寶箱 ×2")
         else:
@@ -1880,10 +1880,9 @@ def render_html(data: TablesData) -> str:
     )
     elites = "、".join(f"{H(data.decorations[i].name, terms)}（{i}）" for i in ELITE_IDS)
     e0 = data.decorations[ELITE_IDS[0]]
-    rewards = "、".join(f"<code>{e(data.decorations[i].reward)}</code>" for i in ELITE_IDS)
     add(
-        f"<li>{elites}：時限類型 {e0.time_type}，同一段時間；每日獎勵分別為 {rewards}。"
-        "這三個道具編號在本抽取沒有官方物品名。這三件本身沒有自身屬性列。</li>"
+        f"<li>{elites}：時限類型 {e0.time_type}，同一段時間；每日獎勵沒有官方名稱（原值見資料說明）。"
+        "這三件本身沒有自身屬性列。</li>"
     )
     tree = data.decorations[TREE_ID]
     add(
@@ -2004,7 +2003,7 @@ def render_html(data: TablesData) -> str:
     ))
     add(p_html(
         f"尋寶主題里程碑表 {comma(data.table_meta['milestone_rows'])} 筆："
-        "各主題在解鎖 1／10／20 件時各給一筆獎勵（46301–46312），這些獎勵編號在本抽取沒有道具名。"
+        "各主題在解鎖 1／10／20 件時各給一筆獎勵（46301–46312），這些獎勵編號在這份資料沒有道具名。"
         f"尋寶刷新表 {comma(data.table_meta['refresh_rows'])} 筆，對應各藏品的刷新／投放。檔名見資料說明。"
     ))
     for theme in THEME_IDS:
@@ -2144,7 +2143,9 @@ def render_html(data: TablesData) -> str:
         f"{H('紅水晶礦', terms)}每日獎勵可見寫第 1 級 4,000、滿級 15 為 96,000；原值記法是 <code>999|6|{{數值}}</code>（滿級 <code>999|6|96000</code>）。類型 999 與中段 6 沒有官方資源名，不編造。"
         f"{H('繽紛聖誕樹', terms)}每日獎勵可見寫{H('驚喜寶箱', terms)} ×2，原值 <code>2|512110003|2</code>。"
         "其時間參數原值 <code>4519|4474|2144</code>，表上沒有說明這三個數字的含義，可見正文不推算。"
-        "自然精英·永恆等三件每日獎勵原值 <code>2|601283006|1</code>、<code>2|601283005|1</code>、<code>2|601283004|1</code>，本抽取沒有官方物品名，可見表照錄編號。"
+        f"{'、'.join(H(data.decorations[i].name, terms) for i in ELITE_IDS)}"
+        " 每日獎勵原值 <code>2|601283006|1</code>、<code>2|601283005|1</code>、<code>2|601283004|1</code>，"
+        "字串表沒有對應的官方物品名，可見正文不照錄編號。"
         "套裝「解鎖賽季（只照錄）」的 <code>1|0</code>、<code>2|0</code>、<code>3|0</code>、<code>4|0</code> 只照錄，不換算成賽季日曆。"
         "聖塔技能「參數」欄原值如 <code>1|40</code>、<code>1|90|6|2</code> 保留照錄，文案已代入參數，不另推算含義。可見聖塔一覽不再寫編號與陣營編號欄，改寫官方裝飾物名；編號與陣營編號對照見此。可見公會裝飾物表不再寫編號欄，改寫官方裝飾物名；編號對照見此。可見裝飾物分表與廢品表在該表全列都有官方名時不再寫編號欄，改寫官方名稱；若表內仍有（無名稱）列則保留編號欄。編號對照見此。可見正文改寫「沒有獨立名稱／沒有藏品名稱／沒有正式名稱字串」「說明對照見資料說明」，名稱鍵與說明鍵對照見此。可見表不再列出說明鍵；聯盟／部族／自然聖塔說明鍵原名 <code>citybuilding_DIY_skill_1</code>／<code>_2</code>、<code>citybuilding_DIY_skill_3</code>／<code>_4</code>、<code>citybuilding_DIY_skill_5</code>／<code>_6</code>。城鎮裝飾名稱鍵原名 <code>citybuilding_DIY_name_*</code>，收藏名稱鍵原名 <code>collection_name_*</code>。公會屬性生效人數上限原名 <code>property_alliance_max_num</code>。公會裝飾物「全部同屬一套公會套裝」原欄是 <code>suit_id=1</code>。"
         "戰力／評分欄原名 <code>fight</code>／<code>score</code>；公會共享屬性原名 <code>property_alliance</code>／<code>alliance_attrs</code>。"

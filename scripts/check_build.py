@@ -1375,11 +1375,47 @@ def check_mobile_catalog_markup(errors: list[str]) -> None:
     expect(_section_chunk(valhalla, "t1-batch"), "valhalla unlock 批次", "table-cards", 'data-label="英靈"')
     forbid(_section_chunk(valhalla, "t1-seg"), "valhalla 消耗分段", "table-cards", "table-sticky-col", "data-label")
 
-    for path in sorted((DOCS / "heroes").glob("*.html")):
+    hero_pages = sorted((DOCS / "heroes").glob("*.html"))
+    if len(hero_pages) != 57:
+        fail(f"expected 57 hero pages, found {len(hero_pages)}", errors)
+    for path in hero_pages:
         html = path.read_text(encoding="utf-8")
-        for needle in ("table-cards", "table-sticky-col", "data-label", "card-title", "尚未發佈", "preview-banner"):
+        for needle in ("尚未發佈", "preview-banner"):
             if needle in html:
                 fail(f"{path.name}: hero page should not contain {needle}", errors)
+        if "table-sticky-col" in html:
+            fail(f"{path.name}: hero tables should use table-cards, not table-sticky-col", errors)
+        wide = 0
+        for wrap in re.finditer(r'<div class="(table-wrap[^"]*)">(.*?)</div>', html, flags=re.S):
+            cls, inner = wrap.group(1), wrap.group(2)
+            thead = re.search(r"<thead\b[^>]*>.*?</thead>", inner, flags=re.S)
+            if not thead:
+                continue
+            headers = [text_of(h) for h in re.findall(r"<th\b[^>]*>(.*?)</th>", thead.group(0), flags=re.S)]
+            ncols = len(headers)
+            if ncols < 4:
+                continue
+            wide += 1
+            if "table-cards" not in cls:
+                fail(f"{path.name}: {ncols}-column table should use table-cards", errors)
+                continue
+            tbody = re.search(r"<tbody\b[^>]*>(.*?)</tbody>", inner, flags=re.S)
+            rows = re.findall(r"<tr\b[^>]*>(.*?)</tr>", tbody.group(1) if tbody else "", flags=re.S)
+            missing = 0
+            for row in rows:
+                cells = re.findall(r"<td\b([^>]*)>", row)
+                if len(cells) != ncols:
+                    fail(f"{path.name}: {ncols}-column card table row has {len(cells)} cells", errors)
+                for i, attrs in enumerate(cells):
+                    m = re.search(r'data-label="([^"]*)"', attrs)
+                    if not m or m.group(1) != headers[i]:
+                        missing += 1
+            if missing:
+                fail(f"{path.name}: {ncols}-column card table has {missing} cells missing or mismatched data-label", errors)
+            if "card-title" not in inner:
+                fail(f"{path.name}: {ncols}-column card table should mark a card-title cell", errors)
+        if wide == 0:
+            fail(f"{path.name}: expected at least one 4–6 column table", errors)
 
 
 def check_skins_page(html: str, errors: list[str]) -> None:
@@ -1622,6 +1658,20 @@ def check_equipment_page(html: str, errors: list[str]) -> None:
     if "部落護甲" not in t or "部落戰靴" not in t:
         fail("equipment: official 部落護甲／部落戰靴 must be kept", errors)
 
+    vis = visible_before_notes(html)
+    notes_m = list(re.finditer(r"<h2\b[^>]*>\s*資料說明\s*</h2>", html))
+    notes = text_of(html[notes_m[-1].start():]) if notes_m else ""
+    main_m = re.search(r"<main\b[^>]*>(.*)<section[^>]*id=\"notes\"", html, flags=re.S)
+    vis_html = main_m.group(1) if main_m else ""
+    if "0|300,1|100,2|100,3|100" in vis:
+        fail("equipment: visible body should not contain raw camp-weight string 0|300,1|100,2|100,3|100", errors)
+    if "0|300,1|100,2|100,3|100" not in notes:
+        fail("equipment: data notes must keep raw camp-weight string 0|300,1|100,2|100,3|100", errors)
+    if "無陣營" not in vis or "泰坦印記" not in vis:
+        fail("equipment: visible body must keep the 無陣營／泰坦印記 correspondence for camp weights", errors)
+    if "<code>" in vis_html or "<code " in vis_html:
+        fail("equipment: visible body should not contain <code>", errors)
+
 
 def check_lord_equipment_page(html: str, errors: list[str]) -> None:
     check_public_catalog_shell(html, "lord-equipment", "Top Heroes Wiki｜領主裝備總表", "2026-11-23", errors)
@@ -1788,6 +1838,26 @@ def check_decorations_page(html: str, errors: list[str]) -> None:
     if "不在本頁展開" not in t:
         fail("decorations: castle appearance should remain out of scope for this page", errors)
 
+    vis = visible_before_notes(html)
+    notes_m = list(re.finditer(r"<h2\b[^>]*>\s*資料說明\s*</h2>", html))
+    notes = text_of(html[notes_m[-1].start():]) if notes_m else ""
+    main_m = re.search(r"<main\b[^>]*>(.*)<section[^>]*id=\"notes\"", html, flags=re.S)
+    vis_html = main_m.group(1) if main_m else ""
+    for raw in ("2|601283006|1", "2|601283005|1", "2|601283004|1"):
+        if raw in vis:
+            fail(f"decorations: visible body should not contain raw reward string {raw}", errors)
+        if raw not in notes:
+            fail(f"decorations: data notes must keep raw reward string {raw}", errors)
+    for name in ("聯盟精英·聖輝", "部族精英·霸業", "自然精英·永恆"):
+        if name not in vis:
+            fail(f"decorations: visible body must keep official name {name}", errors)
+    if "聪盟精英" in html:
+        fail("decorations: must not use typo 聪盟精英", errors)
+    if "每日獎勵沒有官方名稱" not in vis:
+        fail("decorations: elite daily rewards should be marked as having no official name in the visible body", errors)
+    if "<code>" in vis_html or "<code " in vis_html:
+        fail("decorations: visible body should not contain <code>", errors)
+
 
 def check_castle_page(html: str, errors: list[str]) -> None:
     check_public_catalog_shell(html, "castle", "Top Heroes Wiki｜城堡外觀總表", "2026-11-23", errors)
@@ -1829,6 +1899,20 @@ FORBIDDEN_VISIBLE_ATTRIBUTION = (
     "已用面板確認",
     "玩家說法",
 )
+
+
+
+def check_visible_no_benchouqu(errors: list[str]) -> None:
+    """Visible body (before 資料說明) must not use research-speak 本抽取."""
+    paths = sorted(DOCS.glob("*.html")) + sorted((DOCS / "heroes").glob("*.html"))
+    if not paths:
+        fail("visible 本抽取 check: no HTML pages found", errors)
+        return
+    for path in paths:
+        html = path.read_text(encoding="utf-8")
+        vis = visible_before_notes(html)
+        if "本抽取" in vis:
+            fail(f"{path.relative_to(DOCS)}: visible body should not contain 本抽取", errors)
 
 
 def check_attribution_cleanup(errors: list[str]) -> None:
@@ -2533,6 +2617,7 @@ def main() -> int:
     if re.search(r"顯示.?50.{0,12}10050|10050.{0,12}顯示.?50", jt + nt + rt + vt + it):
         fail("must not claim display 50 equals internal id 10050", errors)
 
+    check_visible_no_benchouqu(errors)
     check_attribution_cleanup(errors)
     check_hero_valhalla_attrs(errors)
     check_new_league_pages(errors)

@@ -288,7 +288,7 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
     if page.awaken_rows or page.awaken_skills:
         awaken_inner = (
             f'<p>{H("下表是覺醒階段的官方短述；其後再附圖鑑裡的技能全文與升級加成。兩者用字可能略有出入，都照原文保留，不互相改寫。", terms)}</p>'
-            + table(["階段", "名稱", "官方短述", "關聯技能"], aw_rows)
+            + table(["階段", "名稱", "官方短述", "關聯技能"], aw_rows, mobile="cards", card_title="名稱")
             + skill_blocks(page.awaken_skills, terms)
         )
     else:
@@ -404,7 +404,7 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
       <section>
         <h3>天賦</h3>
         <p>{H(page.talent_intro, terms)}</p>
-        {table(["槽位", "名稱", "屬性", "1 級", "30 級", "說明"], tal_rows)}
+        {table(["槽位", "名稱", "屬性", "1 級", "30 級", "說明"], tal_rows, mobile="cards", card_title="名稱")}
       </section>
     </section>
     """
@@ -438,7 +438,7 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
         <section id="skin-suits">
           <h3>收集套裝</h3>
           <p>{H("收集套裝的效果只寫當前檔，不加總前面各檔。範圍用「套裝英雄」與「全英雄」。" + "，".join(belong_bits) + "。", terms)}</p>
-          {table(["套裝", "條件", "效果"], rows)}
+          {table(["套裝", "條件", "效果"], rows, mobile="cards", card_title="套裝")}
         </section>
         """
     appear_noart = (
@@ -450,8 +450,8 @@ def render_hero(page: HeroPage, depth: int = 1) -> str:
         appear_body = (
             f'<p>{H("可收集造型有收集屬性與裝備屬性。收集屬性裡，自身欄用該英雄名稱，隊伍欄用「全部」。百分比寫成加號與兩位小數，點數寫成加號、沒有百分號也沒有千分位。覺醒造型沒有這兩欄。升星、成對、賽季與收集套裝寫在下方分節。", terms)}</p>'
             f'<p>{H(appear_noart, terms)}</p>'
-            + table(["名稱", "收集屬性", "裝備屬性"], attr_rows)
-            + table(["名稱", "編號", "解鎖來源", "時裝幣"], unlock_rows)
+            + table(["名稱", "收集屬性", "裝備屬性"], attr_rows, mobile="cards", card_title="名稱")
+            + table(["名稱", "編號", "解鎖來源", "時裝幣"], unlock_rows, mobile="cards", card_title="名稱")
             + ''.join(feat_html)
             + suit_html
         )
