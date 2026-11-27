@@ -7,6 +7,8 @@
   <meta name="description" content="可佩戴到隊列上的秘寶：兩套編號、29 個中文名錄、秘寶大廳關鍵級、升星消耗與滿星屬性、表列套裝、榮譽牆，以及各件 0 星／100 星技能原文。">
   <link rel="stylesheet" href="assets/css/site.css">
   <script src="assets/js/page-filter.js" defer></script>
+  <script src="assets/js/search-index.js" defer></script>
+  <script src="assets/js/search.js" defer></script>
 </head>
 <body id="top">
   <a class="skip" href="#main">跳到本文</a>
@@ -14,6 +16,7 @@
     <div class="inner">
       <a class="site-title" href="index.html">Top Heroes Wiki</a>
       <nav class="site-nav" aria-label="本站"><a href="index.html">首頁</a><a href="index.html#heroes">英雄</a><a href="index.html#faction-league">聯盟</a><a href="index.html#faction-nature">自然</a><a href="index.html#faction-tribe">部族</a><a href="index.html#codex" class="current">圖鑑</a><a href="index.html#about">關於本站</a></nav>
+      <form class="site-search" role="search" hidden data-site-search data-root=""><label for="site-search-q">搜尋</label><input id="site-search-q" type="search" name="q" autocomplete="off" aria-autocomplete="list" aria-controls="site-search-results" aria-expanded="false"><div id="site-search-results" class="site-search-results" hidden data-site-search-results></div></form>
     </div>
   </header>
   <main id="main" class="page">
@@ -101,7 +104,7 @@
     </section>
     <section id="suits">
       <h2>套裝</h2>
-<p>套裝表 6 筆，去重後 3 套，各有一組對應資料裡另一套與目前這套。三套都是 15 星解鎖套裝技能。解鎖說明兩句：<span class="term">解鎖條件：所有套裝秘寶上陣同一隊列</span>；<span class="term">解鎖條件：所有套裝秘寶皆達到{0}，且上陣同一隊列</span>。<code>{0}</code> 應對 15 星，表沒有另寫填入規則。套裝陣營與士兵表<span class="term">聯盟</span>／<span class="term">部族</span>／<span class="term">自然</span>相同。編號對照見資料說明。</p>
+<p>套裝表 6 筆，去重後 3 套，各有一組對應資料裡另一套與目前這套。三套都是 15 星解鎖套裝技能。解鎖說明兩句：<span class="term">解鎖條件：所有套裝秘寶上陣同一隊列</span>；<span class="term">解鎖條件：所有套裝秘寶皆達到{0}，且上陣同一隊列</span>。這個位置對應 15 星，表沒有另寫填入規則。套裝陣營與士兵表<span class="term">聯盟</span>／<span class="term">部族</span>／<span class="term">自然</span>相同。編號對照見資料說明。</p>
 <div class="table-wrap table-cards"><table><thead><tr><th>套裝</th><th>陣營</th><th>成員</th><th>官方說明（原文）</th></tr></thead><tbody><tr><td data-label="套裝" class="card-title"><span class="term">秘法寶庫</span></td><td data-label="陣營">1 <span class="term">聯盟</span></td><td data-label="成員"><span class="term">石化魔杖</span>、<span class="term">心御寶珠</span>、<span class="term">契約之羽</span></td><td data-label="官方說明（原文）"><span class="term">【石化魔杖】的石化時間+1秒</span><br>
 <span class="term">【心御寶珠】的抵禦效果持續時間+1秒</span></td></tr><tr><td data-label="套裝" class="card-title"><span class="term">巨龍之力</span></td><td data-label="陣營">2 <span class="term">部族</span></td><td data-label="成員"><span class="term">煌雷裁決</span>、<span class="term">龍心</span>、<span class="term">龍骸護符</span></td><td data-label="官方說明（原文）"><span class="term">【煌雷裁決】的雷縛時間+1秒</span><br>
 <span class="term">【龍心】的不屈效果持續時間+1秒</span></td></tr><tr><td data-label="套裝" class="card-title"><span class="term">聖林誓約</span></td><td data-label="陣營">3 <span class="term">自然</span></td><td data-label="成員"><span class="term">青藤古弓</span>、<span class="term">不敗華冠</span>、<span class="term">神聖盟約</span></td><td data-label="官方說明（原文）"><span class="term">【青藤古弓】的纏繞時間+1秒</span><br>
@@ -258,14 +261,14 @@
 <li><strong>定義表：</strong>定義在 <code>artifact.json</code>（58 筆），升星在 <code>artifact_star_up.json</code>（5,858 筆，每件 0–100 星共 101 列），套裝在 <code>artifact_suit.json</code>（6 筆），榮譽在 <code>artifact_honor.json</code>（3 筆）與 <code>artifact_honor_bonus.json</code>（30 筆），技能屬性輔表在 <code>artifact_skill_attr.json</code>（120 筆）。<span class="term">秘寶大廳</span>升級在 <code>citybuilding_lvup.json</code>／<code>citybuilding_lvup_new.json</code>（建築 <code>index</code> 140，兩表此建築 0–2076 級數值相同）。官方界面名稱鍵是 <code>artifact_system_name</code>。</li>
 <li><strong>兩套編號：</strong>58 筆是 29 個中文名的兩套編號。<code>version=-1</code> 用 3xxxx／4xxxx／5xxxx，<code>version=1</code> 用 13xxxx／14xxxx／15xxxx。名錄與技能以 <code>version=1</code> 為準列出，並註明與 <code>version=-1</code> 的差別。不要從 <code>SeasonParam</code> 自動標未開放。</li>
 <li><strong>屬性顯示：</strong>屬性名優先用 <code>attribute_name_{id}</code>。<span class="term">攻擊</span>、<span class="term">生命值</span>（3／4，點數）的 <code>show_type</code> 為 1；<span class="term">英雄攻擊</span>、<span class="term">英雄生命</span>（103／104，百分比類）與<span class="term">增傷</span>、<span class="term">減傷</span>（18／19）的 <code>show_type</code> 為 2。本頁只錄原值，不自行換算成百分比。升星表 <code>newFightAttrs</code>／大廳 <code>string_para1</code> 另用 id 20005／20006，其 <code>name</code> 欄指向 <code>attribute_name_20003</code>／<code>20004</code>（<span class="term">秘寶攻擊</span>／<span class="term">秘寶生命</span>），字串表沒有 <code>attribute_name_20005</code>／<code>20006</code>。</li>
-<li>資料截至 2026-11-23（香港時間）。這不是官方 wiki。來源是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），打包時戳 2026-11-22 23:33（香港時間）。升星、套裝、榮譽與技能屬性輔表（artifact_star_up、artifact_suit、artifact_honor、artifact_honor_bonus、artifact_skill_attr）與第 20 章所用 2026-11-05 解壓檔、以及 2026-11-22 StreamingAssets／LocalLow 歸檔位元組相同。這不表示整個 LocalLow 包與 2026-11-05 解壓檔相同。`artifact.json` 現行檔與 2026-11-22 LocalLow 歸檔相同（58 筆）；2026-11-05 與 2026-11-22 StreamingAssets 彼此相同，但與現行檔位元組不同：只差在 `GetSkillVOList`／`_skillVOList` 後來多了 `artifactMetaId` 與 `skillId`；其餘共有欄（含 id、名稱鍵、品質、類型、碎片、SeasonParam、技能解鎖星）相同。`citybuilding_lvup.json`／`citybuilding_lvup_new.json` 整檔與 2026-11-05 解壓檔位元組不同（現行檔與 2026-11-22 兩份歸檔相同），但建築 140 秘寶大廳 0–2076 級本頁用到的數值欄（para1／para2／para3、string_para1／string_para2、戰力、des、消耗、buildTime、前置）在四份裡相同。`strings_zh.json` 現行檔與 2026-11-22 LocalLow 歸檔相同（40581 鍵）；2026-11-05（40016 鍵）與 2026-11-22 StreamingAssets（40327 鍵）整體不同。本頁用到的 185 個字串鍵在這四份裡值相同。`attribute.json` 列數同為 764，2026-11-05 與現行包位元組不同，差在後來多了欄位；本頁用到的 type／show_type／name 與 2026-11-05 相同。顯示規則依攻略手冊「秘寶圖鑑」第一版（2026-11-15，香港時間；該章標題仍寫來源解壓日期 2026-11-05）。第 20 章升星節摘要把 品質 4 的 0 星攻擊／生命寫成 3530／23600、把 品質 3 的 100 星寫成 level 16／skillShowLevel 15、把 artifact_skill_attr 的級數寫成 11／16／40；本頁改以升星表與輔表實有列為準：品質 4 的 0 星為 2780／19100，品質 3 的 100 星為level 13／skillShowLevel 12（該章各件技能小節原本已寫 13／12），輔表三型皆為 1–40 級且曲線相同。</li>
+<li>資料截至 2026-11-22（香港時間）。這不是官方 wiki。來源是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），打包時戳 2026-11-22 23:33（香港時間）。升星、套裝、榮譽與技能屬性輔表（artifact_star_up、artifact_suit、artifact_honor、artifact_honor_bonus、artifact_skill_attr）與第 20 章所用 2026-11-05 解壓檔、以及 2026-11-22 StreamingAssets／LocalLow 歸檔位元組相同。這不表示整個 LocalLow 包與 2026-11-05 解壓檔相同。`artifact.json` 現行檔與 2026-11-22 LocalLow 歸檔相同（58 筆）；2026-11-05 與 2026-11-22 StreamingAssets 彼此相同，但與現行檔位元組不同：只差在 `GetSkillVOList`／`_skillVOList` 後來多了 `artifactMetaId` 與 `skillId`；其餘共有欄（含 id、名稱鍵、品質、類型、碎片、SeasonParam、技能解鎖星）相同。`citybuilding_lvup.json`／`citybuilding_lvup_new.json` 整檔與 2026-11-05 解壓檔位元組不同（現行檔與 2026-11-22 兩份歸檔相同），但建築 140 秘寶大廳 0–2076 級本頁用到的數值欄（para1／para2／para3、string_para1／string_para2、戰力、des、消耗、buildTime、前置）在四份裡相同。`strings_zh.json` 現行檔與 2026-11-22 LocalLow 歸檔相同（40581 鍵）；2026-11-05（40016 鍵）與 2026-11-22 StreamingAssets（40327 鍵）整體不同。本頁用到的 185 個字串鍵在這四份裡值相同。`attribute.json` 列數同為 764，2026-11-05 與現行包位元組不同，差在後來多了欄位；本頁用到的 type／show_type／name 與 2026-11-05 相同。顯示規則依攻略手冊「秘寶圖鑑」第一版（2026-11-15，香港時間；該章標題仍寫來源解壓日期 2026-11-05）。第 20 章升星節摘要把 品質 4 的 0 星攻擊／生命寫成 3530／23600、把 品質 3 的 100 星寫成 level 16／skillShowLevel 15、把 artifact_skill_attr 的級數寫成 11／16／40；本頁改以升星表與輔表實有列為準：品質 4 的 0 星為 2780／19100，品質 3 的 100 星為level 13／skillShowLevel 12（該章各件技能小節原本已寫 13／12），輔表三型皆為 1–40 級且曲線相同。</li>
 <li>待補：客戶端實際讀 <code>version=-1</code> 還是 <code>version=1</code>；大廳 para 欄與倍率／轉化率的對應，以及插槽解鎖字串與表不一致的原因；碎片三組 id 的關係；「秘寶之力」與「傳奇」品質用字；面板 52.50% 的完整來源；活動與取得途徑。</li>
 </ul>
     </section>
   </main>
   <footer class="site-footer">
     <div class="inner">
-      <p>資料截至 2026-11-23（香港時間）。這不是官方 wiki。</p>
+      <p>資料截至 2026-11-22（香港時間）。這不是官方 wiki。</p>
       <p><a href="#top">回到頂部</a></p>
     </div>
   </footer>

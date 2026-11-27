@@ -1251,6 +1251,7 @@ def render_html(data: TablesData) -> str:
         f"1 級為 {e(str(r195[1].get('string_para2')[0].split('|')[1]))}，之後每級加 500，"
         f"至 40 級為 {e(str(r195[40].get('string_para2')[0].split('|')[1]))}。"
         "本頁只錄原值，不換算成百分比。"
+        f"陣營效果與等級斷點見<a href=\"ancestral-totem.html\">「{H(b195.name, terms)}」</a>。本頁只記這座建築的升級。"
     ))
     add(totem_tbl)
     add("    </section>")

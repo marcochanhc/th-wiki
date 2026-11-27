@@ -7,6 +7,8 @@
   <meta name="description" content="七件領主裝備的寫入屬性、品質階段、消耗、三件／六件加成，以及等級階段的特殊列。">
   <link rel="stylesheet" href="assets/css/site.css">
   <script src="assets/js/page-filter.js" defer></script>
+  <script src="assets/js/search-index.js" defer></script>
+  <script src="assets/js/search.js" defer></script>
 </head>
 <body id="top">
   <a class="skip" href="#main">跳到本文</a>
@@ -14,6 +16,7 @@
     <div class="inner">
       <a class="site-title" href="index.html">Top Heroes Wiki</a>
       <nav class="site-nav" aria-label="本站"><a href="index.html">首頁</a><a href="index.html#heroes">英雄</a><a href="index.html#faction-league">聯盟</a><a href="index.html#faction-nature">自然</a><a href="index.html#faction-tribe">部族</a><a href="index.html#codex" class="current">圖鑑</a><a href="index.html#about">關於本站</a></nav>
+      <form class="site-search" role="search" hidden data-site-search data-root=""><label for="site-search-q">搜尋</label><input id="site-search-q" type="search" name="q" autocomplete="off" aria-autocomplete="list" aria-controls="site-search-results" aria-expanded="false"><div id="site-search-results" class="site-search-results" hidden data-site-search-results></div></form>
     </div>
   </header>
   <main id="main" class="page">
@@ -119,7 +122,7 @@
         <li>七件總表「類型」原欄名 <code>type</code>。等級階段特殊列表頭「編號」「顯示等級」原名 <code>id</code>、<code>level_show</code>。階級欄可見寫 T1–T4，原名 <code>icon_txt_T1</code>–<code>icon_txt_T4</code>（欄位 <code>equip_tier</code>）；字串表沒有這些鍵的顯示名，不另編造階級稱呼。</li>
         <li>可見正文「類型」「寫入屬性」「名稱對照」對應類型編號、屬性編號與名稱鍵；可見改寫「檔名見資料說明」「對照見資料說明」，鍵名對照見此。可見等級階段表材料欄改寫官方貨品名（<code>goods_name_154</code>／<code>155</code>／<code>156</code>／<code>157</code>）；編號對照見此。滿級（64）是等級不是屬性編號。不要從 <code>unlocktime</code>、<code>season</code> 自動標未開放。品質與階段名稱取自 <code>lord_equip_desc001</code>–<code>013</code> 的原文（去掉色碼與未填的 <code>{0}</code> 後綴）。表上的 <code>quality</code> 欄是 2–6，與這些稱呼不是一一對應（例如傳說T1 至傳說T4 的 <code>quality</code> 都是 5）。傳說T3、傳說T4 的名稱鍵是 <code>lord_equip_desc0061</code>、<code>lord_equip_desc0071</code>。消耗在表上寫成 <code>2|物品id|數量</code>；物品 154–157 名稱取自 <code>goods_name_154</code>–<code>157</code>，不用骨架貨品表。類型 2 在本抽取裡對得上貨品，本頁不自行把開頭的 2 解釋成別的系統。</li>
         <li>系統分類是 <code>attr_category</code> 49。介面標題鍵是 <code>ui_lordequip_002</code>。對應表為 <code>lord_equipment.json</code>（1,060 筆）、<code>lord_equip_master.json</code>（34 筆，介面字串 <code>ui_lordequip_012</code>／<code>013</code>）、<code>lord_equipment_enchantment.json</code>（240 筆）。屬性名優先用 <code>attribute_name_{id}</code>。<code>show_type=2</code> 只記表內原值，不自行換算成百分比。除<span class="term">突破防禦</span>（64）為 <code>type=1</code>、<code>show_type=1</code> 外，本頁其餘寫入屬性皆為 <code>type=2</code>、<code>show_type=2</code>。例如<span class="term">英雄攻擊</span>（103）150，不是 1.50%。消耗物品編號 154–157 只在資料說明保留，表頭改用官方物品名。資料表檔名含 <code>enchantment</code>；階段鍵是 <code>fmjd_1</code>–<code>fmjd_6</code>，說明鍵是 <code>lord_fm4</code>。</li>
-        <li>資料出自遊戲資料表與官方字串（lord_equipment、lord_equip_master、lord_equipment_enchantment、attr_category、attribute、strings_zh.json），資料截至 2026-11-23（香港時間）。來源是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），打包時戳 2026-11-22 23:33（香港時間）。這三張領主裝備表與第 25 章所用 2026-11-05 解壓檔、以及 2026-11-22 StreamingAssets／LocalLow 歸檔位元組相同；這不表示整個 LocalLow 包與 2026-11-05 解壓檔相同。本頁用到的領主裝備相關官方字串與這三份歸檔一致。顯示規則依攻略手冊「領主裝備圖鑑」第一版（2026-11-15，香港時間；該章標題仍寫來源解壓日期 2026-11-05）。這不是官方 wiki。</li>
+        <li>資料出自遊戲資料表與官方字串（lord_equipment、lord_equip_master、lord_equipment_enchantment、attr_category、attribute、strings_zh.json），資料截至 2026-11-22（香港時間）。來源是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），打包時戳 2026-11-22 23:33（香港時間）。這三張領主裝備表與第 25 章所用 2026-11-05 解壓檔、以及 2026-11-22 StreamingAssets／LocalLow 歸檔位元組相同；這不表示整個 LocalLow 包與 2026-11-05 解壓檔相同。本頁用到的領主裝備相關官方字串與這三份歸檔一致。顯示規則依攻略手冊「領主裝備圖鑑」第一版（2026-11-15，香港時間；該章標題仍寫來源解壓日期 2026-11-05）。這不是官方 wiki。</li>
         <li>屬性表 <code>attribute.json</code> 在後續包多了 <code>NameKey</code> 欄，與 2026-11-05 解壓檔不是整檔相同；本頁用到的屬性編號在 <code>type</code>、<code>show_type</code> 與名稱鍵上沒有差異，顯示名稱取自 <code>attribute_name_{id}</code>。</li>
       </ul>
     </section>
@@ -127,7 +130,7 @@
   </main>
   <footer class="site-footer">
     <div class="inner">
-      <p>資料截至 2026-11-23（香港時間）。這不是官方 wiki。</p>
+      <p>資料截至 2026-11-22（香港時間）。這不是官方 wiki。</p>
       <p><a href="#top">回到頂部</a></p>
     </div>
   </footer>

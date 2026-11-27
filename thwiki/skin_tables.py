@@ -19,8 +19,8 @@ from .tables import catalog, load_table
 LIVE_HERO = "https://marcochanhc.github.io/th-wiki/heroes/{id}.html"
 # 造型預覽專用；不改 paths.DATA_CUTOFF，以免影響專武、英雄條目等已上線頁。
 # 資料是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），
-# 打包時戳 2026-11-22 23:33（香港時間）。頁腳／截止日寫資料日的次日。
-SKIN_DATA_CUTOFF = "2026-11-23"
+# 打包時戳 2026-11-22 23:33（香港時間）。頁尾資料截至寫解壓包日期 2026-11-22，不寫整理次日。
+SKIN_DATA_CUTOFF = "2026-11-22"
 SKIN_DATA_PACK = "app-1.129.12_table-1.0.43173"
 SKIN_DATA_PACKED = "2026-11-22 23:33"
 

@@ -19,8 +19,8 @@ from .tables import load_table
 
 # 寵物總表專用；不改 paths.DATA_CUTOFF，以免影響首頁與英雄條目的全局截止日。
 # 資料是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），
-# 打包時戳 2026-11-22 23:33（香港時間）。頁腳／截止日寫 2026-11-24。
-PET_DATA_CUTOFF = "2026-11-24"
+# 打包時戳 2026-11-22 23:33（香港時間）。頁尾資料截至寫解壓包日期 2026-11-22，不寫整理次日。
+PET_DATA_CUTOFF = "2026-11-22"
 PET_DATA_PACK = "app-1.129.12_table-1.0.43173"
 PET_DATA_PACKED = "2026-11-22 23:33"
 
@@ -2031,7 +2031,7 @@ def render_html(data: TablesData) -> str:
         f"官方界面稱「{H(o.system_name, terms)}」。"
         f"影響力目錄「{H(o.partner_dir, terms)}」底下再分「{H(o.system_name, terms)}」、"
         f"「{H(o.catalog_name, terms)}」、「{H(o.honour_name, terms)}」。"
-        f"{H('英靈不是寵物', terms)}；<a href=\"pals.html\">帕魯</a>、<a href=\"holybeasts.html\">守護魔獸</a>、精靈、魚缸、蝴蝶、乙太牧場不在本頁展開。"
+        f"{H('英靈不是寵物', terms)}；<a href=\"pals.html\">帕魯</a>、<a href=\"holybeasts.html\">守護魔獸</a>、<a href=\"elf-cottage.html\">精靈小屋</a>、<a href=\"fish-tank.html\">摸魚時光</a>（魚缸）、<a href=\"butterfly-catch.html\">抓蝴蝶</a>、<a href=\"ranch-tale.html\">牧場物語</a>不在本頁展開。"
         f"英雄四件套裝備見<a href=\"equipment.html\">{H('裝備總表', terms)}</a>，"
         f"領主裝備見<a href=\"lord-equipment.html\">{H('領主裝備總表', terms)}</a>，"
         f"士兵見<a href=\"troops.html\">{H('士兵總表', terms)}</a>，"
@@ -2260,7 +2260,7 @@ def render_html(data: TablesData) -> str:
         "鐵喙前三個技能在字串表沒有內容，不編造技能名；"
         f"第四個技能仍是「{H(o.shelter['聯盟的庇護'], terms)}」。"
         "每隻只列起始突破與滿突破的技能文案，不展每一中間等級。"
-        "毛茸茸「揚塵」基礎文案兩處 <code>{1}</code> 都代入同一參數 6，參數表另有未使用的 1.5，照錄不猜、不自行挪位。"
+        "毛茸茸「揚塵」基礎文案有兩處佔位，都代入同一參數 6；參數表另有未使用的 1.5。照錄不猜、不自行挪位。"
     ))
     for p in data.pets:
         add(f'      <h3 id="skill-{p.pid}">{H(p.base_name, terms)}</h3>')
@@ -2341,7 +2341,7 @@ def render_html(data: TablesData) -> str:
     add("      <h2>本頁未列入</h2>")
     add("<ul>")
     add(f"<li>{H('英靈', terms)}（見已發佈的<a href=\"valhalla.html\">{H('英靈總表', terms)}</a>，英靈不是寵物）。"
-        "<a href=\"pals.html\">帕魯</a>、<a href=\"holybeasts.html\">守護魔獸</a>、精靈、魚缸、蝴蝶、乙太牧場等伴侶與休閒系統。</li>")
+        "<a href=\"pals.html\">帕魯</a>、<a href=\"holybeasts.html\">守護魔獸</a>、<a href=\"elf-cottage.html\">精靈小屋</a>、<a href=\"fish-tank.html\">摸魚時光</a>（魚缸）、<a href=\"butterfly-catch.html\">抓蝴蝶</a>、<a href=\"ranch-tale.html\">牧場物語</a>等伴侶與休閒系統。</li>")
     add("<li>寵物主表沒有穩定的寵物名稱；不以寶箱俗稱覆寫皮膚顯示名。</li>")
     add("<li>升級消耗欄對應的確切道具（口糧／精華／兩者），以及突破消耗各段的含義。</li>")
     add("<li>技能解鎖門檻＝10／20／30／40 的含義；有一項沒有對應官方屬性名的數值，"
@@ -2794,7 +2794,7 @@ def render_markdown(data: TablesData) -> str:
     add("")
     add("## 本頁未列入")
     add("")
-    add("- 英靈（見已上線英靈總表；英靈不是寵物）。帕魯、守護魔獸、精靈、魚缸、蝴蝶、乙太牧場。")
+    add("- 英靈（見已上線英靈總表；英靈不是寵物）。帕魯、守護魔獸、精靈小屋、摸魚時光（魚缸）、抓蝴蝶、牧場物語。")
     add("- 寵物主表不存在的穩定 `pet_name_{id}`；不以寶箱俗稱覆寫皮膚名稱鍵。")
     add("- 升級消耗欄對應的確切道具，以及突破消耗 `1|0|n`、`2|5|n` 各段的含義。")
     add("- `component_unlock`＝10／20／30／40 的含義；屬性 1133 與 `pet_building_attr_cd` 是否同一界面顯示。")

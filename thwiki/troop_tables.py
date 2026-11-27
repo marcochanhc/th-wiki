@@ -18,11 +18,11 @@ from .tables import load_table
 
 # 士兵總表專用；不改 paths.DATA_CUTOFF，以免影響首頁與英雄條目的全局截止日。
 # 資料是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），
-# 打包時戳 2026-11-22 23:33（香港時間）。頁腳／截止日寫 2026-11-23。
+# 打包時戳 2026-11-22 23:33（香港時間）。頁尾資料截至寫解壓包日期 2026-11-22，不寫整理次日。
 # 士兵主表、光輝表與兵裝三表與第 19 章所用 2026-11-05 解壓檔、以及
 # 2026-11-22 StreamingAssets／LocalLow 歸檔位元組相同，
 # 但不表示整個 LocalLow 包與 2026-11-05 解壓檔相同。
-TROOP_DATA_CUTOFF = "2026-11-23"
+TROOP_DATA_CUTOFF = "2026-11-22"
 TROOP_DATA_PACK = "app-1.129.12_table-1.0.43173"
 TROOP_DATA_PACKED = "2026-11-22 23:33"
 

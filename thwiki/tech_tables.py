@@ -19,10 +19,10 @@ from .tables import load_table
 
 # 科技總表專用；不改 paths.DATA_CUTOFF，以免影響首頁與英雄條目的全局截止日。
 # 資料是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），
-# 打包時戳 2026-11-22 23:33（香港時間）。本頁頁腳／截止日寫 2026-11-15
-# （第 24 章第一版，香港時間）。與本頁正文有關的科技表在四份包位元組相同，
-# 無需改用更晚的截止日。
-TECH_DATA_CUTOFF = "2026-11-15"
+# 打包時戳 2026-11-22 23:33（香港時間）。頁尾資料截至寫解壓包日期 2026-11-22。
+# 第 24 章第一版寫於 2026-11-15（香港時間），那是整理日期，不是解壓截止日。
+# 與本頁正文有關的科技表在四份包位元組相同。
+TECH_DATA_CUTOFF = "2026-11-22"
 TECH_DATA_PACK = "app-1.129.12_table-1.0.43173"
 TECH_DATA_PACKED = "2026-11-22 23:33"
 
@@ -1680,7 +1680,7 @@ def render_html(data: TablesData) -> str:
     add('    <section id="out-of-scope">')
     add("      <h2>本頁未列入</h2>")
     add("<ul>")
-    add("<li>以太牧場科技與 KVK 同盟堡壘科技。</li>")
+    add("<li><a href=\"ranch-tale.html\">牧場物語</a>的科技表，以及同盟堡壘科技。</li>")
     add(
         f"<li>{H(o.shine_building_name, terms)}"
         "的士兵基礎值。那不是科技樹。</li>"
@@ -1741,7 +1741,7 @@ def render_html(data: TablesData) -> str:
         "屬性寫入 697 筆對應 <code>effect_type=2</code>，效果參數原名 <code>effect_para</code>，"
         "計筆以 <code>effectParamPairs</code> 為準；效果類型 1／−1／3／4／5 的欄位原名同樣是 <code>effect_type</code>。"
         "部分組沒有 <code>alliance_tech_name_{group_id}</code> 名稱字串。"
-        "以太牧場科技與 KVK 同盟堡壘科技分別出自 <code>ether_ranch_tech_detail.json</code>、"
+        "牧場物語的科技表與同盟堡壘科技分別出自 <code>ether_ranch_tech_detail.json</code>、"
         "<code>kvk_alliance_fortress_tech.json</code>。"
         f"{official_term_html(o.shine_building_name)}士兵基礎值出自 <code>shine_troop.json</code>，"
         "來源分類 <code>attr_category</code> 32。"
@@ -2046,7 +2046,7 @@ def render_markdown(data: TablesData) -> str:
     add("")
     add("## 本頁未列入")
     add("")
-    add("- 以太牧場科技與 KVK 同盟堡壘科技。")
+    add("- 牧場物語的科技表，以及同盟堡壘科技。")
     add(f"- {o.shine_building_name}的士兵基礎值。那不是科技樹。")
     add(f"- 841 條樹的完整名稱、消耗、時間與前置鏈（名稱字串也不完整：官方名稱字串只有 {comma(data.table_meta['adv_name_count'])} 條，對不上全部編號）。")
     add("- 兩套伺服器名單在同一服是否只開一套，以及 11／12、季節頁、光輝科技頁在沒有伺服器名單時如何對伺服器開放。")

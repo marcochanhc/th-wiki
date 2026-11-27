@@ -30,7 +30,18 @@ from thwiki.talent_tables import render_talent_page
 from thwiki.tech_tables import render_tech_page
 from thwiki.decoration_tables import render_decoration_page
 from thwiki.castle_tables import render_castle_page
+from thwiki.kvk_tables import render_kingdom_clash_page
+from thwiki.elf_tables import render_elf_cottage_page
+from thwiki.fish_tank_tables import render_fish_tank_page
+from thwiki.butterfly_tables import render_butterfly_catch_page
+from thwiki.ranch_tables import render_ranch_tale_page
+from thwiki.villager_tables import render_villagers_page
+from thwiki.faction_level_tables import render_faction_levels_page
+from thwiki.caravan_tables import render_caravan_trade_page
+from thwiki.totem_tables import render_ancestral_totem_page
+from thwiki.guild_mentor_tables import render_guild_mentors_page
 from thwiki.render import render_hero, render_home
+from thwiki.search_index import write_search_index
 
 
 def copy_assets():
@@ -45,6 +56,7 @@ def copy_assets():
     js_dst.mkdir(parents=True)
     shutil.copy2(js_src, js_dst / "page-filter.js")
     shutil.copy2(STATIC_DIR / "js" / "upgrade-cost.js", js_dst / "upgrade-cost.js")
+    shutil.copy2(STATIC_DIR / "js" / "search.js", js_dst / "search.js")
     # Portraits are reserved placeholders for now; do not copy lead art into docs/.
 
 
@@ -89,6 +101,16 @@ def main() -> int:
         ("tech.html", render_tech_page),
         ("decorations.html", render_decoration_page),
         ("castle.html", render_castle_page),
+        ("kingdom-clash.html", render_kingdom_clash_page),
+        ("elf-cottage.html", render_elf_cottage_page),
+        ("fish-tank.html", render_fish_tank_page),
+        ("butterfly-catch.html", render_butterfly_catch_page),
+        ("ranch-tale.html", render_ranch_tale_page),
+        ("villagers.html", render_villagers_page),
+        ("faction-levels.html", render_faction_levels_page),
+        ("caravan-trade.html", render_caravan_trade_page),
+        ("ancestral-totem.html", render_ancestral_totem_page),
+        ("guild-mentors.html", render_guild_mentors_page),
     )
     for name, renderer in catalogs:
         out = DOCS_DIR / name
@@ -104,6 +126,16 @@ def main() -> int:
     index = DOCS_DIR / "index.html"
     index.write_text(render_home(pages), encoding="utf-8")
     print(f"wrote {index.relative_to(PROJECT_ROOT)}")
+
+    published = [heroes_dir / f"{hid}.html" for hid in PUBLISH_IDS]
+    published.append(exclusive)
+    published.append(valhalla)
+    published.append(skins)
+    published.extend(DOCS_DIR / name for name, _renderer in catalogs)
+    published.append(index)
+    index_js = write_search_index(published)
+    print(f"wrote {index_js.relative_to(PROJECT_ROOT)}")
+
     print(f"output: {DOCS_DIR}")
     return 0
 

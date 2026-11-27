@@ -141,6 +141,17 @@ def page_shell(
         if page_filter
         else ""
     )
+    search_scripts = (
+        f'\n  <script src="{prefix}assets/js/search-index.js" defer></script>'
+        f'\n  <script src="{prefix}assets/js/search.js" defer></script>'
+    )
+    search_form = (
+        f'<form class="site-search" role="search" hidden data-site-search data-root="{prefix}">'
+        '<label for="site-search-q">搜尋</label>'
+        '<input id="site-search-q" type="search" name="q" autocomplete="off" aria-autocomplete="list" aria-controls="site-search-results" aria-expanded="false">'
+        '<div id="site-search-results" class="site-search-results" hidden data-site-search-results></div>'
+        "</form>"
+    )
     return f"""<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -148,7 +159,7 @@ def page_shell(
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{e(title)}</title>
   <meta name="description" content="{e(summary)}">
-  <link rel="stylesheet" href="{prefix}assets/css/site.css">{filter_script}
+  <link rel="stylesheet" href="{prefix}assets/css/site.css">{filter_script}{search_scripts}
 </head>
 <body id="top">
   <a class="skip" href="#main">跳到本文</a>
@@ -156,6 +167,7 @@ def page_shell(
     <div class="inner">
       <a class="site-title" href="{prefix}index.html">Top Heroes Wiki</a>
       <nav class="site-nav" aria-label="本站">{''.join(nav_html)}</nav>
+      {search_form}
     </div>
   </header>
   <main id="main" class="page">
@@ -648,6 +660,16 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
             "帕魯": "pals.html",
             "城建升級": "city-buildings.html",
             "領主職業": "lord-occupations.html",
+            "王國對決": "kingdom-clash.html",
+            "精靈小屋": "elf-cottage.html",
+            "摸魚時光": "fish-tank.html",
+            "抓蝴蝶": "butterfly-catch.html",
+            "牧場物語": "ranch-tale.html",
+            "村民": "villagers.html",
+            "陣營等級": "faction-levels.html",
+            "商隊貿易": "caravan-trade.html",
+            "先祖圖騰": "ancestral-totem.html",
+            "公會導師": "guild-mentors.html",
             "符文": "runes.html",
             "天賦": "talents.html",
             "科技": "tech.html",
@@ -663,7 +685,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
     body = f"""
     <header class="entry-head">
       <h1>Top Heroes Wiki</h1>
-      <p class="lede">Top Heroes 英雄 wiki。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表和城堡外觀總表也已公開。</p>
+      <p class="lede">Top Heroes 英雄 wiki。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師也已公開。</p>
     </header>
     <section id="heroes">
       <h2>英雄</h2>
@@ -671,7 +693,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
     </section>
     <section id="codex">
       <h2>圖鑑</h2>
-      <p>專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表和城堡外觀總表已公開。</p>
+      <p>專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師已公開。</p>
       <ul class="codex-index">{codex}</ul>
     </section>
     <section id="about">
@@ -684,4 +706,4 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
       </ul>
     </section>
     """
-    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表和城堡外觀總表也已公開。", body, depth=0, nav_current="index")
+    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師也已公開。", body, depth=0, nav_current="index")

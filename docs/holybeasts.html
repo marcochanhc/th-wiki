@@ -9,6 +9,8 @@
   <script src="assets/js/page-filter.js" defer></script>
   <script src="assets/js/holybeast-upgrade-costs-data.js" defer></script>
   <script src="assets/js/upgrade-cost.js" defer></script>
+  <script src="assets/js/search-index.js" defer></script>
+  <script src="assets/js/search.js" defer></script>
 </head>
 <body id="top">
   <a class="skip" href="#main">跳到本文</a>
@@ -16,6 +18,7 @@
     <div class="inner">
       <a class="site-title" href="index.html">Top Heroes Wiki</a>
       <nav class="site-nav" aria-label="本站"><a href="index.html">首頁</a><a href="index.html#heroes">英雄</a><a href="index.html#faction-league">聯盟</a><a href="index.html#faction-nature">自然</a><a href="index.html#faction-tribe">部族</a><a href="index.html#codex" class="current">圖鑑</a><a href="index.html#about">關於本站</a></nav>
+      <form class="site-search" role="search" hidden data-site-search data-root=""><label for="site-search-q">搜尋</label><input id="site-search-q" type="search" name="q" autocomplete="off" aria-autocomplete="list" aria-controls="site-search-results" aria-expanded="false"><div id="site-search-results" class="site-search-results" hidden data-site-search-results></div></form>
     </div>
   </header>
   <main id="main" class="page">
@@ -31,7 +34,7 @@
     </form>
     <section id="lead">
       <h2>簡介與閱讀說明</h2>
-<p>正文只根據遊戲資料表與官方字串，不評定守護魔獸強弱，也不排行。官方界面稱「<span class="term">守護魔獸</span>」。這不是寵物；寵物見已發佈的<a href="pets.html"><span class="term">寵物總表</span></a>。<a href="pals.html">帕魯</a>、精靈、魚缸、蝴蝶、乙太牧場不在本頁展開。已發佈的<a href="valhalla.html"><span class="term">英靈總表</span></a>是綁在英雄身上的另一套養成，不是守護魔獸。野外或 PVE 怪物不在本頁。</p>
+<p>正文只根據遊戲資料表與官方字串，不評定守護魔獸強弱，也不排行。官方界面稱「<span class="term">守護魔獸</span>」。這不是寵物；寵物見已發佈的<a href="pets.html"><span class="term">寵物總表</span></a>。<a href="pals.html">帕魯</a>、<a href="elf-cottage.html">精靈小屋</a>、<a href="fish-tank.html">摸魚時光</a>（魚缸）、<a href="butterfly-catch.html">抓蝴蝶</a>、<a href="ranch-tale.html">牧場物語</a>不在本頁展開。已發佈的<a href="valhalla.html"><span class="term">英靈總表</span></a>是綁在英雄身上的另一套養成，不是守護魔獸。野外或 PVE 怪物不在本頁。</p>
 <ul>
 <li><strong>本頁只寫官方所稱的「<span class="term">守護魔獸</span>」這套養成，共 6 隻。</strong>下面會列出名稱、契約與材料、升級與升星規則與關鍵節點、展示技能原文，以及升星退還。升級與升星不整表傾印。對照路徑與筆數見資料說明。</li>
 <li>名稱依遊戲裡看得到的顯示名書寫。沒有官方名稱或技能說明的欄位會註明「字串表沒有內容」或「字串表沒有名稱與說明」，不編造。官方用語是「<span class="term">守護魔獸</span>」「<span class="term">部族</span>」；界面亦有簡稱「<span class="term">魔獸</span>」。官方用字不一致時照錄，不自行改寫。</li>
@@ -207,7 +210,7 @@
     <section id="out-of-scope">
       <h2>本頁未列入</h2>
 <ul>
-<li>寵物（見已發佈的<a href="pets.html"><span class="term">寵物總表</span></a>）、英靈（見已發佈的<a href="valhalla.html"><span class="term">英靈總表</span></a>），以及<a href="pals.html">帕魯</a>、精靈、魚缸、蝴蝶、乙太牧場等其他伴侶與休閒系統；野外或 PVE 怪物。</li>
+<li>寵物（見已發佈的<a href="pets.html"><span class="term">寵物總表</span></a>）、英靈（見已發佈的<a href="valhalla.html"><span class="term">英靈總表</span></a>），以及<a href="pals.html">帕魯</a>、<a href="elf-cottage.html">精靈小屋</a>、<a href="fish-tank.html">摸魚時光</a>（魚缸）、<a href="butterfly-catch.html">抓蝴蝶</a>、<a href="ranch-tale.html">牧場物語</a>等其他伴侶與休閒系統；野外或 PVE 怪物。</li>
 <li>升級 1,020 筆、升星 606 筆的逐列全表（規則與關鍵節點已寫；退還 50 筆已全列）。</li>
 <li>功能開啟表沒有守護魔獸專用開啟列；影響力跳轉的名稱與說明為空。建築消耗欄各段的枚舉定義。</li>
 <li>升星表裡沒有官方名稱的技能在客戶端如何與展示技能合併顯示。</li>

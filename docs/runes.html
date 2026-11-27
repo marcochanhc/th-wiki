@@ -7,6 +7,8 @@
   <meta name="description" content="官方界面所稱的符文：隊列符文五種三營 1–10 級與羈絆，以及後續資料包才出現的另一套符文（六種、1–12 級，含精煉欄）。">
   <link rel="stylesheet" href="assets/css/site.css">
   <script src="assets/js/page-filter.js" defer></script>
+  <script src="assets/js/search-index.js" defer></script>
+  <script src="assets/js/search.js" defer></script>
 </head>
 <body id="top">
   <a class="skip" href="#main">跳到本文</a>
@@ -14,6 +16,7 @@
     <div class="inner">
       <a class="site-title" href="index.html">Top Heroes Wiki</a>
       <nav class="site-nav" aria-label="本站"><a href="index.html">首頁</a><a href="index.html#heroes">英雄</a><a href="index.html#faction-league">聯盟</a><a href="index.html#faction-nature">自然</a><a href="index.html#faction-tribe">部族</a><a href="index.html#codex" class="current">圖鑑</a><a href="index.html#about">關於本站</a></nav>
+      <form class="site-search" role="search" hidden data-site-search data-root=""><label for="site-search-q">搜尋</label><input id="site-search-q" type="search" name="q" autocomplete="off" aria-autocomplete="list" aria-controls="site-search-results" aria-expanded="false"><div id="site-search-results" class="site-search-results" hidden data-site-search-results></div></form>
     </div>
   </header>
   <main id="main" class="page">
@@ -39,7 +42,7 @@
     </section>
     <section id="lead">
       <h2>簡介與閱讀說明</h2>
-<p>正文只根據遊戲資料表與官方字串，不評定符文強弱，也不做搭配模擬。官方系統名是「<span class="term">符文</span>」，提示「<span class="term">可在英雄雕像建築提升符文等級</span>」。介面標題是「<span class="term">隊列符文</span>」。<span class="term">英雄雕像</span>說明：「<span class="term">可以鑲嵌符文使英雄和士兵獲得力量加成的神秘雕像</span>」。英雄四件套裝備見<a href="equipment.html"><span class="term">裝備總表</span></a>，領主裝備見<a href="lord-equipment.html"><span class="term">領主裝備總表</span></a>，士兵見<a href="troops.html"><span class="term">士兵總表</span></a>，秘寶見<a href="artifacts.html"><span class="term">秘寶總表</span></a>，寵物見<a href="pets.html"><span class="term">寵物總表</span></a>。已發佈的<a href="exclusive.html"><span class="term">專武總表</span></a>是英雄專武；已發佈的<a href="valhalla.html"><span class="term">英靈總表</span></a>是綁在英雄身上的另一套養成；已發佈的<a href="skins.html"><span class="term">造型總表</span></a>是英雄造型。<a href="pals.html">帕魯</a>、<a href="holybeasts.html">守護魔獸</a>、精靈、魚缸、蝴蝶、乙太牧場、科技、裝飾物不在本頁展開。</p>
+<p>正文只根據遊戲資料表與官方字串，不評定符文強弱，也不做搭配模擬。官方系統名是「<span class="term">符文</span>」，提示「<span class="term">可在英雄雕像建築提升符文等級</span>」。介面標題是「<span class="term">隊列符文</span>」。<span class="term">英雄雕像</span>說明：「<span class="term">可以鑲嵌符文使英雄和士兵獲得力量加成的神秘雕像</span>」。英雄四件套裝備見<a href="equipment.html"><span class="term">裝備總表</span></a>，領主裝備見<a href="lord-equipment.html"><span class="term">領主裝備總表</span></a>，士兵見<a href="troops.html"><span class="term">士兵總表</span></a>，秘寶見<a href="artifacts.html"><span class="term">秘寶總表</span></a>，寵物見<a href="pets.html"><span class="term">寵物總表</span></a>。已發佈的<a href="exclusive.html"><span class="term">專武總表</span></a>是英雄專武；已發佈的<a href="valhalla.html"><span class="term">英靈總表</span></a>是綁在英雄身上的另一套養成；已發佈的<a href="skins.html"><span class="term">造型總表</span></a>是英雄造型。<a href="pals.html">帕魯</a>、<a href="holybeasts.html">守護魔獸</a>、<a href="elf-cottage.html">精靈小屋</a>、<a href="fish-tank.html">摸魚時光</a>（魚缸）、<a href="butterfly-catch.html">抓蝴蝶</a>、<a href="ranch-tale.html">牧場物語</a>、科技、裝飾物不在本頁展開。</p>
 <ul>
 <li><strong>屬性只錄表上的原值</strong>，不自行換成百分比。「<span class="term">攻擊</span>／<span class="term">生命值</span>」與「<span class="term">英雄攻擊</span>／<span class="term">英雄生命</span>」不要混成同一欄。有一個編號在四份字串包都沒有對應名稱，本頁不把它的備用名稱當成正式名稱。對照見資料說明。</li>
 <li>正式用語是「部族」不是「部落」。不要從時間或賽季欄位自動標未開放（這幾張符文表沒有這類欄位）。</li>
@@ -120,7 +123,7 @@
 <li>精煉經驗與材料／道具的對應（表沒指明）。</li>
 <li>插槽數為五或六的裁斷。</li>
 <li>強弱評定與搭配模擬。</li>
-<li>另一張圖騰表（檔名見資料說明），以及<a href="pals.html">帕魯</a>、守護魔獸、精靈、魚缸、蝴蝶、乙太牧場、科技、裝飾物。</li>
+<li>另一張圖騰表（檔名見資料說明），以及<a href="pals.html">帕魯</a>、守護魔獸、<a href="elf-cottage.html">精靈小屋</a>、<a href="fish-tank.html">摸魚時光</a>（魚缸）、<a href="butterfly-catch.html">抓蝴蝶</a>、<a href="ranch-tale.html">牧場物語</a>、科技、裝飾物。</li>
 </ul>
     </section>
     <section id="notes">
@@ -134,14 +137,14 @@
 <li>官方 1.–5. 條規則引自 <code>team_rune_info_desc</code>。合成所需枚數對應 <code>level_up_num</code>：隊列符文 1–9 級為 3，第 10 級為 -1；<code>player_rune</code> 1–11 級為 3，第 12 級為 -1。介面另有 <code>team_rune_power_tip</code>、<code>team_rune_uncompound</code>；羈絆提示為 <code>team_rune_bond</code>，以及 <code>team_rune_tips5</code>／<code>team_rune_tips6</code>。郵件標題鍵是 <code>mail_rune_title</code>。符文名稱只使用對應的官方名稱鍵，不改官方名。可見改寫「沒有對應名稱」「對照見資料說明」，名稱鍵對照見此。</li>
 <li>隊列符文對應 <code>team_rune.json</code>（150 筆）與 <code>team_rune_bond.json</code>（36 筆）；另一套是只在 LocalLow 包出現的 <code>player_rune.json</code>（72 筆：6 個 type × 12 級，含精煉欄）。player_rune 表沒有名稱欄，也沒有 power 欄，只有 base_power；本頁不編造 power，也不把 type N 寫成 <code>team_rune_name_00N</code>。</li>
 <li>隊列符文對應 <code>team_rune.json</code> 與 <code>team_rune_bond.json</code>；另一套是只在 LocalLow 包出現的 <code>player_rune.json</code>。官方系統名鍵是 <code>team_rune_bagname</code>，標題鍵是 <code>team_rune_title</code>。屬性名優先用 <code>attribute_name_{id}</code>，不要盲目跟 <code>attribute.json</code> 的 <code>name</code> 欄。id 3 的 name 欄指向 <code>attribute_name_103</code>，本頁用 <code>attribute_name_3</code>「<span class="term">攻擊</span>」（type=1、show_type=1）；id 4 用 <code>attribute_name_4</code>「<span class="term">生命值</span>」，不寫成「<span class="term">英雄攻擊</span>／<span class="term">英雄生命</span>」。id 103／104 才是 show_type=2 的「<span class="term">英雄攻擊</span>／<span class="term">英雄生命</span>」。id 20006 必須先查 <code>attribute_name_20006</code>：四份字串包都沒有此鍵；name 欄指向 <code>attribute_name_20004</code>，本頁不把它當作正式名稱。可見「依寫入屬性對照」表只列類型、寫入屬性官方名與對照。編號區間、寫入欄位、表內原值與編號前綴見此：類型 1 為 7010001–7010012（前綴 701），寫入欄位為參數欄（原名 <code>para</code>），生命值 4、英雄生命 104，參數欄為 4，高級加 104；類型 2 為 7020001–7020012（前綴 702），參數欄，士兵生命 10004、出征上限 1019、所有士兵生命 10104；類型 3 為 7030001–7030012（前綴 703），寫入欄位為特殊參數 1／2（原名 <code>sp_para1</code>／<code>sp_para2</code>），生命值 4 與 20006（沒有官方屬性名），不用參數欄；類型 4 為 7060001–7060012（前綴 706，與種類編號不一致），參數欄，攻擊 3、英雄攻擊 103；類型 5 為 7050001–7050012（前綴 705），參數欄，士兵攻擊 10003、出征上限 1019、所有士兵攻擊 10103；類型 6 為 7040001–7040012（前綴 704，與種類編號不一致），參數欄，防禦 22、突破防禦 64、出征上限 1019。可見隊列符文寫入屬性只列官方名；分營屬性編號聯盟隊列攻擊／生命 3062／3063、部族 4062／4063、自然 5062／5063，破甲另加突破防禦 64，厚甲另加防禦 22。種族 1／2／3 對應聯盟／部族／自然。羈絆「出征上限」編號 1019。後續資料包曲線表頭只寫官方屬性名；20006 沒有官方屬性名，編號只在資料說明。隊列符文的分營隊列攻擊／生命（3062 等）是 type=2、show_type=2；<span class="term">防禦</span> 22、<span class="term">突破防禦</span> 64、<span class="term">出征上限</span> 1019，以及 player_rune 裡 show_type=1 的 3／4／22／64／10003／10004／20006，也都只記原值。不把 3062 等與不分營的 62／63 寫成同一條公式。隊列符文的 type 1–5，只使用 <code>team_rune_name_1</code>–<code>5</code> 與 <code>team_rune_desc_1</code>–<code>5</code>。絕不用 <code>team_rune_name_001</code>–<code>006</code> 或 <code>UI_player_rune_01</code>–<code>06</code> 來標 <code>team_rune</code> 的 type。<code>kvk_totem</code> 不在本頁展開。可見表頭「類型／戰力／基礎戰力／精煉經驗／精煉需求／精煉戰力／精煉百分比欄／精煉百分比戰力／精煉參數／精煉特殊參數／特殊參數 1／2／屬性編號／顯示類型／分營欄／名稱欄／種族編號」對應原欄名 <code>type</code>、<code>power</code>、<code>base_power</code>、<code>refine_exp</code>、<code>refine_need</code>、<code>refine_power</code>、<code>refine_percent</code>、<code>refine_percent_power</code>、<code>refine_para</code>、<code>refine_sp_para1</code>、<code>sp_para1</code>／<code>sp_para2</code>、<code>id</code>、<code>show_type</code>、<code>is_race</code>、<code>name</code>、<code>race</code>。寫入欄位「參數欄」原名 <code>para</code>。可見「羈絆隊列欄」原名 <code>queue</code>。</li>
-<li>資料截至 2026-11-24（香港時間）。這不是官方 wiki。來源是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），打包時戳 2026-11-22 23:33（香港時間）。`team_rune.json` 四份包皆 150 筆、28605 bytes，sha256 6afccc545b493a62f88d22f280cc39d2df918134fce1dec6d9278c5feb7e4628，位元組相同。`team_rune_bond.json` 四份包皆 36 筆、3254 bytes，sha256 8859d10a5df57882f84d02eeba18788d9492684987f65db38df7883642016a33，位元組相同。`player_rune.json` 只出現在現行 LocalLow 與 2026-11-22 LocalLow 歸檔（皆 72 筆、72456 bytes，sha256 4a9f79fbc3d8a4112b25df7ddc50dfbaefcbd61e775c21593bfe5198fa56a427），兩份位元組相同；2026-11-05 解壓檔與 2026-11-22 StreamingAssets 沒有此表。這是相對第 22 章（寫「本抽取沒有精煉表」）的主要補充。`attribute.json` 列數同為 764；現行檔與 2026-11-22 兩份歸檔位元組相同，2026-11-05 與現行包位元組不同，差在後來多了欄位（NameKey、name_season）；本頁用到的 type／show_type／name 與 2026-11-05 相同。本頁不以 goods.json 當道具目錄。`strings_zh.json` 現行檔與 2026-11-22 LocalLow 歸檔相同（40581 鍵，3250588 bytes，sha256 249e08f64922de78527d6669912e4202fd650d1bd2434e47c89351d123da0134）；2026-11-05（40016 鍵）與 2026-11-22 StreamingAssets（40327 鍵）整體不同。本頁用到的 74 個字串鍵在這四份裡值相同。attribute_name_20006 在現行字串表與三份歸檔都不存在，不是歸檔缺漏；attribute.json 裡 id 20006 的 name 欄指向 attribute_name_20004（「秘寶生命」），本頁不把它當作 20006 的正式名稱。顯示規則依攻略手冊「符文圖鑑」第一版（2026-11-15，香港時間；該章標題仍寫來源解壓日期 2026-11-05），但數值一律以現行資料表為準。隊列符文與羈絆數列與第 22 章一致；player_rune 的 72 筆曲線與精煉欄為本頁按表補上。</li>
+<li>資料截至 2026-11-22（香港時間）。這不是官方 wiki。來源是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），打包時戳 2026-11-22 23:33（香港時間）。`team_rune.json` 四份包皆 150 筆、28605 bytes，sha256 6afccc545b493a62f88d22f280cc39d2df918134fce1dec6d9278c5feb7e4628，位元組相同。`team_rune_bond.json` 四份包皆 36 筆、3254 bytes，sha256 8859d10a5df57882f84d02eeba18788d9492684987f65db38df7883642016a33，位元組相同。`player_rune.json` 只出現在現行 LocalLow 與 2026-11-22 LocalLow 歸檔（皆 72 筆、72456 bytes，sha256 4a9f79fbc3d8a4112b25df7ddc50dfbaefcbd61e775c21593bfe5198fa56a427），兩份位元組相同；2026-11-05 解壓檔與 2026-11-22 StreamingAssets 沒有此表。這是相對第 22 章（寫「本抽取沒有精煉表」）的主要補充。`attribute.json` 列數同為 764；現行檔與 2026-11-22 兩份歸檔位元組相同，2026-11-05 與現行包位元組不同，差在後來多了欄位（NameKey、name_season）；本頁用到的 type／show_type／name 與 2026-11-05 相同。本頁不以 goods.json 當道具目錄。`strings_zh.json` 現行檔與 2026-11-22 LocalLow 歸檔相同（40581 鍵，3250588 bytes，sha256 249e08f64922de78527d6669912e4202fd650d1bd2434e47c89351d123da0134）；2026-11-05（40016 鍵）與 2026-11-22 StreamingAssets（40327 鍵）整體不同。本頁用到的 74 個字串鍵在這四份裡值相同。attribute_name_20006 在現行字串表與三份歸檔都不存在，不是歸檔缺漏；attribute.json 裡 id 20006 的 name 欄指向 attribute_name_20004（「秘寶生命」），本頁不把它當作 20006 的正式名稱。顯示規則依攻略手冊「符文圖鑑」第一版（2026-11-15，香港時間；該章標題仍寫來源解壓日期 2026-11-05），但數值一律以現行資料表為準。隊列符文與羈絆數列與第 22 章一致；player_rune 的 72 筆曲線與精煉欄為本頁按表補上。</li>
 <li>待補：attribute_name_20006 缺失時客戶端實際顯示什麼；精煉經驗與材料的對應；羈絆隊列欄的含義；分營與不分營隊列攻擊／生命的疊加方式；以及 name_001–006 與說明不一致的原因。</li>
 </ul>
     </section>
   </main>
   <footer class="site-footer">
     <div class="inner">
-      <p>資料截至 2026-11-24（香港時間）。這不是官方 wiki。</p>
+      <p>資料截至 2026-11-22（香港時間）。這不是官方 wiki。</p>
       <p><a href="#top">回到頂部</a></p>
     </div>
   </footer>

@@ -21,9 +21,9 @@ from .tables import load_table
 
 # 天賦總表專用；不改 paths.DATA_CUTOFF，以免影響首頁與英雄條目的全局截止日。
 # 資料是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），
-# 打包時戳 2026-11-22 23:33（香港時間）。本頁頁腳／截止日寫 2026-11-21
-# （第 23 章第三版／最後確認的前服面板，香港時間）。
-TALENT_DATA_CUTOFF = "2026-11-21"
+# 打包時戳 2026-11-22 23:33（香港時間）。頁尾資料截至寫解壓包日期 2026-11-22。
+# 第 23 章第三版／前服面板確認寫於 2026-11-21（香港時間），那是整理日期，不是解壓截止日。
+TALENT_DATA_CUTOFF = "2026-11-22"
 TALENT_DATA_PACK = "app-1.129.12_table-1.0.43173"
 TALENT_DATA_PACKED = "2026-11-22 23:33"
 
@@ -1318,7 +1318,7 @@ def _data_notes(data: TablesData) -> str:
         f"資料截至 {TALENT_DATA_CUTOFF}（香港時間）。這不是官方 wiki。"
         f"來源是 LocalLow 包 {TALENT_DATA_PACK}（{data.table_meta['table_count']} 張表），"
         f"打包時戳 {TALENT_DATA_PACKED}（香港時間）。"
-        f"第 23 章第三版寫的是 2026-11-05 解壓檔（{data.table_meta['extract_2026_11_05_table_count']} 張表）。"
+        f"第 23 章第三版寫於 2026-11-21（香港時間），那是整理日期；該版寫的是 2026-11-05 解壓檔（{data.table_meta['extract_2026_11_05_table_count']} 張表）。"
         + pack_note("hero_talent.json", "舊表")
         + pack_note("hero_talent_new.json", "後來的定義")
         + pack_note("hero_talent_group.json", "數值")

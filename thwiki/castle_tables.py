@@ -19,9 +19,10 @@ from .tables import load_table
 
 # 城堡外觀總表專用；不改 paths.DATA_CUTOFF，以免影響首頁與英雄條目的全局截止日。
 # 資料是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），
-# 打包時戳 2026-11-22 23:33（香港時間）。本頁頁腳／截止日寫 2026-11-23，
-# 因為第 17 章第十版與最後確認的前服面板寫於該日；現行包與 LocalLow 歸檔位元組相同。
-CASTLE_DATA_CUTOFF = "2026-11-23"
+# 打包時戳 2026-11-22 23:33（香港時間）。頁尾資料截至寫解壓包日期 2026-11-22。
+# 第 17 章第十版與部分面板確認寫於 2026-11-23（香港時間），那是整理日期，不是解壓截止日。
+# 現行包與 LocalLow 歸檔位元組相同。
+CASTLE_DATA_CUTOFF = "2026-11-22"
 CASTLE_DATA_PACK = "app-1.129.12_table-1.0.43173"
 CASTLE_DATA_PACKED = "2026-11-22 23:33:08–23:33:20"
 CHAPTER_EDITION = "第十版"
@@ -2059,7 +2060,7 @@ def render_html(data: TablesData) -> str:
         "是技能在身邊生成的採集物，不是城堡升級材料表。"
         f"所有道具說明裡寫「升級城堡外觀／升星」的道具，仍只有「{H(o.goods[290][0], terms)}」、「{H(o.goods[314][0], terms)}」、「{H(o.goods[305][0], terms)}」、「{H(o.goods[313][0], terms)}」四種；"
         "沒有任何道具說明把蛋糕城、飛翔號、美味史萊姆、夢幻摩天輪列入可升級名單。"
-        "夢幻摩天輪也沒有 <code>-Lv.2</code> 任務字串，只有技能表的強化列。"
+        "夢幻摩天輪也沒有帶「-Lv.2」這個後綴的任務字串，只有技能表的強化列。"
         f"升級材料以「{H(o.goods[290][0], terms)}」與官方名單一併列出：說明名單尚未列這四座，但這四座都用「{H(o.goods[290][0], terms)}」升級。"
     ))
     add("    </section>")
@@ -2833,7 +2834,7 @@ def render_html(data: TablesData) -> str:
         "world_skin_suit_collection_rewa.json、world_skin_suit_collect_fashion.json、world_skin_effect.json、"
         "world_skin_goods 採集物、troop_skin.json、map_march.json、skin.json、village_style.json、"
         "citybuilding_skin_suit.json、alliance_fort_skin.json、attribute.json、goods.json。"
-        "星紀元效果列的參數欄與升級範圍欄原值（含 311|327 這類寫法）只抄表，對照見抽取；升級範圍欄點名創世紀、永恆紀。中段面板抄錄日期為 2026-11-22（香港時間）；頁尾資料截至 2026-11-23（香港時間）。"
+        "星紀元效果列的參數欄與升級範圍欄原值（含 311|327 這類寫法）只抄表，對照見抽取；升級範圍欄點名創世紀、永恆紀。中段面板抄錄日期為 2026-11-22（香港時間），那是整理日期，不是另一批解壓截止日。頁尾資料截至 2026-11-22（香港時間）。"
         "揚帆啟航護盾表 id 3008 官方名鍵為 world_shields_name_3009（洋流環繞）；果香帷幕為表 id 3007、鍵 world_shields_name_3008。"
         "水晶聖城 hide 在 level 1 為 1、level 2–6 為 -1。山岳之傲「守城時士兵生命」列 id 1000104，鍵 attribute_name_1010104。"
     ))

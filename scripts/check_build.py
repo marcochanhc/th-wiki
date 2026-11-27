@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from html.parser import HTMLParser
@@ -32,6 +33,16 @@ TECH = DOCS / "tech.html"
 DECORATIONS = DOCS / "decorations.html"
 CASTLE = DOCS / "castle.html"
 LORD_OCCUPATIONS = DOCS / "lord-occupations.html"
+KINGDOM_CLASH = DOCS / "kingdom-clash.html"
+ELF_COTTAGE = DOCS / "elf-cottage.html"
+FISH_TANK = DOCS / "fish-tank.html"
+BUTTERFLY_CATCH = DOCS / "butterfly-catch.html"
+RANCH_TALE = DOCS / "ranch-tale.html"
+VILLAGERS = DOCS / "villagers.html"
+FACTION_LEVELS = DOCS / "faction-levels.html"
+CARAVAN_TRADE = DOCS / "caravan-trade.html"
+ANCESTRAL_TOTEM = DOCS / "ancestral-totem.html"
+GUILD_MENTORS = DOCS / "guild-mentors.html"
 
 
 def text_of(html: str) -> str:
@@ -76,6 +87,7 @@ TRIBE_NAMES = [
 CODEX_ITEMS = [
     "專武", "英靈", "造型", "裝備", "領主裝備", "士兵", "秘寶", "寵物", "符文",
     "天賦", "科技", "裝飾物", "城堡外觀", "守護魔獸", "帕魯", "城建升級", "領主職業",
+    "王國對決", "精靈小屋", "摸魚時光", "抓蝴蝶", "牧場物語", "村民", "陣營等級", "商隊貿易", "先祖圖騰", "公會導師",
 ]
 GAMEPLAY_TERMS = ("開局", "陣容與羈絆", "PVE", "PVP", "KVK")
 STALE_DEPLOY = ("GitHub Pages 公開部署尚未進行", "公開部署還沒做")
@@ -243,6 +255,16 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
             ("pals.html", "帕魯"),
             ("city-buildings.html", "城建升級"),
             ("lord-occupations.html", "領主職業"),
+            ("kingdom-clash.html", "王國對決"),
+            ("elf-cottage.html", "精靈小屋"),
+            ("fish-tank.html", "摸魚時光"),
+            ("butterfly-catch.html", "抓蝴蝶"),
+            ("ranch-tale.html", "牧場物語"),
+            ("villagers.html", "村民"),
+            ("faction-levels.html", "陣營等級"),
+            ("caravan-trade.html", "商隊貿易"),
+            ("ancestral-totem.html", "先祖圖騰"),
+            ("guild-mentors.html", "公會導師"),
         )
         other = codex
         for href, label in published_codex:
@@ -275,12 +297,18 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         fail("index 關於本站 should say this is not official", errors)
     if "目前聯盟、自然和部族的英雄條目都已公開。" not in it:
         fail("index lede should say alliance, nature and tribe pages are all published", errors)
-    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表和城堡外觀總表也已公開" not in it:
-        fail("index lede should name all published catalogs, including talent, tech, decoration and castle", errors)
+    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師也已公開" not in it:
+        fail("index lede should name all published catalogs, through 公會導師", errors)
     if "專武總表、英靈總表和造型總表也已公開" in it:
         fail("index lede still only lists exclusive, valhalla and skin catalogs", errors)
-    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表和城堡外觀總表已公開" not in it:
-        fail("index 圖鑑 should name all published catalogs, including talent, tech, decoration and castle", errors)
+    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師已公開" not in it:
+        fail("index 圖鑑 should name all published catalogs, through 公會導師", errors)
+    if "抓蝴蝶和牧場物語也已公開" in it or "抓蝴蝶和牧場物語已公開" in it:
+        fail("index lede or 圖鑑 still uses the previous locked ending", errors)
+    if "裝飾物總表和城堡外觀總表也已公開" in it:
+        fail("index lede still stops at 城堡外觀總表", errors)
+    if "裝飾物總表和城堡外觀總表已公開" in it:
+        fail("index 圖鑑 still stops at 城堡外觀總表", errors)
     if "其餘分類稍後再補" in it:
         fail("index 圖鑑 should not still say remaining categories will follow", errors)
     if "專武總表、英靈總表和造型總表已公開，其餘分類稍後再補" in it:
@@ -291,6 +319,10 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         "artifacts.html", "pets.html", "runes.html",
         "talents.html", "tech.html", "decorations.html", "castle.html",
         "holybeasts.html", "pals.html", "city-buildings.html", "lord-occupations.html",
+        "kingdom-clash.html", "elf-cottage.html", "fish-tank.html",
+        "butterfly-catch.html", "ranch-tale.html",
+        "villagers.html", "faction-levels.html", "caravan-trade.html",
+        "ancestral-totem.html", "guild-mentors.html",
     ):
         if f'href="{href}"' not in index:
             fail(f"index should link to {href}", errors)
@@ -1473,8 +1505,8 @@ def check_skins_page(html: str, errors: list[str]) -> None:
                 fail(f"skins: site-nav missing {needle}", errors)
 
     it = text_of(html)
-    if "資料截至 2026-11-23" not in it:
-        fail("skins: data cutoff should be 2026-11-23", errors)
+    if "資料截至 2026-11-22" not in it:
+        fail("skins: data cutoff should be 2026-11-22", errors)
     if "資料截至 2026-11-05" in it:
         fail("skins: must not use the global 2026-11-05 cutoff on this page", errors)
     if "app-1.129.12_table-1.0.43173" not in html:
@@ -1601,8 +1633,8 @@ def check_skins_page(html: str, errors: list[str]) -> None:
         fail("skins: must not claim skin_season_6 is the official S6 name", errors)
 
     footer = re.search(r'<footer class="site-footer">.*?</footer>', html, flags=re.S)
-    if not footer or "資料截至 2026-11-23" not in text_of(footer.group(0)):
-        fail("skins: footer cutoff should be 2026-11-23", errors)
+    if not footer or "資料截至 2026-11-22" not in text_of(footer.group(0)):
+        fail("skins: footer cutoff should be 2026-11-22", errors)
 
 
 
@@ -1664,13 +1696,13 @@ def check_public_catalog_shell(html: str, label: str, title: str, cutoff: str, e
     t = text_of(html)
     if "尚未發佈" in t or "本機預覽" in t:
         fail(f"{label}: stripped text still mentions unpublished preview status", errors)
-    for bad in ("繁絆", "精録", "魚缺", "魚缽", "鐵喉", "部落的伝護", "部族的庇護"):
+    for bad in ("繁絆", "精録", "魚缺", "魚缽", "鐵喉", "鐵噎", "部落的伝護", "部族的庇護", "地心獵獸", "地心獵獵", "契約之獅", "約誓之獅"):
         if bad in html or bad in t:
             fail(f"{label}: forbidden typo or rewritten official term {bad}", errors)
 
 
 def check_equipment_page(html: str, errors: list[str]) -> None:
-    check_public_catalog_shell(html, "equipment", "Top Heroes Wiki｜裝備總表", "2026-11-23", errors)
+    check_public_catalog_shell(html, "equipment", "Top Heroes Wiki｜裝備總表", "2026-11-22", errors)
     if not html:
         return
     if "本頁列出四件套裝備的 12 個實際使用套裝" not in html:
@@ -1697,7 +1729,7 @@ def check_equipment_page(html: str, errors: list[str]) -> None:
 
 
 def check_lord_equipment_page(html: str, errors: list[str]) -> None:
-    check_public_catalog_shell(html, "lord-equipment", "Top Heroes Wiki｜領主裝備總表", "2026-11-23", errors)
+    check_public_catalog_shell(html, "lord-equipment", "Top Heroes Wiki｜領主裝備總表", "2026-11-22", errors)
     if not html:
         return
     if "本頁列出七件領主裝備的寫入屬性" not in html:
@@ -1709,7 +1741,7 @@ def check_lord_equipment_page(html: str, errors: list[str]) -> None:
 
 
 def check_troops_page(html: str, errors: list[str]) -> None:
-    check_public_catalog_shell(html, "troops", "Top Heroes Wiki｜士兵總表", "2026-11-23", errors)
+    check_public_catalog_shell(html, "troops", "Top Heroes Wiki｜士兵總表", "2026-11-22", errors)
     if not html:
         return
     if "本頁列出士兵的名稱、單兵數值" not in html:
@@ -1722,8 +1754,31 @@ def check_troops_page(html: str, errors: list[str]) -> None:
         fail("troops: missing locked 天穹聯盟戰士 1012 攻擊 50、生命 900", errors)
 
 
+
+def visible_html_before_notes(html: str) -> str:
+    main_m = re.search(r"<main\b[^>]*>(.*)<section[^>]*id=\"notes\"", html, flags=re.S)
+    if main_m:
+        return main_m.group(1)
+    notes_m = list(re.finditer(r"<h2\b[^>]*>\s*資料說明\s*</h2>", html))
+    if notes_m:
+        return html[:notes_m[-1].start()]
+    return html
+
+
+def check_visible_placeholder_code(html: str, label: str, errors: list[str]) -> None:
+    """Visible catalog body must not wrap placeholders in <code> or backticks."""
+    vis_html = visible_html_before_notes(html)
+    vis = visible_before_notes(html)
+    if re.search(r"<code\b[^>]*>\s*\{\d+\}\s*</code>", vis_html):
+        fail(f"{label}: visible body must not wrap placeholders such as {{0}} in <code>", errors)
+    if re.search(r"<code\b[^>]*>\s*-Lv\.2\s*</code>", vis_html):
+        fail(f"{label}: visible body must not wrap the -Lv.2 suffix in <code>", errors)
+    if re.search(r"`\{\d+\}`|`-Lv\.2`", vis):
+        fail(f"{label}: visible body must not wrap placeholders or the -Lv.2 suffix in backticks", errors)
+
+
 def check_artifacts_page(html: str, errors: list[str]) -> None:
-    check_public_catalog_shell(html, "artifacts", "Top Heroes Wiki｜秘寶總表", "2026-11-23", errors)
+    check_public_catalog_shell(html, "artifacts", "Top Heroes Wiki｜秘寶總表", "2026-11-22", errors)
     if not html:
         return
     if "本頁列出可佩戴到隊列上的秘寶" not in html:
@@ -1738,15 +1793,21 @@ def check_artifacts_page(html: str, errors: list[str]) -> None:
         fail("artifacts: quality 4 0-star row must not use 3530／23600", errors)
     if "3530／23600" in t and "該數字未出現在升星表" not in t:
         fail("artifacts: 3530／23600 may only appear as the rejected chapter-20 figure", errors)
+    vis = visible_before_notes(html)
+    check_visible_placeholder_code(html, "artifacts", errors)
+    if "所有套裝秘寶皆達到{0}，且上陣同一隊列" not in vis:
+        fail("artifacts: official unlock wording with {0} must be quoted unchanged", errors)
+    if "這個位置對應 15 星" not in vis or "表沒有另寫填入規則" not in vis:
+        fail("artifacts: missing plain-language note that the placeholder corresponds to 15 stars", errors)
 
 
 def check_pets_page(html: str, errors: list[str]) -> None:
-    check_public_catalog_shell(html, "pets", "Top Heroes Wiki｜寵物總表", "2026-11-24", errors)
+    check_public_catalog_shell(html, "pets", "Top Heroes Wiki｜寵物總表", "2026-11-22", errors)
     if not html:
         return
     if "本頁列出官方界面所稱的「寵物」" not in html:
         fail("pets: missing public lede", errors)
-    for href in ("equipment.html", "lord-equipment.html", "troops.html", "artifacts.html", "exclusive.html", "valhalla.html", "holybeasts.html", "pals.html"):
+    for href in ("equipment.html", "lord-equipment.html", "troops.html", "artifacts.html", "exclusive.html", "valhalla.html", "holybeasts.html", "pals.html", "elf-cottage.html", "fish-tank.html", "butterfly-catch.html", "ranch-tale.html"):
         if f'href="{href}"' not in html:
             fail(f"pets: should link to {href}", errors)
     t = text_of(html)
@@ -1754,12 +1815,22 @@ def check_pets_page(html: str, errors: list[str]) -> None:
         fail("pets: missing official name 鐵喙", errors)
     if "部落的庇護" not in t:
         fail("pets: official skill name 部落的庇護 must be kept", errors)
-    if "魚缸" not in t:
-        fail("pets: 魚缸 must be kept", errors)
+    if "魚缸" not in t or "摸魚時光" not in t:
+        fail("pets: 摸魚時光 and 魚缸 must be kept", errors)
+    if "精靈小屋" not in t or "抓蝴蝶" not in t or "牧場物語" not in t:
+        fail("pets: leisure catalog official names missing", errors)
+    vis = visible_before_notes(html)
+    check_visible_placeholder_code(html, "pets", errors)
+    if "揚塵" not in vis:
+        fail("pets: missing official skill name 揚塵", errors)
+    if "都代入同一參數 6" not in vis or "未使用的 1.5" not in vis:
+        fail("pets: 揚塵 must keep the verified parameter 6 and unused 1.5 in plain language", errors)
+    if "每{1}秒使己方全體英雄獲得{1}%的迴避" not in vis:
+        fail("pets: official 揚塵 source wording with {1} must be quoted unchanged", errors)
 
 
 def check_runes_page(html: str, errors: list[str]) -> None:
-    check_public_catalog_shell(html, "runes", "Top Heroes Wiki｜符文總表", "2026-11-24", errors)
+    check_public_catalog_shell(html, "runes", "Top Heroes Wiki｜符文總表", "2026-11-22", errors)
     if not html:
         return
     if "本頁列出官方界面所稱的「符文」" not in html:
@@ -1767,6 +1838,7 @@ def check_runes_page(html: str, errors: list[str]) -> None:
     for href in (
         "equipment.html", "lord-equipment.html", "troops.html", "artifacts.html",
         "pets.html", "holybeasts.html", "pals.html", "exclusive.html", "valhalla.html", "skins.html",
+        "elf-cottage.html", "fish-tank.html", "butterfly-catch.html", "ranch-tale.html",
     ):
         if f'href="{href}"' not in html:
             fail(f"runes: should link to {href}", errors)
@@ -1786,7 +1858,7 @@ def check_runes_page(html: str, errors: list[str]) -> None:
 
 
 def check_talents_page(html: str, errors: list[str]) -> None:
-    check_public_catalog_shell(html, "talents", "Top Heroes Wiki｜天賦總表", "2026-11-21", errors)
+    check_public_catalog_shell(html, "talents", "Top Heroes Wiki｜天賦總表", "2026-11-22", errors)
     if not html:
         return
     if "本頁分開列出兩套系統，不要混為一套：英雄天賦" not in html:
@@ -1813,7 +1885,7 @@ def check_talents_page(html: str, errors: list[str]) -> None:
 
 
 def check_tech_page(html: str, errors: list[str]) -> None:
-    check_public_catalog_shell(html, "tech", "Top Heroes Wiki｜科技總表", "2026-11-15", errors)
+    check_public_catalog_shell(html, "tech", "Top Heroes Wiki｜科技總表", "2026-11-22", errors)
     if not html:
         return
     if "本頁主體是玩家科技（官方名稱「科技」" not in html:
@@ -1883,7 +1955,7 @@ def check_decorations_page(html: str, errors: list[str]) -> None:
 
 
 def check_castle_page(html: str, errors: list[str]) -> None:
-    check_public_catalog_shell(html, "castle", "Top Heroes Wiki｜城堡外觀總表", "2026-11-23", errors)
+    check_public_catalog_shell(html, "castle", "Top Heroes Wiki｜城堡外觀總表", "2026-11-22", errors)
     if not html:
         return
     if "本頁主體是城堡造型（介面欄位「城堡造型」）" not in html:
@@ -1910,6 +1982,12 @@ def check_castle_page(html: str, errors: list[str]) -> None:
         fail("castle: goods_desc_314 list should include 火砲要塞", errors)
     if "不列入本頁主體" not in t:
         fail("castle: decorations should remain out of scope for the main catalog body", errors)
+    vis = visible_before_notes(html)
+    check_visible_placeholder_code(html, "castle", errors)
+    if "擁有城堡巨蟹沙城-Lv.2" not in vis:
+        fail("castle: official task string with the -Lv.2 suffix must be quoted unchanged", errors)
+    if "帶「-Lv.2」這個後綴" not in vis:
+        fail("castle: must describe -Lv.2 as a visible task-string suffix in plain language", errors)
 
 
 
@@ -1924,6 +2002,192 @@ FORBIDDEN_VISIBLE_ATTRIBUTION = (
 )
 
 
+
+
+def check_site_search(errors: list[str]) -> None:
+    """Static site-wide search: generated index, local JS, hidden until progressive enhancement."""
+    static_js = ROOT / "static" / "js" / "search.js"
+    docs_js = DOCS / "assets" / "js" / "search.js"
+    index_js = DOCS / "assets" / "js" / "search-index.js"
+    if not static_js.is_file():
+        fail("missing static/js/search.js", errors)
+        return
+    if not docs_js.is_file():
+        fail("missing docs/assets/js/search.js", errors)
+        return
+    if static_js.read_bytes() != docs_js.read_bytes():
+        fail("static/js/search.js and docs/assets/js/search.js should be identical", errors)
+    js = static_js.read_text(encoding="utf-8")
+    if re.search(r"https?://", js) or "cdn" in js.lower():
+        fail("search.js should not load external scripts", errors)
+    if re.search(r"\blunr\b", js, flags=re.I) or re.search(r"\bfuse\b", js, flags=re.I):
+        fail("search.js should not use lunr or fuse", errors)
+    if (ROOT / "static" / "js" / "search-index.js").exists():
+        fail("search-index.js should be generated at build time, not kept in static/js", errors)
+    if not index_js.is_file():
+        fail("missing generated docs/assets/js/search-index.js", errors)
+        return
+    raw = index_js.read_text(encoding="utf-8")
+    if "Generated by build.py" not in raw:
+        fail("search-index.js should be generated by build.py", errors)
+    if re.search(r"https?://", raw) or re.search(r"\blunr\b", raw, flags=re.I) or re.search(r"\bfuse\b", raw, flags=re.I):
+        fail("search-index.js should stay local and not use a third-party search library", errors)
+    m = re.search(r"window\.TH_WIKI_SEARCH_INDEX\s*=\s*(\[.*\]);\s*\Z", raw, flags=re.S)
+    if not m:
+        fail("search-index.js should assign window.TH_WIKI_SEARCH_INDEX to a JSON array", errors)
+        return
+    try:
+        entries = json.loads(m.group(1))
+    except json.JSONDecodeError as exc:
+        fail(f"search-index.js is not valid JSON: {exc}", errors)
+        return
+    if not isinstance(entries, list) or not entries:
+        fail("search-index.js should contain a non-empty array", errors)
+        return
+
+    catalogs = {
+        "exclusive.html",
+        "valhalla.html",
+        "skins.html",
+        "equipment.html",
+        "lord-equipment.html",
+        "troops.html",
+        "artifacts.html",
+        "pets.html",
+        "holybeasts.html",
+        "pals.html",
+        "city-buildings.html",
+        "lord-occupations.html",
+        "runes.html",
+        "talents.html",
+        "tech.html",
+        "decorations.html",
+        "castle.html",
+        "kingdom-clash.html",
+        "elf-cottage.html",
+        "fish-tank.html",
+        "butterfly-catch.html",
+        "ranch-tale.html",
+        "villagers.html",
+        "faction-levels.html",
+        "caravan-trade.html",
+        "ancestral-totem.html",
+        "guild-mentors.html",
+    }
+    allowed_pages = {"index.html"} | catalogs | {f"heroes/{hid}.html" for hid in PUBLISHED_IDS}
+    found_pages = {
+        (e.get("url") or "").split("#", 1)[0]
+        for e in entries
+        if isinstance(e, dict)
+    }
+    missing = sorted(allowed_pages - found_pages)
+    if missing:
+        fail(f"search index missing published pages: {missing[:8]}", errors)
+
+    bad_titles = ("乙太牧場", "以太牧場", "地心獵獵", "地心獵獸", "鐵喉", "鐵噎", "魚缺", "堡堡外觀")
+    for item in entries:
+        if not isinstance(item, dict):
+            fail("search index entry must be an object", errors)
+            continue
+        title = item.get("title") or ""
+        url = item.get("url") or ""
+        if title in bad_titles:
+            fail(f"search result title must not be {title}", errors)
+        page = url.split("#", 1)[0]
+        if page not in allowed_pages:
+            fail(f"search index points at unpublished or invalid url: {url}", errors)
+        if url.startswith("skins/") and url.split("#", 1)[0] != "skins.html":
+            fail(f"search index must not invent a skin subpage: {url}", errors)
+
+    titles_and_text = " ".join(
+        f"{e.get('title', '')} {e.get('text', '')}" for e in entries if isinstance(e, dict)
+    )
+    if "鐵喙" not in titles_and_text:
+        fail("search index should include official pet name 鐵喙", errors)
+    kc = DOCS / "kingdom-clash.html"
+    if kc.is_file() and "地心狩獵" in visible_before_notes(kc.read_text(encoding="utf-8")):
+        if "地心狩獵" not in titles_and_text:
+            fail("search index should include official sub-activity name 地心狩獵", errors)
+    if "牧場物語" not in titles_and_text:
+        fail("search index should include official system name 牧場物語", errors)
+    if "魚缸" not in titles_and_text or "摸魚時光" not in titles_and_text:
+        fail("search index should include official names 摸魚時光 and 魚缸", errors)
+    for bad in ("乙太牧場", "以太牧場", "魚缺", "地心獵獵", "地心獵獸", "鐵喉"):
+        if bad in titles_and_text:
+            fail(f"search index should not contain unofficial or typo name {bad}", errors)
+
+    form_ok = re.compile(
+        r"<form\b[^>]*\b(?:data-site-search\b[^>]*\bhidden|hidden\b[^>]*\bdata-site-search)\b",
+        flags=re.S,
+    )
+    catalog_pages = [
+        (INDEX, "index"),
+        (EXCLUSIVE, "exclusive"),
+        (VALHALLA, "valhalla"),
+        (SKINS, "skins"),
+        (EQUIPMENT, "equipment"),
+        (LORD_EQUIPMENT, "lord-equipment"),
+        (TROOPS, "troops"),
+        (ARTIFACTS, "artifacts"),
+        (PETS, "pets"),
+        (HOLYBEASTS, "holybeasts"),
+        (PALS, "pals"),
+        (CITY_BUILDINGS, "city-buildings"),
+        (RUNES, "runes"),
+        (TALENTS, "talents"),
+        (TECH, "tech"),
+        (DECORATIONS, "decorations"),
+        (CASTLE, "castle"),
+        (LORD_OCCUPATIONS, "lord-occupations"),
+        (KINGDOM_CLASH, "kingdom-clash"),
+        (ELF_COTTAGE, "elf-cottage"),
+        (FISH_TANK, "fish-tank"),
+        (BUTTERFLY_CATCH, "butterfly-catch"),
+        (RANCH_TALE, "ranch-tale"),
+        (VILLAGERS, "villagers"),
+        (FACTION_LEVELS, "faction-levels"),
+        (CARAVAN_TRADE, "caravan-trade"),
+        (ANCESTRAL_TOTEM, "ancestral-totem"),
+        (GUILD_MENTORS, "guild-mentors"),
+    ]
+    for path, label in catalog_pages:
+        html = path.read_text(encoding="utf-8")
+        if 'src="assets/js/search-index.js"' not in html or 'src="assets/js/search.js"' not in html:
+            fail(f"{label}: missing local site-search scripts", errors)
+        if re.search(r'<script\b[^>]+src="https?://', html):
+            fail(f"{label}: script src must be local, not an external URL", errors)
+        if not form_ok.search(html):
+            fail(f"{label}: site-search form should start hidden for no-JS readers", errors)
+        header = re.search(r'<header class="site-header">.*?</header>', html, flags=re.S)
+        if not header or "data-site-search" not in header.group(0):
+            fail(f"{label}: site-search should sit in site-header", errors)
+        if ">搜尋<" not in html:
+            fail(f"{label}: site-search label should be 搜尋", errors)
+        nav = re.search(r'<nav class="site-nav"[^>]*>.*?</nav>', html, flags=re.S)
+        if nav and "data-site-search" in nav.group(0):
+            fail(f"{label}: site-search must not sit inside site-nav", errors)
+        lede = re.search(r'<p class="lede">.*?</p>', html, flags=re.S)
+        if lede and "data-site-search" in lede.group(0):
+            fail(f"{label}: site-search must not sit inside the lede", errors)
+
+    hero_pages = sorted((DOCS / "heroes").glob("*.html"))
+    if len(hero_pages) != 57:
+        fail(f"expected 57 hero pages when checking site-search, found {len(hero_pages)}", errors)
+    for path in hero_pages:
+        html = path.read_text(encoding="utf-8")
+        if 'src="../assets/js/search-index.js"' not in html or 'src="../assets/js/search.js"' not in html:
+            fail(f"{path.name}: hero page should load site-search with ../assets/js/", errors)
+        if not form_ok.search(html):
+            fail(f"{path.name}: site-search form should start hidden for no-JS readers", errors)
+        if 'data-root="../"' not in html:
+            fail(f"{path.name}: site-search should use a relative data-root for hero subpages", errors)
+        if ">搜尋<" not in html:
+            fail(f"{path.name}: site-search label should be 搜尋", errors)
+
+    index = INDEX.read_text(encoding="utf-8")
+    lede = re.search(r'<p class="lede">(.*?)</p>', index, flags=re.S)
+    if not lede or "抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師也已公開" not in text_of(lede.group(0)):
+        fail("index: adding site-search must not change the locked lede", errors)
 
 
 def check_page_filter(errors: list[str]) -> None:
@@ -1955,6 +2219,16 @@ def check_page_filter(errors: list[str]) -> None:
         (DECORATIONS, "decorations"),
         (CASTLE, "castle"),
         (LORD_OCCUPATIONS, "lord-occupations"),
+        (KINGDOM_CLASH, "kingdom-clash"),
+        (ELF_COTTAGE, "elf-cottage"),
+        (FISH_TANK, "fish-tank"),
+        (BUTTERFLY_CATCH, "butterfly-catch"),
+        (RANCH_TALE, "ranch-tale"),
+        (VILLAGERS, "villagers"),
+        (FACTION_LEVELS, "faction-levels"),
+        (CARAVAN_TRADE, "caravan-trade"),
+        (ANCESTRAL_TOTEM, "ancestral-totem"),
+        (GUILD_MENTORS, "guild-mentors"),
     ]
     form_ok = re.compile(
         r"<form\b[^>]*\b(?:data-page-filter\b[^>]*\bhidden|hidden\b[^>]*\bdata-page-filter)\b",
@@ -1975,8 +2249,10 @@ def check_page_filter(errors: list[str]) -> None:
             if "data-page-filter" in league or "篩選名稱" in league:
                 fail("index: filter bar should not sit inside a faction roster list", errors)
             lede = re.search(r'<p class="lede">(.*?)</p>', html, flags=re.S)
-            if lede and "城堡外觀總表也已公開" not in text_of(lede.group(0)):
-                fail("index: lede must still end by naming 城堡外觀總表 as published", errors)
+            if lede and "抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師也已公開" not in text_of(lede.group(0)):
+                fail("index: lede must name published catalogs through 公會導師", errors)
+            if lede and "城堡外觀總表" not in text_of(lede.group(0)):
+                fail("index: lede must still name 城堡外觀總表", errors)
 
 
 
@@ -2120,7 +2396,7 @@ def check_holybeasts_page(html: str, errors: list[str]) -> None:
         return
     if "本頁列出官方界面所稱的「守護魔獸」" not in html:
         fail("holybeasts: missing public lede", errors)
-    for href in ("pets.html", "valhalla.html", "pals.html"):
+    for href in ("pets.html", "valhalla.html", "pals.html", "elf-cottage.html", "fish-tank.html", "butterfly-catch.html", "ranch-tale.html"):
         if f'href="{href}"' not in html:
             fail(f"holybeasts: should link to {href}", errors)
     t = text_of(html)
@@ -2207,7 +2483,7 @@ def check_pals_page(html: str, errors: list[str]) -> None:
         return
     if "本頁列出官方界面所稱的「帕魯」" not in html:
         fail("pals: missing public lede", errors)
-    for href in ("pets.html", "holybeasts.html", "valhalla.html"):
+    for href in ("pets.html", "holybeasts.html", "valhalla.html", "elf-cottage.html", "fish-tank.html", "butterfly-catch.html", "ranch-tale.html"):
         if f'href="{href}"' not in html:
             fail(f"pals: should link to {href}", errors)
     t = text_of(html)
@@ -2712,7 +2988,259 @@ def check_index_published_catalogs(index: str, errors: list[str]) -> None:
     footer = re.search(r'<footer class="site-footer">.*?</footer>', index, flags=re.S)
     if not footer or "資料截至 2026-11-05" not in text_of(footer.group(0)):
         fail("index: footer cutoff should remain 2026-11-05", errors)
+    paths_py = Path(__file__).resolve().parents[1] / "thwiki" / "paths.py"
+    if 'DATA_CUTOFF = "2026-11-05"' not in paths_py.read_text(encoding="utf-8"):
+        fail("thwiki/paths.py DATA_CUTOFF must remain 2026-11-05", errors)
 
+
+
+def _check_new_catalog_locks(html: str, label: str, errors: list[str]) -> None:
+    vis = visible_before_notes(html)
+    if "玩家確認" in vis:
+        fail(f"{label}: visible body must not mention 玩家確認", errors)
+    if "<code>" in vis or "<code " in vis:
+        fail(f"{label}: visible body should not contain <code>", errors)
+    for bad in ("乙太牧場", "以太牧場", "地心獵獸", "地心獵獵", "鐵喉", "鐵噎", "魚缺", "契約之獅"):
+        if bad in vis:
+            fail(f"{label}: typo or unofficial name {bad} in visible body", errors)
+    if re.search(r"雲海紀行.{0,20}(第六季|第 6 季|官方第六|S6)|官方第六.{0,20}雲海紀行", vis):
+        fail(f"{label}: must not present 雲海紀行 as official season 6", errors)
+    if re.search(r"顯示伺服器\s*N.{0,20}100N|顯示.?伺服器.*=.{0,10}內部", vis):
+        fail(f"{label}: must not claim display server N equals internal id 100N", errors)
+    if re.search(r"(^|[^A-Za-z])None([^A-Za-z]|$)", vis):
+        fail(f"{label}: visible body leaked Python None", errors)
+
+
+def check_kingdom_clash_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "kingdom-clash", "Top Heroes Wiki｜王國對決", "2026-11-22", errors)
+    if not html:
+        return
+    _check_new_catalog_locks(html, "kingdom-clash", errors)
+    vis = visible_before_notes(html)
+    for name in ("王國對決", "王國紛爭", "雲海紀行", "地心探險", "地心狩獵"):
+        if name not in vis:
+            fail(f"kingdom-clash: missing official name {name}", errors)
+    if "表列未齊" not in vis:
+        fail("kingdom-clash: 地心探險 section must say tables are incomplete", errors)
+    if "不是「地心探險」" not in vis and "不是「地心探險」" not in html:
+        fail("kingdom-clash: must record that the third prepare row is still 王國紛爭", errors)
+    if "第 N 季" in vis and "不把" not in vis:
+        fail("kingdom-clash: visible body must not present unofficial season numbering", errors)
+    for name in ("星落龍廷", "星落王庭", "風之都", "風息城", "沙丘陣營", "沙漠陣營"):
+        if name not in vis:
+            fail(f"kingdom-clash: missing official or recorded name {name}", errors)
+    if "UTC-2" not in vis:
+        fail("kingdom-clash: must quote official 寶藏洞窟 text that names UTC-2", errors)
+    if "不合併" not in vis and "不以其中一個覆寫" not in vis:
+        fail("kingdom-clash: must keep variant official names distinct", errors)
+
+
+def check_elf_cottage_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "elf-cottage", "Top Heroes Wiki｜精靈小屋", "2026-11-22", errors)
+    if not html:
+        return
+    _check_new_catalog_locks(html, "elf-cottage", errors)
+    vis = visible_before_notes(html)
+    if "精靈小屋" not in vis or "精靈" not in vis:
+        fail("elf-cottage: must keep official names 精靈小屋 and 精靈", errors)
+    if "合養" in vis and "共養" in vis and "不合併" not in vis:
+        fail("elf-cottage: 合養 and 共養 must be kept distinct", errors)
+    if "撫摸" not in vis:
+        fail("elf-cottage: must record the official name 撫摸 on the shared-key rows", errors)
+    if re.search(r"官方第\s*N\s*季|第[一二三四五六七八九十]季", vis) and "不把" not in vis:
+        fail("elf-cottage: must not map table groups to official season numbers", errors)
+
+
+def check_fish_tank_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "fish-tank", "Top Heroes Wiki｜摸魚時光、魚缸", "2026-11-22", errors)
+    if not html:
+        return
+    _check_new_catalog_locks(html, "fish-tank", errors)
+    vis = visible_before_notes(html)
+    if "摸魚時光" not in vis or "魚缸" not in vis:
+        fail("fish-tank: visible title or lede must name both 摸魚時光 and 魚缸", errors)
+    if "深海魚包" not in vis:
+        fail("fish-tank: must record 深海魚包 as an official string", errors)
+    if "沒有這一列" not in vis and "只照錄字串" not in vis:
+        fail("fish-tank: must say 深海魚包 has no fry-table row", errors)
+    if re.search(r"品質.{0,8}(普通|優秀|精良|史詩|傳說)", vis):
+        fail("fish-tank: must not invent quality Chinese names", errors)
+
+
+def check_butterfly_catch_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "butterfly-catch", "Top Heroes Wiki｜抓蝴蝶", "2026-11-22", errors)
+    if not html:
+        return
+    _check_new_catalog_locks(html, "butterfly-catch", errors)
+    vis = visible_before_notes(html)
+    if "抓蝴蝶" not in vis:
+        fail("butterfly-catch: missing official name 抓蝴蝶", errors)
+    if "彩蝶領域" not in vis or "彩蝶林域" not in vis:
+        fail("butterfly-catch: must keep both 彩蝶領域 and 彩蝶林域", errors)
+    if "不靠後綴或順序去對" not in vis:
+        fail("butterfly-catch: must not invent goods-name mappings", errors)
+
+
+def check_ranch_tale_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "ranch-tale", "Top Heroes Wiki｜牧場物語", "2026-11-22", errors)
+    if not html:
+        return
+    _check_new_catalog_locks(html, "ranch-tale", errors)
+    vis = visible_before_notes(html)
+    if "牧場物語" not in vis or "帕菲" not in vis:
+        fail("ranch-tale: must keep official names 牧場物語 and 帕菲", errors)
+    if re.search(r"品質.{0,8}(紫|橙|金色|紫色|橙色)", vis):
+        fail("ranch-tale: must not invent quality colour names", errors)
+    if "40%" not in vis or "原值" not in vis:
+        fail("ranch-tale: must keep the official 40% wording alongside the settings raw value", errors)
+    notes = text_of(html[html.find("資料說明"):] if "資料說明" in html else "")
+    if "乙太牧場" in notes and "不是已核到的官方界面標題" not in notes and "字串表沒有" not in notes:
+        fail("ranch-tale: notes may mention 乙太牧場 only as a non-official handbook label", errors)
+
+
+
+
+def check_villagers_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "villagers", "Top Heroes Wiki｜村民", "2026-11-22", errors)
+    if not html:
+        return
+    _check_new_catalog_locks(html, "villagers", errors)
+    vis = visible_before_notes(html)
+    if "村民" not in vis:
+        fail("villagers: missing official name 村民", errors)
+    if "村民規則" not in vis or "村民列表" not in vis or "村民招募" not in vis:
+        fail("villagers: missing official labels 村民規則／村民列表／村民招募", errors)
+    if "功能名" not in vis or "單位名" not in vis:
+        fail("villagers: function name and unit name must be listed in parallel", errors)
+    if "跑酷" in vis and "名冊" in vis and "不當作" not in vis and "不是" not in vis:
+        fail("villagers: must not treat parkour placements as a recruitable roster", errors)
+    if "部落陣營" not in vis:
+        fail("villagers: official special text 部落陣營 must be recorded as-is", errors)
+    notes = text_of(html[html.find("資料說明"):] if "資料說明" in html else "")
+    if "is_star" in vis:
+        fail("villagers: visible body must not expose field name is_star", errors)
+    if "主廚" not in vis:
+        fail("villagers: star roster should include official name 主廚", errors)
+
+
+def check_faction_levels_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "faction-levels", "Top Heroes Wiki｜陣營等級", "2026-11-22", errors)
+    if not html:
+        return
+    _check_new_catalog_locks(html, "faction-levels", errors)
+    vis = visible_before_notes(html)
+    for name in ("陣營等級", "聯盟雕像", "部族雕像", "自然雕像"):
+        if name not in vis:
+            fail(f"faction-levels: missing official name {name}", errors)
+    if "狼人" not in vis or "吸血鬼" not in vis:
+        fail("faction-levels: season-faction names 狼人／吸血鬼 must appear in out-of-scope", errors)
+    if "不是本頁" not in vis and "不是本頁的" not in vis:
+        fail("faction-levels: must exclude 賽季陣營 from the official 陣營等級 tracks", errors)
+    if re.search(r"官方第\s*N\s*季|官方第[一二三四五六七八九十0-9]+季", vis) and "不把它寫成官方第" not in vis and "不是官方第" not in vis:
+        fail("faction-levels: must not present table prefixes as official season numbers", errors)
+    if vis.count("<tr") > 80:
+        fail("faction-levels: must not dump the full 2,607-row table", errors)
+
+
+def check_caravan_trade_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "caravan-trade", "Top Heroes Wiki｜商隊貿易", "2026-11-22", errors)
+    if not html:
+        return
+    _check_new_catalog_locks(html, "caravan-trade", errors)
+    vis = visible_before_notes(html)
+    for name in ("商隊貿易", "貿易商團", "海底貿易商團", "天空貿易商團規則", "貿易站"):
+        if name not in vis:
+            fail(f"caravan-trade: missing official name {name}", errors)
+    if "海底／天空" in vis or "海底天空貿易商團" in vis or "含海底" in vis:
+        fail("caravan-trade: must not invent a merged trade-group name", errors)
+    if "未驗證" not in vis:
+        fail("caravan-trade: frequency caps that exist only in official copy must be marked 未驗證", errors)
+    if "深海" not in vis or "飛鳥" not in vis:
+        fail("caravan-trade: must keep official station names for both trade-group variants", errors)
+
+
+def check_ancestral_totem_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "ancestral-totem", "Top Heroes Wiki｜先祖圖騰", "2026-11-22", errors)
+    if not html:
+        return
+    _check_new_catalog_locks(html, "ancestral-totem", errors)
+    vis = visible_before_notes(html)
+    if "先祖圖騰" not in vis:
+        fail("ancestral-totem: missing official name 先祖圖騰", errors)
+    if "賽季結束後將被回收" not in vis:
+        fail("ancestral-totem: must quote 賽季結束後將被回收 as-is", errors)
+    if "不把它對成" not in vis and "不把它對成官方第" not in vis:
+        fail("ancestral-totem: must not map the recovery sentence to an official season number", errors)
+    if "字串表沒有官方技能名" not in vis and "不編造名稱" not in vis:
+        fail("ancestral-totem: must not invent unofficial skill names", errors)
+    if vis.count("<tr") > 40:
+        fail("ancestral-totem: must not dump all 450 rows", errors)
+
+
+def check_guild_mentors_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "guild-mentors", "Top Heroes Wiki｜公會導師", "2026-11-22", errors)
+    if not html:
+        return
+    _check_new_catalog_locks(html, "guild-mentors", errors)
+    vis = visible_before_notes(html)
+    for name in ("公會導師", "爐火大廳", "科迪莉亞", "安布羅斯", "邀請科迪莉亞", "邀請安布羅斯"):
+        if name not in vis:
+            fail(f"guild-mentors: missing official name {name}", errors)
+    if "皇家學院" in vis:
+        fail("guild-mentors: visible body must not use 皇家學院 as a UI title", errors)
+    if "unlock_teh" in vis:
+        fail("guild-mentors: typo field unlock_teh must not appear in visible body", errors)
+    notes = text_of(html[html.find("資料說明"):] if "資料說明" in html else "")
+    if "unlock_teh" not in notes:
+        fail("guild-mentors: typo field unlock_teh should be recorded in notes", errors)
+    if "不是同一條軸" not in vis and "不是同一條" not in vis:
+        fail("guild-mentors: favor and honor must stay on distinct axes", errors)
+
+
+def check_visible_unofficial_work_titles(errors: list[str]) -> None:
+    """Handbook work titles must not appear as official names in visible catalog body."""
+    pages = [
+        (INDEX, "index"),
+        (EXCLUSIVE, "exclusive"),
+        (VALHALLA, "valhalla"),
+        (SKINS, "skins"),
+        (EQUIPMENT, "equipment"),
+        (LORD_EQUIPMENT, "lord-equipment"),
+        (TROOPS, "troops"),
+        (ARTIFACTS, "artifacts"),
+        (PETS, "pets"),
+        (HOLYBEASTS, "holybeasts"),
+        (PALS, "pals"),
+        (CITY_BUILDINGS, "city-buildings"),
+        (RUNES, "runes"),
+        (TALENTS, "talents"),
+        (TECH, "tech"),
+        (DECORATIONS, "decorations"),
+        (CASTLE, "castle"),
+        (LORD_OCCUPATIONS, "lord-occupations"),
+        (KINGDOM_CLASH, "kingdom-clash"),
+        (ELF_COTTAGE, "elf-cottage"),
+        (FISH_TANK, "fish-tank"),
+        (BUTTERFLY_CATCH, "butterfly-catch"),
+        (RANCH_TALE, "ranch-tale"),
+        (VILLAGERS, "villagers"),
+        (FACTION_LEVELS, "faction-levels"),
+        (CARAVAN_TRADE, "caravan-trade"),
+        (ANCESTRAL_TOTEM, "ancestral-totem"),
+        (GUILD_MENTORS, "guild-mentors"),
+    ]
+    for path, label in pages:
+        if not path.exists():
+            continue
+        html = path.read_text(encoding="utf-8")
+        vis = visible_before_notes(html) if label != "index" else text_of(html)
+        if label == "index":
+            vis = visible_before_notes(html) if "資料說明" in html else text_of(html)
+        for bad in ("乙太牧場", "以太牧場", "魚缺", "地心獵獸", "地心獵獵"):
+            if bad in vis:
+                fail(f"{label}: visible body must not use unofficial or typo name {bad}", errors)
+        if label != "index":
+            check_visible_placeholder_code(html, label, errors)
 
 def main() -> int:
     errors = []
@@ -2720,6 +3248,7 @@ def main() -> int:
         INDEX, EXCLUSIVE, VALHALLA, SKINS,
         EQUIPMENT, LORD_EQUIPMENT, TROOPS, ARTIFACTS, PETS, HOLYBEASTS, PALS, CITY_BUILDINGS, RUNES,
         TALENTS, TECH, DECORATIONS, CASTLE, LORD_OCCUPATIONS,
+        KINGDOM_CLASH, ELF_COTTAGE, FISH_TANK, BUTTERFLY_CATCH, RANCH_TALE,
         JUDGE, NUN, ROSE, INVENTOR,
     ):
         if not p.exists():
@@ -2766,6 +3295,16 @@ def main() -> int:
     decorations_html = DECORATIONS.read_text(encoding="utf-8")
     castle_html = CASTLE.read_text(encoding="utf-8")
     lord_occupations_html = LORD_OCCUPATIONS.read_text(encoding="utf-8")
+    kingdom_clash_html = KINGDOM_CLASH.read_text(encoding="utf-8")
+    elf_cottage_html = ELF_COTTAGE.read_text(encoding="utf-8")
+    fish_tank_html = FISH_TANK.read_text(encoding="utf-8")
+    butterfly_catch_html = BUTTERFLY_CATCH.read_text(encoding="utf-8")
+    ranch_tale_html = RANCH_TALE.read_text(encoding="utf-8")
+    villagers_html = VILLAGERS.read_text(encoding="utf-8")
+    faction_levels_html = FACTION_LEVELS.read_text(encoding="utf-8")
+    caravan_trade_html = CARAVAN_TRADE.read_text(encoding="utf-8")
+    ancestral_totem_html = ANCESTRAL_TOTEM.read_text(encoding="utf-8")
+    guild_mentors_html = GUILD_MENTORS.read_text(encoding="utf-8")
     check_index(index, it, errors)
     check_index_published_catalogs(index, errors)
     check_exclusive_page(exclusive_html, errors)
@@ -2785,6 +3324,16 @@ def main() -> int:
     check_decorations_page(decorations_html, errors)
     check_castle_page(castle_html, errors)
     check_lord_occupations_page(lord_occupations_html, errors)
+    check_kingdom_clash_page(kingdom_clash_html, errors)
+    check_elf_cottage_page(elf_cottage_html, errors)
+    check_fish_tank_page(fish_tank_html, errors)
+    check_butterfly_catch_page(butterfly_catch_html, errors)
+    check_ranch_tale_page(ranch_tale_html, errors)
+    check_villagers_page(villagers_html, errors)
+    check_faction_levels_page(faction_levels_html, errors)
+    check_caravan_trade_page(caravan_trade_html, errors)
+    check_ancestral_totem_page(ancestral_totem_html, errors)
+    check_guild_mentors_page(guild_mentors_html, errors)
     for html, label in (
         (exclusive_html, "專武總表"),
         (valhalla_html, "英靈總表"),
@@ -3080,7 +3629,9 @@ def main() -> int:
     if re.search(r"顯示.?50.{0,12}10050|10050.{0,12}顯示.?50", jt + nt + rt + vt + it):
         fail("must not claim display 50 equals internal id 10050", errors)
 
+    check_site_search(errors)
     check_page_filter(errors)
+    check_visible_unofficial_work_titles(errors)
     check_upgrade_cost_calculators(errors)
     check_catalog_hero_reverse_links(errors)
     check_visible_no_benchouqu(errors)

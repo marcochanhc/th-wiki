@@ -19,8 +19,8 @@ from .tables import load_table
 
 # 秘寶總表專用；不改 paths.DATA_CUTOFF，以免影響首頁與英雄條目的全局截止日。
 # 資料是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），
-# 打包時戳 2026-11-22 23:33（香港時間）。頁腳／截止日寫 2026-11-23。
-ARTIFACT_DATA_CUTOFF = "2026-11-23"
+# 打包時戳 2026-11-22 23:33（香港時間）。頁尾資料截至寫解壓包日期 2026-11-22，不寫整理次日。
+ARTIFACT_DATA_CUTOFF = "2026-11-22"
 ARTIFACT_DATA_PACK = "app-1.129.12_table-1.0.43173"
 ARTIFACT_DATA_PACKED = "2026-11-22 23:33"
 
@@ -1565,7 +1565,7 @@ def render_html(data: TablesData) -> str:
         "套裝表 6 筆，去重後 3 套，各有一組對應資料裡另一套與目前這套。"
         "三套都是 15 星解鎖套裝技能。"
         f"解鎖說明兩句：{H(o.suit_unlock[0], terms)}；{H(o.suit_unlock[1], terms)}。"
-        "<code>{0}</code> 應對 15 星，表沒有另寫填入規則。"
+        "這個位置對應 15 星，表沒有另寫填入規則。"
         f"套裝陣營與士兵表{H('聯盟', terms)}／{H('部族', terms)}／{H('自然', terms)}相同。編號對照見資料說明。"
     ))
     add(tbl["suits"])

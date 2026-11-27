@@ -18,8 +18,8 @@ from .tables import load_table
 
 # 符文總表專用；不改 paths.DATA_CUTOFF，以免影響首頁與英雄條目的全局截止日。
 # 資料是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），
-# 打包時戳 2026-11-22 23:33（香港時間）。頁腳／截止日寫 2026-11-24。
-RUNE_DATA_CUTOFF = "2026-11-24"
+# 打包時戳 2026-11-22 23:33（香港時間）。頁尾資料截至寫解壓包日期 2026-11-22，不寫整理次日。
+RUNE_DATA_CUTOFF = "2026-11-22"
 RUNE_DATA_PACK = "app-1.129.12_table-1.0.43173"
 RUNE_DATA_PACKED = "2026-11-22 23:33"
 
@@ -1286,7 +1286,7 @@ def render_html(data: TablesData) -> str:
         f"已發佈的<a href=\"exclusive.html\">{H('專武總表', terms)}</a>是英雄專武；"
         f"已發佈的<a href=\"valhalla.html\">{H('英靈總表', terms)}</a>是綁在英雄身上的另一套養成；"
         f"已發佈的<a href=\"skins.html\">{H('造型總表', terms)}</a>是英雄造型。"
-        "<a href=\"pals.html\">帕魯</a>、<a href=\"holybeasts.html\">守護魔獸</a>、精靈、魚缸、蝴蝶、乙太牧場、科技、裝飾物不在本頁展開。"
+        "<a href=\"pals.html\">帕魯</a>、<a href=\"holybeasts.html\">守護魔獸</a>、<a href=\"elf-cottage.html\">精靈小屋</a>、<a href=\"fish-tank.html\">摸魚時光</a>（魚缸）、<a href=\"butterfly-catch.html\">抓蝴蝶</a>、<a href=\"ranch-tale.html\">牧場物語</a>、科技、裝飾物不在本頁展開。"
     ))
     add("<ul>")
     add("<li><strong>屬性只錄表上的原值</strong>，不自行換成百分比。"
@@ -1403,7 +1403,7 @@ def render_html(data: TablesData) -> str:
     add("<li>精煉經驗與材料／道具的對應（表沒指明）。</li>")
     add("<li>插槽數為五或六的裁斷。</li>")
     add("<li>強弱評定與搭配模擬。</li>")
-    add("<li>另一張圖騰表（檔名見資料說明），以及<a href=\"pals.html\">帕魯</a>、守護魔獸、精靈、魚缸、蝴蝶、乙太牧場、科技、裝飾物。</li>")
+    add("<li>另一張圖騰表（檔名見資料說明），以及<a href=\"pals.html\">帕魯</a>、守護魔獸、<a href=\"elf-cottage.html\">精靈小屋</a>、<a href=\"fish-tank.html\">摸魚時光</a>（魚缸）、<a href=\"butterfly-catch.html\">抓蝴蝶</a>、<a href=\"ranch-tale.html\">牧場物語</a>、科技、裝飾物。</li>")
     add("</ul>")
     add("    </section>")
 
@@ -1747,7 +1747,7 @@ def render_markdown(data: TablesData) -> str:
         f"官方系統名是「{o.system_name}」（鍵 `team_rune_bagname`），提示「{o.system_dec}」。"
         f"介面標題是「{o.title}」（`team_rune_title`）。"
         f"{o.statue_name}說明：「{o.statue_des}」。"
-        "<a href=\"pals.html\">帕魯</a>、守護魔獸、精靈、魚缸、蝴蝶、乙太牧場、科技、裝飾物，以及 `kvk_totem`，不在本頁展開。"
+        "<a href=\"pals.html\">帕魯</a>、守護魔獸、<a href=\"elf-cottage.html\">精靈小屋</a>、<a href=\"fish-tank.html\">摸魚時光</a>（魚缸）、<a href=\"butterfly-catch.html\">抓蝴蝶</a>、<a href=\"ranch-tale.html\">牧場物語</a>、科技、裝飾物，以及 `kvk_totem`，不在本頁展開。"
     )
     add("")
     add(
@@ -1923,7 +1923,7 @@ def render_markdown(data: TablesData) -> str:
     add("- 精煉經驗與材料／道具的對應（表沒指明）。")
     add("- 插槽數為五或六的裁斷。")
     add("- 強弱評定與搭配模擬。")
-    add("- `kvk_totem`，以及<a href=\"pals.html\">帕魯</a>、守護魔獸、精靈、魚缸、蝴蝶、乙太牧場、科技、裝飾物。")
+    add("- `kvk_totem`，以及<a href=\"pals.html\">帕魯</a>、守護魔獸、<a href=\"elf-cottage.html\">精靈小屋</a>、<a href=\"fish-tank.html\">摸魚時光</a>（魚缸）、<a href=\"butterfly-catch.html\">抓蝴蝶</a>、<a href=\"ranch-tale.html\">牧場物語</a>、科技、裝飾物。")
     add("")
     add("## 資料說明")
     add("")

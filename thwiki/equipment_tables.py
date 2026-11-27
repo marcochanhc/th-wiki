@@ -19,10 +19,10 @@ from . import attrs as A
 
 # 裝備總表專用；不改 paths.DATA_CUTOFF，以免影響首頁與英雄條目的全局截止日。
 # 資料是 LocalLow 包 app-1.129.12_table-1.0.43173（759 張表），
-# 打包時戳 2026-11-22 23:33（香港時間）。頁腳／截止日寫資料日的次日。
+# 打包時戳 2026-11-22 23:33（香港時間）。頁尾資料截至寫解壓包日期 2026-11-22，不寫整理次日。
 # 17 張 equipment*.json 與 hero_detail.json 與 2026-11-05 解壓檔位元組相同，
 # 但不表示整個 LocalLow 包與該日解壓檔相同。
-EQUIP_DATA_CUTOFF = "2026-11-23"
+EQUIP_DATA_CUTOFF = "2026-11-22"
 EQUIP_DATA_PACK = "app-1.129.12_table-1.0.43173"
 EQUIP_DATA_PACKED = "2026-11-22 23:33"
 

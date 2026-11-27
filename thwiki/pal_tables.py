@@ -1514,7 +1514,7 @@ def render_html(data: TablesData) -> str:
         f"這不是寵物；寵物見已發佈的<a href=\"pets.html\">{H('寵物總表', terms)}</a>。"
         f"這不是守護魔獸；守護魔獸見已發佈的<a href=\"holybeasts.html\">{H('守護魔獸總表', terms)}</a>。"
         f"已發佈的<a href=\"valhalla.html\">{H('英靈總表', terms)}</a>是綁在英雄身上的另一套養成，不是帕魯。"
-        "精靈、魚缸、蝴蝶、乙太牧場不在本頁展開。"
+        "<a href=\"elf-cottage.html\">精靈小屋</a>、<a href=\"fish-tank.html\">摸魚時光</a>（魚缸）、<a href=\"butterfly-catch.html\">抓蝴蝶</a>、<a href=\"ranch-tale.html\">牧場物語</a>不在本頁展開。"
         "對照路徑、筆數與欄位原值見資料說明。"
     ))
     add("<ul>")
