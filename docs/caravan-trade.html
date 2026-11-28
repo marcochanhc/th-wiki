@@ -299,6 +299,7 @@
 <p>「<span class="term">海底貿易商團</span>」站點官方名是「<span class="term">深海</span>」、「<span class="term">淺灘</span>」、「<span class="term">珊瑚</span>」、「<span class="term">遺跡</span>」。共 4 列。</p>
 <p>「<span class="term">天空貿易商團規則</span>」站點官方名是「<span class="term">飛鳥</span>」、「<span class="term">烈日</span>」、「<span class="term">風暴</span>」、「<span class="term">雷霆</span>」。共 4 列。</p>
 <p>「<span class="term">貿易站</span>」定義表有 60 列，官方顯示名是「<span class="term">貿易站</span>」。商店表另有 62 列，本頁不傾印商品清單。站點表另有陣營與等級欄，不把欄位數字寫成官方第 N 季。</p>
+<p>「<span class="term">貿易站</span>」的官方說明已寫「開啟時間：週五」「每次爭奪時間：1 小時」，見上方官方說明。本頁使用的現行表裡，開放時段的數字有兩組，以下是表上的數字，沒有額外的官方中文欄名：24 列是 0｜4｜12，對應時長數字 79,200；36 列是 1｜4｜12，對應時長數字 3,600。這三段數字各自的含義、以及它們如何對上說明文的「週五」與「1 小時」，尚未核對，本頁不把它寫成鐘點或星期幾的時間表，也不自行換算時長單位。較早的 2026-11-05 抽取裡，同樣 60 列的時段數字是 0｜4｜2（24 列）與 1｜4｜2（36 列），與現行值不同，不混成同一份時段。</p>
     </section>
     <section id="out-of-scope">
       <h2>本頁未列入</h2>
@@ -320,6 +321,7 @@
 <li>品質 1–6 的官方名來自 <code>hatred_carriagr1</code> 至 <code>hatred_carriagr6</code>。品質 99 沒有對應官方名。</li>
 <li>「海底貿易商團」來自 <code>season_memo_s4_point3_title</code>，可見正文只寫這個官方名，不把它對成官方第 4 季。</li>
 <li>「天空貿易商團規則」是說明頁官方標題，與「海底貿易商團」並列，不另造合併名稱。</li>
+<li>貿易站開放時段欄是 <code>open_time</code>。現行 LocalLow／live 為 <code>0|4|12</code> 24 列（<code>group</code> 1001，<code>fight_duration</code> 79200）與 <code>1|4|12</code> 36 列（<code>group</code> 1002，<code>fight_duration</code> 3600）。2026-11-05 抽取 SHA-256 <code>56d72980b96d14b51543e190da75e1d031b9fab7d8ebc2aa70fda41accc17a2a</code>，同樣分組的時段數字是 <code>0|4|2</code> 與 <code>1|4|2</code>，只改了第三段。三段含義及與官方「開啟時間：週五」「每次爭奪時間：1 小時」的對應尚未核對。<code>next_open</code>、<code>close_time</code>、<code>shop_close_time</code> 的單位與鐘點對應亦未核對，可見正文不展開。</li>
     </ul>
     </section>
   </main>

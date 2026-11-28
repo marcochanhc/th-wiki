@@ -40,6 +40,9 @@ from thwiki.faction_level_tables import render_faction_levels_page
 from thwiki.caravan_tables import render_caravan_trade_page
 from thwiki.totem_tables import render_ancestral_totem_page
 from thwiki.guild_mentor_tables import render_guild_mentors_page
+from thwiki.pve_tables import render_pve_page
+from thwiki.seven_reward_move_tables import render_seven_reward_move_page
+from thwiki.arena_ladder_tables import render_arena_ladder_page
 from thwiki.render import render_hero, render_home
 from thwiki.search_index import write_search_index
 
@@ -111,6 +114,9 @@ def main() -> int:
         ("caravan-trade.html", render_caravan_trade_page),
         ("ancestral-totem.html", render_ancestral_totem_page),
         ("guild-mentors.html", render_guild_mentors_page),
+        ("pve.html", render_pve_page),
+        ("seven-reward-move.html", render_seven_reward_move_page),
+        ("arena-ladder.html", render_arena_ladder_page),
     )
     for name, renderer in catalogs:
         out = DOCS_DIR / name

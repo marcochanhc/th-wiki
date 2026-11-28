@@ -43,6 +43,9 @@ FACTION_LEVELS = DOCS / "faction-levels.html"
 CARAVAN_TRADE = DOCS / "caravan-trade.html"
 ANCESTRAL_TOTEM = DOCS / "ancestral-totem.html"
 GUILD_MENTORS = DOCS / "guild-mentors.html"
+PVE = DOCS / "pve.html"
+SEVEN_REWARD_MOVE = DOCS / "seven-reward-move.html"
+ARENA_LADDER = DOCS / "arena-ladder.html"
 
 
 def text_of(html: str) -> str:
@@ -87,7 +90,9 @@ TRIBE_NAMES = [
 CODEX_ITEMS = [
     "專武", "英靈", "造型", "裝備", "領主裝備", "士兵", "秘寶", "寵物", "符文",
     "天賦", "科技", "裝飾物", "城堡外觀", "守護魔獸", "帕魯", "城建升級", "領主職業",
-    "王國對決", "精靈小屋", "摸魚時光", "抓蝴蝶", "牧場物語", "村民", "陣營等級", "商隊貿易", "先祖圖騰", "公會導師",
+    "王國對決", "精靈小屋", "摸魚時光", "抓蝴蝶", "牧場物語", "村民", "陣營等級", "商隊貿易", "先祖圖騰", "公會導師", "冒險、懸賞、公會Boss",
+    "七日獎勵、王國遷移",
+    "積分賽、挑戰賽、天梯賽、巔峰積分賽",
 ]
 GAMEPLAY_TERMS = ("開局", "陣容與羈絆", "PVE", "PVP", "KVK")
 STALE_DEPLOY = ("GitHub Pages 公開部署尚未進行", "公開部署還沒做")
@@ -265,6 +270,9 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
             ("caravan-trade.html", "商隊貿易"),
             ("ancestral-totem.html", "先祖圖騰"),
             ("guild-mentors.html", "公會導師"),
+            ("pve.html", "冒險、懸賞、公會Boss"),
+            ("seven-reward-move.html", "七日獎勵、王國遷移"),
+            ("arena-ladder.html", "積分賽、挑戰賽、天梯賽、巔峰積分賽"),
         )
         other = codex
         for href, label in published_codex:
@@ -297,12 +305,12 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         fail("index 關於本站 should say this is not official", errors)
     if "目前聯盟、自然和部族的英雄條目都已公開。" not in it:
         fail("index lede should say alliance, nature and tribe pages are all published", errors)
-    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師也已公開" not in it:
-        fail("index lede should name all published catalogs, through 公會導師", errors)
+    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰、公會導師、冒險、懸賞、公會Boss和七日獎勵、王國遷移和積分賽、挑戰賽、天梯賽、巔峰積分賽也已公開" not in it:
+        fail("index lede should name all published catalogs, through 積分賽、挑戰賽、天梯賽、巔峰積分賽", errors)
     if "專武總表、英靈總表和造型總表也已公開" in it:
         fail("index lede still only lists exclusive, valhalla and skin catalogs", errors)
-    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師已公開" not in it:
-        fail("index 圖鑑 should name all published catalogs, through 公會導師", errors)
+    if "專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰、公會導師、冒險、懸賞、公會Boss和七日獎勵、王國遷移和積分賽、挑戰賽、天梯賽、巔峰積分賽已公開" not in it:
+        fail("index 圖鑑 should name all published catalogs, through 積分賽、挑戰賽、天梯賽、巔峰積分賽", errors)
     if "抓蝴蝶和牧場物語也已公開" in it or "抓蝴蝶和牧場物語已公開" in it:
         fail("index lede or 圖鑑 still uses the previous locked ending", errors)
     if "裝飾物總表和城堡外觀總表也已公開" in it:
@@ -322,7 +330,7 @@ def check_index(index: str, it: str, errors: list[str]) -> None:
         "kingdom-clash.html", "elf-cottage.html", "fish-tank.html",
         "butterfly-catch.html", "ranch-tale.html",
         "villagers.html", "faction-levels.html", "caravan-trade.html",
-        "ancestral-totem.html", "guild-mentors.html",
+        "ancestral-totem.html", "guild-mentors.html", "pve.html", "seven-reward-move.html", "arena-ladder.html",
     ):
         if f'href="{href}"' not in index:
             fail(f"index should link to {href}", errors)
@@ -2073,6 +2081,9 @@ def check_site_search(errors: list[str]) -> None:
         "caravan-trade.html",
         "ancestral-totem.html",
         "guild-mentors.html",
+        "pve.html",
+        "seven-reward-move.html",
+        "arena-ladder.html",
     }
     allowed_pages = {"index.html"} | catalogs | {f"heroes/{hid}.html" for hid in PUBLISHED_IDS}
     found_pages = {
@@ -2112,6 +2123,12 @@ def check_site_search(errors: list[str]) -> None:
         fail("search index should include official system name 牧場物語", errors)
     if "魚缸" not in titles_and_text or "摸魚時光" not in titles_and_text:
         fail("search index should include official names 摸魚時光 and 魚缸", errors)
+    if "冒險" not in titles_and_text or "懸賞" not in titles_and_text or "公會Boss" not in titles_and_text:
+        fail("search index should include official names 冒險, 懸賞 and 公會Boss", errors)
+    if "七日獎勵" not in titles_and_text or "王國遷移" not in titles_and_text:
+        fail("search index should include official names 七日獎勵 and 王國遷移", errors)
+    if "積分賽" not in titles_and_text or "挑戰賽" not in titles_and_text or "天梯賽" not in titles_and_text or "巔峰積分賽" not in titles_and_text:
+        fail("search index should include official names 積分賽, 挑戰賽, 天梯賽 and 巔峰積分賽", errors)
     for bad in ("乙太牧場", "以太牧場", "魚缺", "地心獵獵", "地心獵獸", "鐵喉"):
         if bad in titles_and_text:
             fail(f"search index should not contain unofficial or typo name {bad}", errors)
@@ -2149,6 +2166,7 @@ def check_site_search(errors: list[str]) -> None:
         (CARAVAN_TRADE, "caravan-trade"),
         (ANCESTRAL_TOTEM, "ancestral-totem"),
         (GUILD_MENTORS, "guild-mentors"),
+        (PVE, "pve"),
     ]
     for path, label in catalog_pages:
         html = path.read_text(encoding="utf-8")
@@ -2186,7 +2204,7 @@ def check_site_search(errors: list[str]) -> None:
 
     index = INDEX.read_text(encoding="utf-8")
     lede = re.search(r'<p class="lede">(.*?)</p>', index, flags=re.S)
-    if not lede or "抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師也已公開" not in text_of(lede.group(0)):
+    if not lede or "抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰、公會導師、冒險、懸賞、公會Boss和七日獎勵、王國遷移和積分賽、挑戰賽、天梯賽、巔峰積分賽也已公開" not in text_of(lede.group(0)):
         fail("index: adding site-search must not change the locked lede", errors)
 
 
@@ -2229,6 +2247,7 @@ def check_page_filter(errors: list[str]) -> None:
         (CARAVAN_TRADE, "caravan-trade"),
         (ANCESTRAL_TOTEM, "ancestral-totem"),
         (GUILD_MENTORS, "guild-mentors"),
+        (PVE, "pve"),
     ]
     form_ok = re.compile(
         r"<form\b[^>]*\b(?:data-page-filter\b[^>]*\bhidden|hidden\b[^>]*\bdata-page-filter)\b",
@@ -2249,8 +2268,8 @@ def check_page_filter(errors: list[str]) -> None:
             if "data-page-filter" in league or "篩選名稱" in league:
                 fail("index: filter bar should not sit inside a faction roster list", errors)
             lede = re.search(r'<p class="lede">(.*?)</p>', html, flags=re.S)
-            if lede and "抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師也已公開" not in text_of(lede.group(0)):
-                fail("index: lede must name published catalogs through 公會導師", errors)
+            if lede and "抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰、公會導師、冒險、懸賞、公會Boss和七日獎勵、王國遷移和積分賽、挑戰賽、天梯賽、巔峰積分賽也已公開" not in text_of(lede.group(0)):
+                fail("index: lede must name published catalogs through 積分賽、挑戰賽、天梯賽、巔峰積分賽", errors)
             if lede and "城堡外觀總表" not in text_of(lede.group(0)):
                 fail("index: lede must still name 城堡外觀總表", errors)
 
@@ -3157,6 +3176,20 @@ def check_caravan_trade_page(html: str, errors: list[str]) -> None:
         fail("caravan-trade: frequency caps that exist only in official copy must be marked 未驗證", errors)
     if "深海" not in vis or "飛鳥" not in vis:
         fail("caravan-trade: must keep official station names for both trade-group variants", errors)
+    if "開啟時間：週五" not in vis or "每次爭奪時間：1 小時" not in vis:
+        fail("caravan-trade: must quote official 貿易站 opening-time copy", errors)
+    if "0｜4｜12" not in vis or "1｜4｜12" not in vis:
+        fail("caravan-trade: must record both current open-time encodings", errors)
+    if "一律" in vis and "0｜4｜12" in vis and "1｜4｜12" not in vis:
+        fail("caravan-trade: must not claim every trade-post row has the same open-time encoding", errors)
+    if "尚未核對" not in vis or "不把它寫成鐘點或星期幾的時間表" not in vis:
+        fail("caravan-trade: must not invent a clock or weekday schedule from open-time codes", errors)
+    if "0｜4｜2" not in vis or "1｜4｜2" not in vis or "不混成同一份時段" not in vis:
+        fail("caravan-trade: must keep the 2026-11-05 open-time values distinct from the current schedule", errors)
+    if "本抽取" in vis:
+        fail("caravan-trade: visible body must not say 本抽取", errors)
+    if "照錄" in vis:
+        fail("caravan-trade: visible body must not say 照錄", errors)
 
 
 def check_ancestral_totem_page(html: str, errors: list[str]) -> None:
@@ -3228,6 +3261,7 @@ def check_visible_unofficial_work_titles(errors: list[str]) -> None:
         (CARAVAN_TRADE, "caravan-trade"),
         (ANCESTRAL_TOTEM, "ancestral-totem"),
         (GUILD_MENTORS, "guild-mentors"),
+        (PVE, "pve"),
     ]
     for path, label in pages:
         if not path.exists():
@@ -3242,13 +3276,206 @@ def check_visible_unofficial_work_titles(errors: list[str]) -> None:
         if label != "index":
             check_visible_placeholder_code(html, label, errors)
 
+
+def check_pve_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(html, "pve", "Top Heroes Wiki｜冒險、懸賞、公會Boss", "2026-11-22", errors)
+    if not html:
+        return
+    _check_new_catalog_locks(html, "pve", errors)
+    vis = visible_before_notes(html)
+    for name in ("冒險", "世界", "懸賞", "公會Boss", "榮譽試煉", "虛空寶庫", "高塔寶庫", "懸賞大廳", "關卡進度", "本層大獎"):
+        if name not in vis:
+            fail(f"pve: missing official name {name}", errors)
+    if "不把它們寫成同一玩法" not in vis:
+        fail("pve: must keep the two floor-challenge families distinct", errors)
+    if "不逕行等同為同一入口" not in vis and "不逕行等同" not in vis:
+        fail("pve: must not equate 虛空寶庫 with 高塔寶庫", errors)
+    if "不是同一套" not in vis and "不要混成一套" not in vis:
+        fail("pve: must keep 冒險火盆 and 公會火盆 distinct", errors)
+    if "遊戲中文名稱表沒有對應名稱" not in vis:
+        fail("pve: must keep the missing-name wording for unnamed rows", errors)
+    if "邪惡煉金術師" in vis and "不把它們與「邪惡煉金術師」合併" not in vis:
+        fail("pve: must not merge missing bounty names into 邪惡煉金術師", errors)
+    if "不是本頁評級" not in vis:
+        fail("pve: must record that 最強之路 is official text, not a ranking", errors)
+    if "不是已核對的官方賽季標題" not in vis:
+        fail("pve: must not treat unlock_season 5/6 as official season titles", errors)
+    if "挑戰賽" in vis and "不把它寫成功能「挑戰賽」的已核對主表" not in vis:
+        fail("pve: must not present the climbing table as official 挑戰賽", errors)
+    if "無限關" in vis or "無限層" in vis:
+        fail("pve: visible body must not present 無限關 or 無限層 as an official function title", errors)
+    if "本抽取" in vis:
+        fail("pve: visible body must not say 本抽取", errors)
+    if vis.count("玩家確認"):
+        fail("pve: visible body must not say 玩家確認", errors)
+    if "地心狩獵" in html and ("地心獵獵" in vis or "地心獵獸" in vis):
+        fail("pve: typography of 地心狩獵 inverted", errors)
+    if "遊戲中文名稱表沒有一個單獨功能名，用來把這兩套層數關卡叫成同一個系統" not in vis:
+        fail("pve: lede must keep the no-umbrella wording for the two floor families", errors)
+    if "不要合成一種突襲" in vis:
+        fail("pve: visible body must not tell readers to merge raids into one system", errors)
+    if "照錄" in vis:
+        fail("pve: visible body must not say 照錄", errors)
+    if "第 5、第 6 組" not in vis and "第5、第6組" not in vis:
+        # allow either typography of the no-group-5/6 sentence
+        if "沒有以潮汐之怒之後的官方賽季標題為名的第 5" not in vis:
+            fail("pve: must record that the preview table has no official group 5 or 6", errors)
+    for href, label in (
+        ("city-buildings.html", "懸賞大廳"),
+        ("pets.html", "寵物"),
+        ("artifacts.html", "秘寶"),
+        ("caravan-trade.html", "商隊貿易"),
+        ("kingdom-clash.html", "王國對決"),
+    ):
+        if f'href="{href}"' not in html:
+            fail(f"pve: should link to existing page {href}", errors)
+    if "開局與轉服.html" in html or 'href="arena.html"' in html or "pvp.html" in html:
+        fail("pve: must not link to unbuilt pages", errors)
+    if 'href="arena-ladder.html"' not in html:
+        fail("pve: should link to existing page arena-ladder.html", errors)
+    if 'href="seven-reward-move.html"' not in html:
+        fail("pve: should link to existing page seven-reward-move.html", errors)
+    if "開局、合服與王國遷移不在本頁" in visible_before_notes(html):
+        fail("pve: visible body should link 七日獎勵、王國遷移 instead of saying they are absent", errors)
+    if "也不連到尚未建立的頁" in visible_before_notes(html):
+        fail("pve: should no longer say the arena functions link to unbuilt pages", errors)
+
+
+def check_seven_reward_move_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(
+        html, "seven-reward-move", "Top Heroes Wiki｜七日獎勵、王國遷移", "2026-11-22", errors
+    )
+    if not html:
+        return
+    _check_new_catalog_locks(html, "seven-reward-move", errors)
+    vis = visible_before_notes(html)
+    for name in (
+        "七日獎勵",
+        "開服慶典",
+        "七日慶典",
+        "傳唱的篇章",
+        "王國遷移",
+        "轉服卷軸",
+        "新手遷服成功",
+        "轉服成功",
+        "合服",
+        "王國合併",
+        "推薦陣容",
+        "最佳部族",
+        "最好的部落陣容，有著快速又猛烈的攻擊",
+        "藥劑師",
+        "戰士",
+        "世界樹之影",
+        "冰封之焰",
+        "暮光之戰",
+        "潮汐之怒",
+        "信標",
+        "地心狩獵",
+        "雲海紀行",
+        "地心探險",
+    ):
+        if name not in vis:
+            fail(f"seven-reward-move: missing official name {name}", errors)
+    if "技能文案沒有陣營用詞" not in vis:
+        fail("seven-reward-move: must record that 藥劑師 skill text has no faction wording", errors)
+    if "榮譽加成也不能用來判定陣營" not in vis:
+        fail("seven-reward-move: must not use honor bonus to classify 藥劑師", errors)
+    if "本站自然英雄名單已收入藥劑師" not in vis:
+        fail("seven-reward-move: must note the site nature roster already includes 藥劑師", errors)
+    if "不排列培養優先順序" not in vis:
+        fail("seven-reward-move: must not rank a training order", errors)
+    if "不把它們寫成界面上的伺服器編號" not in vis and "不把界面上看到的伺服器編號，對成表內編號" not in vis:
+        fail("seven-reward-move: must not equate display server numbers with internal ids", errors)
+    if "沒有第五、第六則賽季名稱" not in vis:
+        fail("seven-reward-move: must record that there is no official season name 5 or 6", errors)
+    if "不把這些名稱寫成已核對的官方第五季或第六季標題" not in vis:
+        fail("seven-reward-move: must not present 雲海紀行 as official season 6", errors)
+    if "「部落」按原文保留" not in vis:
+        fail("seven-reward-move: must quote 部落 in the official 最佳部族 short description", errors)
+    if "不是功能「七日獎勵」的獎勵內容" not in vis and "這張表不是功能" not in vis:
+        fail("seven-reward-move: must not present the other login-gift table as 七日獎勵", errors)
+    if "與功能「七日獎勵」不是同一項" not in vis:
+        fail("seven-reward-move: must not merge 七日豪禮 into newbie 七日獎勵", errors)
+    if "本抽取" in vis:
+        fail("seven-reward-move: visible body must not say 本抽取", errors)
+    if "照錄" in vis:
+        fail("seven-reward-move: visible body must not say 照錄", errors)
+    if "玩家確認" in vis:
+        fail("seven-reward-move: visible body must not say 玩家確認", errors)
+    if "開局" in vis:
+        fail("seven-reward-move: visible body must not present 開局 as an official umbrella title", errors)
+    if "地心獵獵" in vis or "地心獵獸" in vis or "地心獸獵" in vis:
+        fail("seven-reward-move: typography of 地心狩獵 inverted", errors)
+    for href in ("pve.html", "kingdom-clash.html", "city-buildings.html", "heroes/10007.html", "heroes/10001.html"):
+        if f'href="{href}"' not in html:
+            fail(f"seven-reward-move: should link to existing page {href}", errors)
+    if "arena.html" in html or "pvp.html" in html or "開局與轉服.html" in html:
+        fail("seven-reward-move: must not link to unbuilt pages", errors)
+
+
+def check_arena_ladder_page(html: str, errors: list[str]) -> None:
+    check_public_catalog_shell(
+        html, "arena-ladder", "Top Heroes Wiki｜積分賽、挑戰賽、天梯賽、巔峰積分賽", "2026-11-22", errors
+    )
+    if not html:
+        return
+    _check_new_catalog_locks(html, "arena-ladder", errors)
+    vis = visible_before_notes(html)
+    for name in (
+        "積分賽",
+        "挑戰賽",
+        "天梯賽",
+        "巔峰積分賽",
+        "競技場",
+        "榮耀對決（Beta）",
+        "傳奇戰場",
+        "亂鬥競技場",
+        "巔峰組",
+        "大眾組",
+        "青銅段位",
+        "王者段位",
+        "地心狩獵",
+        "雲海紀行",
+        "懸賞",
+    ):
+        if name not in vis:
+            fail(f"arena-ladder: missing official name {name}", errors)
+    if "巒峰積分賽" in vis:
+        fail("arena-ladder: typography of 巔峰積分賽 inverted", errors)
+    if "地心獵獵" in vis or "地心獵獸" in vis or "地心獸獵" in vis:
+        fail("arena-ladder: typography of 地心狩獵 inverted", errors)
+    if "沒有一個單獨功能名，用來把這些對戰入口叫成同一個系統" not in vis:
+        fail("arena-ladder: must not invent an official umbrella title", errors)
+    if "不把它們寫成已核對的同一系統" not in vis:
+        fail("arena-ladder: must not equate the climbing table with 挑戰賽", errors)
+    if "與功能「巔峰積分賽」不是同一名稱" not in vis:
+        fail("arena-ladder: must keep 巔峰賽 distinct from 巔峰積分賽", errors)
+    if "遊戲中文名稱表沒有「冠軍決鬥」" not in vis:
+        fail("arena-ladder: must not present 冠軍決鬥 as an official function title", errors)
+    if "不把這些名稱寫成已核對的官方第五季或第六季標題" not in vis:
+        fail("arena-ladder: must not present 雲海紀行 as official season 6", errors)
+    if "本抽取" in vis:
+        fail("arena-ladder: visible body must not say 本抽取", errors)
+    if "照錄" in vis:
+        fail("arena-ladder: visible body must not say 照錄", errors)
+    if "玩家確認" in vis:
+        fail("arena-ladder: visible body must not say 玩家確認", errors)
+    if "競技玩法" in vis or "PVP" in vis or "KVK" in vis:
+        fail("arena-ladder: visible body must not present 競技玩法, PVP or KVK as an official umbrella title", errors)
+    for href in ("pve.html", "seven-reward-move.html", "kingdom-clash.html"):
+        if f'href="{href}"' not in html:
+            fail(f"arena-ladder: should link to existing page {href}", errors)
+    if "pvp.html" in html or "開局與轉服.html" in html:
+        fail("arena-ladder: must not link to unbuilt pages", errors)
+
+
 def main() -> int:
     errors = []
     for p in (
         INDEX, EXCLUSIVE, VALHALLA, SKINS,
         EQUIPMENT, LORD_EQUIPMENT, TROOPS, ARTIFACTS, PETS, HOLYBEASTS, PALS, CITY_BUILDINGS, RUNES,
         TALENTS, TECH, DECORATIONS, CASTLE, LORD_OCCUPATIONS,
-        KINGDOM_CLASH, ELF_COTTAGE, FISH_TANK, BUTTERFLY_CATCH, RANCH_TALE,
+        KINGDOM_CLASH, ELF_COTTAGE, FISH_TANK, BUTTERFLY_CATCH, RANCH_TALE, PVE, SEVEN_REWARD_MOVE, ARENA_LADDER,
         JUDGE, NUN, ROSE, INVENTOR,
     ):
         if not p.exists():
@@ -3305,6 +3532,9 @@ def main() -> int:
     caravan_trade_html = CARAVAN_TRADE.read_text(encoding="utf-8")
     ancestral_totem_html = ANCESTRAL_TOTEM.read_text(encoding="utf-8")
     guild_mentors_html = GUILD_MENTORS.read_text(encoding="utf-8")
+    pve_html = PVE.read_text(encoding="utf-8")
+    seven_reward_move_html = SEVEN_REWARD_MOVE.read_text(encoding="utf-8")
+    arena_ladder_html = ARENA_LADDER.read_text(encoding="utf-8")
     check_index(index, it, errors)
     check_index_published_catalogs(index, errors)
     check_exclusive_page(exclusive_html, errors)
@@ -3334,6 +3564,9 @@ def main() -> int:
     check_caravan_trade_page(caravan_trade_html, errors)
     check_ancestral_totem_page(ancestral_totem_html, errors)
     check_guild_mentors_page(guild_mentors_html, errors)
+    check_pve_page(pve_html, errors)
+    check_seven_reward_move_page(seven_reward_move_html, errors)
+    check_arena_ladder_page(arena_ladder_html, errors)
     for html, label in (
         (exclusive_html, "專武總表"),
         (valhalla_html, "英靈總表"),

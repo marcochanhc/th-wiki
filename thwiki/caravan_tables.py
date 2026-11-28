@@ -221,6 +221,26 @@ def render_html() -> str:
         + f"。商店表另有 {len(data['trade_post_shop.json'])} 列，本頁不傾印商品清單。"
         "站點表另有陣營與等級欄，不把欄位數字寫成官方第 N 季。"
     ))
+    time_pairs = []
+    for row in posts:
+        raw = row.get("open_time")
+        shown = str(raw).replace("|", "｜") if raw not in (None, "", -1, "-1") else ""
+        dur = row.get("fight_duration")
+        time_pairs.append((shown, dur))
+    time_counts = Counter(time_pairs)
+    add(p_html(
+        f"「{H(post, terms)}」的官方說明已寫「開啟時間：週五」「每次爭奪時間：1 小時」，見上方官方說明。"
+        "本頁使用的現行表裡，開放時段的數字有兩組，以下是表上的數字，沒有額外的官方中文欄名："
+        + "；".join(
+            f"{cnt} 列是 {shown}，對應時長數字 {dur:,}"
+            for (shown, dur), cnt in sorted(time_counts.items(), key=lambda x: (x[1], x[0][0]))
+        )
+        + "。"
+        "這三段數字各自的含義、以及它們如何對上說明文的「週五」與「1 小時」，尚未核對，"
+        "本頁不把它寫成鐘點或星期幾的時間表，也不自行換算時長單位。"
+        "較早的 2026-11-05 抽取裡，同樣 60 列的時段數字是 0｜4｜2（24 列）與 1｜4｜2（36 列），"
+        "與現行值不同，不混成同一份時段。"
+    ))
     add("    </section>")
 
     add('    <section id="out-of-scope">')
@@ -249,6 +269,15 @@ def render_html() -> str:
     )
     add(
         "<li>「天空貿易商團規則」是說明頁官方標題，與「海底貿易商團」並列，不另造合併名稱。</li>"
+    )
+    add(
+        "<li>貿易站開放時段欄是 <code>open_time</code>。"
+        "現行 LocalLow／live 為 <code>0|4|12</code> 24 列（<code>group</code> 1001，<code>fight_duration</code> 79200）"
+        "與 <code>1|4|12</code> 36 列（<code>group</code> 1002，<code>fight_duration</code> 3600）。"
+        "2026-11-05 抽取 SHA-256 <code>56d72980b96d14b51543e190da75e1d031b9fab7d8ebc2aa70fda41accc17a2a</code>，"
+        "同樣分組的時段數字是 <code>0|4|2</code> 與 <code>1|4|2</code>，只改了第三段。"
+        "三段含義及與官方「開啟時間：週五」「每次爭奪時間：1 小時」的對應尚未核對。"
+        "<code>next_open</code>、<code>close_time</code>、<code>shop_close_time</code> 的單位與鐘點對應亦未核對，可見正文不展開。</li>"
     )
     add("    </ul>")
     add("    </section>")

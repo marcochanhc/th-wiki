@@ -670,6 +670,9 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
             "商隊貿易": "caravan-trade.html",
             "先祖圖騰": "ancestral-totem.html",
             "公會導師": "guild-mentors.html",
+            "冒險、懸賞、公會Boss": "pve.html",
+            "七日獎勵、王國遷移": "seven-reward-move.html",
+            "積分賽、挑戰賽、天梯賽、巔峰積分賽": "arena-ladder.html",
             "符文": "runes.html",
             "天賦": "talents.html",
             "科技": "tech.html",
@@ -685,7 +688,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
     body = f"""
     <header class="entry-head">
       <h1>Top Heroes Wiki</h1>
-      <p class="lede">Top Heroes 英雄 wiki。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師也已公開。</p>
+      <p class="lede">Top Heroes 英雄 wiki。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰、公會導師、冒險、懸賞、公會Boss和七日獎勵、王國遷移和積分賽、挑戰賽、天梯賽、巔峰積分賽也已公開。</p>
     </header>
     <section id="heroes">
       <h2>英雄</h2>
@@ -693,7 +696,7 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
     </section>
     <section id="codex">
       <h2>圖鑑</h2>
-      <p>專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師已公開。</p>
+      <p>專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰、公會導師、冒險、懸賞、公會Boss和七日獎勵、王國遷移和積分賽、挑戰賽、天梯賽、巔峰積分賽已公開。</p>
       <ul class="codex-index">{codex}</ul>
     </section>
     <section id="about">
@@ -706,4 +709,4 @@ def render_home(heroes: list[HeroPage] | None = None) -> str:
       </ul>
     </section>
     """
-    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰和公會導師也已公開。", body, depth=0, nav_current="index")
+    return page_shell("Top Heroes Wiki", "Top Heroes 英雄 wiki 總目錄。目前聯盟、自然和部族的英雄條目都已公開。專武總表、英靈總表、造型總表、裝備總表、領主裝備總表、士兵總表、秘寶總表、寵物總表、符文總表、天賦總表、科技總表、裝飾物總表、城堡外觀總表、守護魔獸、帕魯、城建升級、領主職業、王國對決、精靈小屋、摸魚時光、抓蝴蝶、牧場物語、村民、陣營等級、商隊貿易、先祖圖騰、公會導師、冒險、懸賞、公會Boss和七日獎勵、王國遷移和積分賽、挑戰賽、天梯賽、巔峰積分賽也已公開。", body, depth=0, nav_current="index")

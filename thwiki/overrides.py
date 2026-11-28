@@ -110,7 +110,7 @@ ROSTER: list[tuple[str, str, list[tuple[int, str | None]]]] = [
     ),
 ]
 
-# Catalogue headings on the public index. The first nine items (專武 through 符文) link to published pages; 天賦、科技、裝飾物 and 城堡外觀 remain names only.
+# Catalogue headings on the public index. All items listed here link to published pages.
 CODEX_ITEMS = [
     "專武",
     "英靈",
@@ -139,6 +139,9 @@ CODEX_ITEMS = [
     "商隊貿易",
     "先祖圖騰",
     "公會導師",
+    "冒險、懸賞、公會Boss",
+    "七日獎勵、王國遷移",
+    "積分賽、挑戰賽、天梯賽、巔峰積分賽",
 ]
 
 
