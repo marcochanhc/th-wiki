@@ -104,8 +104,6 @@ def render_html() -> str:
     lede = (
         f"本頁寫「{sys_name}」三條雕像軌道的等級範圍、小段結構與屬性對照。"
         f"共 {len(rows)} 列，不逐列傾印。"
-        "名稱與說明依遊戲裡看得到的字照錄。"
-        "表上的編號前綴對應雕像，不是官方第 N 季。"
     )
     summary = f"{sys_name}圖鑑：三陣營雕像對照與等級斷點。"
     toc = toc_list([
@@ -126,7 +124,8 @@ def render_html() -> str:
     add('    <section id="lead">')
     add("      <h2>簡介與閱讀說明</h2>")
     add(p_html(
-        f"官方系統名是「{H(sys_name, terms)}」。"
+        "名稱與說明以遊戲裡看得到的為準。表上的編號前綴對應雕像，不是官方第 N 季。"
+        + f"官方系統名是「{H(sys_name, terms)}」。"
         + (f"說明是「{H(desc, terms)}」。" if desc else "")
         + f"三條升級軌道分別對應「{H(statues[0], terms)}」、「{H(statues[1], terms)}」、「{H(statues[2], terms)}」。"
         + f"界面影響條目另有「{H(hero_inf, terms)}」、「{H(team_inf, terms)}」、「{H(troop_inf, terms)}」，那些不是本頁這張升級表。"

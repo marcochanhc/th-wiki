@@ -138,7 +138,7 @@ def resource_label(rid, terms: list[str]) -> str:
     name = official_text(f"top_resource_name_{rid}")
     if name:
         return H(visible_official(name), terms)
-    return "字串表沒有名稱"
+    return "遊戲中文名稱表沒有對應名稱"
 
 
 def attr_pair_label(spec, terms: list[str]) -> str:
@@ -157,7 +157,7 @@ def attr_pair_label(spec, terms: list[str]) -> str:
         else:
             aid, val = text, ""
     name = official_text(f"attribute_name_{aid}")
-    label = H(visible_official(name), terms) if name else "字串表沒有名稱"
+    label = H(visible_official(name), terms) if name else "遊戲中文名稱表沒有對應名稱"
     if val in ("", None):
         return label
     shown = str(val).split("|", 1)[0]

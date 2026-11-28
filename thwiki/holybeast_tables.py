@@ -1455,6 +1455,7 @@ def render_html(data: TablesData) -> str:
     add("      <h2>升星</h2>")
     add(p_html(
         "每隻 101 列，星級 0–20，共 606 筆。0–19 星各有 5 個子階，20 星只有 1 列。"
+        "遊戲中文名稱表另有 21 至 30 星的說明，升星表仍只到 20 星，不把那些說明寫成已開放星階。"
         "把契約道具、技能與增傷屬性按陣營對齊後，六隻的星、子階、轉化率、戰力、魔獸等級上限、技能等級、"
         "需求等級、消耗數量與屬性原值全部相同。"
         "其餘欄位原值見資料說明，只照錄，不對成賽季編號。"
@@ -1631,6 +1632,7 @@ def render_html(data: TablesData) -> str:
     add("<ul>")
     add("<li>定義在 <code>holybeast.json</code>（6 筆），升級在 <code>holybeast_level.json</code>（1,020 筆，每隻 1–170 級），"
         "升星在 <code>holybeast_star.json</code>（606 筆，每隻 101 列），退還在 <code>holybeast_return.json</code>（50 筆）。"
+        "字串表另有 <code>holybeast_star_show_1_21</code> 至 <code>holybeast_star_show_3_30</code> 共 30 鍵，升星表仍只到 20 星，不把那些鍵寫成已開放星階。"
         "展示技能與升星表列出的技能 id 全部能在 <code>hero_component.json</code> 對上（26 個 id）。"
         "名稱來自主表名稱鍵。消耗欄原始寫法是 <code>2|道具id|數量</code>。</li>")
     add("<li>升級屬性 <code>attr_01</code>–<code>attr_03</code> 匯總為 <code>AttrAllList</code>，"

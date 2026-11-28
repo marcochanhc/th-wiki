@@ -90,7 +90,6 @@ def render_html() -> str:
     lede = (
         f"本頁寫「{sys_name}」的尋覓、{unit}培養與產出、設施、聲望任務、商店與交易所。"
         f"單位官方名是「{unit}」。這不是城建裡的牧場，也不是界面圖鑑分頁「{dex}」所能涵蓋的全部內容。"
-        "名稱與說明依遊戲裡看得到的字照錄。沒有官方顏色名，就不把品質寫成顏色。"
     )
     summary = f"{sys_name}圖鑑：{unit}名冊、棲息地、設施與官方活動說明。"
     toc = toc_list([
@@ -134,7 +133,8 @@ def render_html() -> str:
     ))
     add(p_html(
         "城建與同盟裡若也有「牧場」這個詞，與本系統分頁不是同一處，不合併，也不把城建升級排程搬進來。"
-        "品質欄沒有官方顏色名，只錄表上原值。"
+        "名稱與說明以遊戲裡看得到的為準。沒有官方顏色名，就不把品質寫成顏色。"
+        "以下是表上的數字，沒有額外的官方中文欄名。"
     ))
     add("    </section>")
 
@@ -149,12 +149,12 @@ def render_html() -> str:
     add(p_html(
         "上列打招呼說明寫了 40%。"
         f"設定表另有一個原值 {e(str(settings.get('get_percent')))}。"
-        "兩者並列照錄，不自行取捨哪一個才算顯示規則。"
+        "兩者並列，不自行取捨哪一個才算顯示規則。"
     ))
     share = settings.get("share_rate")
     if share is not None:
         add(p_html(
-            f"交易所說明寫分潤「10%」，設定表對應原值是 {e(str(share))}，兩者可對看，仍只照錄。"
+            f"交易所說明寫分潤「10%」，設定表對應原值是 {e(str(share))}，兩者可對看。"
         ))
     add("    </section>")
 
@@ -163,9 +163,8 @@ def render_html() -> str:
     eth = data["ether.json"]
     add(p_html(
         f"名冊共 {len(eth)} 筆、{len({r.get('name') for r in eth})} 個不同名稱。"
-        "同一名稱可對多筆、多個品質原值，不合併成一隻。"
-        "部分名稱與其他系統共用同一句官方用字，本頁仍照錄該名稱，不改當成英雄或其他道具。"
-        "品質是表上原值，沒有官方顏色名。"
+        "同一名稱可對多筆、多個品質數字，不合併成一隻。"
+        "部分名稱與其他系統共用同一句官方用字，本頁仍用該官方名稱，不改當成英雄或其他道具。"
     ))
     # collapse by official name: list qualities present, count
     by_name = defaultdict(list)
@@ -181,7 +180,7 @@ def render_html() -> str:
             e(quals),
         ])
     add(table(
-        ["名稱", "表上列數", "品質原值"],
+        ["名稱", "列數", "品質"],
         cat_rows,
         caption=f"{unit}名冊",
         mobile="cards",
@@ -200,11 +199,11 @@ def render_html() -> str:
             e(str(r.get("open_time"))),
         ])
     add(p_html(
-        "棲息地名稱如下。開放時間是表上原值，沒有單位欄，不自行標成小時。"
+        "棲息地名稱如下。開放時間沒有單位欄，不自行標成小時。"
         "名冊裡的分類欄與棲息地如何對應，未驗證，本頁不自行對譯。"
     ))
     add(table(
-        ["棲息地", "解鎖等級（表上原值）", "開放時間（表上原值）"],
+        ["棲息地", "解鎖等級", "開放時間"],
         pool_rows,
         caption="棲息地",
         mobile="cards",
@@ -217,7 +216,7 @@ def render_html() -> str:
     tech = data["ether_ranch_tech_detail.json"]
     tech_names = unique_keep_order(visible_official(official_text(r.get("name"))) for r in tech)
     add(p_html(
-        f"設施共 {len(tech_names)} 種、{len(tech)} 列，等級原值由 0 到 10。"
+        f"設施共 {len(tech_names)} 種、{len(tech)} 列，等級由 0 到 10。"
         "名稱是「" + "」「".join(H(n, terms) for n in tech_names if n) + "」。"
         "升級消耗與條件對不上官方短名的，不寫成道具名；本頁先列名稱與等級範圍。"
     ))
@@ -228,7 +227,7 @@ def render_html() -> str:
     for name, lvs in by_fac.items():
         fac_rows.append([H(name, terms) if name else "沒有官方名稱", e(f"{min(lvs)}–{max(lvs)}")])
     add(table(
-        ["設施", "等級範圍（表上原值）"],
+        ["設施", "等級範圍"],
         fac_rows,
         caption="牧場設施",
         mobile="cards",
@@ -297,11 +296,11 @@ def render_html() -> str:
     add(p_html(
         f"交易所商品表有 {len(goods)} 列。其中 {len(known)} 列可對上官方收藏券名稱；"
         f"其餘 {unknown} 列沒有可靠的官方短名，不靠後綴或順序去對。"
-        "字串表另有更多「收藏券-…」名稱，未對上表列的只存在字串表，不補進名錄。"
+        "遊戲中文名稱表另有更多「收藏券-…」名稱，未對上表列的不補進名錄。"
     ))
     if known:
         add(table(
-            ["名稱", "價格（表上原值）"],
+            ["名稱", "價格"],
             known,
             caption="對得上官方名稱的收藏券",
             mobile="cards",

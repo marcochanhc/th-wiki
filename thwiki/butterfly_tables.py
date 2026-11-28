@@ -90,7 +90,6 @@ def render_html() -> str:
     lede = (
         f"本頁寫「{title_name}」活動的名錄與規則。"
         f"界面也稱「{activity}」，規則標題是「{help_title}」。"
-        "名稱與說明依遊戲裡看得到的字照錄。道具對不上官方短名的，不靠編號或順序去對。"
     )
     summary = f"{title_name}圖鑑：三十六種蝴蝶的名稱、類型與活動說明。"
     toc = toc_list([
@@ -114,8 +113,8 @@ def render_html() -> str:
     add(p_html(
         f"官方活動名是「{H(title_name, terms)}」、「{H(activity, terms)}」。"
         f"另有「{H(book, terms)}」、「{H(area, terms)}」。"
-        "說明文案裡另有用字「彩蝶林域」，與「彩蝶領域」並列照錄，不合併、不判哪個是錯字。"
-        "字串表沒有剛好等於「蝴蝶」的系統標題，本頁標題用「抓蝴蝶」。"
+        "說明文案裡另有用字「彩蝶林域」，與「彩蝶領域」並列保留，不合併、不判哪個是錯字。"
+        "遊戲中文名稱表沒有剛好等於「蝴蝶」的系統標題，本頁標題用「抓蝴蝶」。"
     ))
     if has_string("butterfly_catch_148") or has_string("butterfly_catch_149"):
         ea = []
@@ -127,8 +126,9 @@ def render_html() -> str:
             "沒有官方說明這段括號是什麼，不自行解釋。"
         ))
     add(p_html(
+        "名稱與說明以遊戲裡看得到的為準。道具對不上官方短名的，不靠編號或順序去對。"
         "星級與品質是兩個欄，即使這批列上數值相同，也不合併成同一個官方概念。"
-        "沒有官方含義的欄位只錄原值。"
+        "以下是表上的數字，沒有額外的官方中文欄名。"
     ))
     add("    </section>")
 
@@ -142,7 +142,7 @@ def render_html() -> str:
 
     add('    <section id="catalog">')
     add("      <h2>蝴蝶名錄</h2>")
-    add(p_html(f"名錄共 {len(info_rows)} 筆，名稱與類型皆有官方中文。品質欄沒有官方中文名，只錄原值。"))
+    add(p_html(f"名錄共 {len(info_rows)} 筆，名稱與類型皆有官方中文。"))
     rows = []
     for r in info_rows:
         name = visible_official(official_text(r.get("name")))
@@ -154,7 +154,7 @@ def render_html() -> str:
             e(str(r.get("quality"))),
         ])
     add(table(
-        ["名稱", "類型", "星級（表上原值）", "品質（表上原值）"],
+        ["名稱", "類型", "星級", "品質"],
         rows,
         caption="蝴蝶名錄",
         mobile="cards",
@@ -168,7 +168,7 @@ def render_html() -> str:
     add("      <h2>捕捉與配對</h2>")
     add(p_html(
         f"捕捉配置有 {len(catch)} 列，名稱皆是「{H(area, terms)}」。"
-        "沒有六個不同的官方活動名。差異在預覽天數等數值欄，以下只列可照錄的原值，不自行解釋含義。"
+        "沒有六個不同的官方活動名。差異在預覽天數等數值欄，以下只列數字，不自行解釋含義。"
     ))
     catch_rows = []
     for r in catch:
@@ -179,7 +179,7 @@ def render_html() -> str:
             e(str(r.get("wait_settle_day"))),
         ])
     add(table(
-        ["名稱", "場地大小（表上原值）", "預覽天數（表上原值）", "結算等待天數（表上原值）"],
+        ["名稱", "場地大小", "預覽天數", "結算等待天數"],
         catch_rows,
         caption="捕捉配置",
         mobile="cards",
@@ -188,12 +188,12 @@ def render_html() -> str:
     add(p_html("各列的獎勵與郵件欄，許多對不上官方道具短名，本頁不逐筆猜獎、不展開。"))
     ch = child[0]
     add(p_html(
-        "配對與幼體表有 1 列。下列原值沒有官方欄位標題，只照錄，不標成機率單位或時間單位。"
-        f"自身相關原值 {e(str(ch.get('self_prop')))}，對方相關原值 {e(str(ch.get('the_other_prop')))}，"
-        f"另有原值 {e(str(ch.get('butterfly_six_prop')))}。"
-        f"交叉相關原值：{e(fmt_pipe(ch.get('stars_cross_prop')))}；"
+        "配對與幼體表有 1 列。下列數字沒有官方欄位標題，不標成機率單位或時間單位。"
+        f"自身相關數字 {e(str(ch.get('self_prop')))}，對方相關數字 {e(str(ch.get('the_other_prop')))}，"
+        f"另有數字 {e(str(ch.get('butterfly_six_prop')))}。"
+        f"交叉相關數字：{e(fmt_pipe(ch.get('stars_cross_prop')))}；"
         f"{e(fmt_pipe(ch.get('stars_cross_time')))}。"
-        f"一至五星幼體相關原值："
+        f"一至五星幼體相關數字："
         + "；".join(
             e(fmt_pipe(ch.get(k)))
             for k in (

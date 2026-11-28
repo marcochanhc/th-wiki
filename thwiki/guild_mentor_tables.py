@@ -76,7 +76,7 @@ def _unique_skill_names(rows: list[dict], mentor: int) -> list[str]:
     for r in rows:
         if r.get("mentor") != mentor:
             continue
-        name = visible_official(official_text(r.get("name"))) or "字串表沒有名稱"
+        name = visible_official(official_text(r.get("name"))) or "遊戲中文名稱表沒有對應名稱"
         if name not in out:
             out.append(name)
     return out
@@ -118,7 +118,6 @@ def render_html() -> str:
     lede = (
         f"本頁寫「{mentor_sys}」的兩位導師、好感與榮譽斷點，以及官方說明。"
         f"「{mentor_sys}」與「{hall}」是不同的官方名稱，並列保留，不合併成一個系統名。"
-        "名稱與說明依遊戲裡看得到的字照錄。"
         "贈禮、印記與每日上限只引用已有官方說明；表上沒有寫明的折算，不猜測。"
     )
     summary = f"{mentor_sys}圖鑑：兩位導師、官方說明與等級斷點。"
@@ -141,6 +140,7 @@ def render_html() -> str:
     add('    <section id="lead">')
     add("      <h2>簡介與閱讀說明</h2>")
     add(p_html(
+        "名稱與說明以遊戲裡看得到的為準。"
         f"界面標題是「{H(mentor_sys, terms)}」，說明頁標題是「{H(mentor_help, terms)}」。"
         f"「{H(hall, terms)}」另有說明頁「{H(hall_help, terms)}」，是共聚空間的官方名，不是導師功能的另一個標題。"
         "本頁不把內部檔名寫成界面標題。"
@@ -179,8 +179,8 @@ def render_html() -> str:
             H(m["name"], terms),
             H(m["title"], terms),
             H(m["tech"], terms),
-            "、".join(H(s, terms) for s in skills) if skills else "字串表沒有名稱",
-            "、".join(H(s, terms) for s in negs) if negs else "字串表沒有名稱",
+            "、".join(H(s, terms) for s in skills) if skills else "遊戲中文名稱表沒有對應名稱",
+            "、".join(H(s, terms) for s in negs) if negs else "遊戲中文名稱表沒有對應名稱",
             "、".join(stamps) if stamps else "沒有官方短名",
         ])
         if m["desc"]:
@@ -211,7 +211,7 @@ def render_html() -> str:
     rel_rows = []
     # Use mentor 1 for relationship labels; names are shared keys
     for r in [x for x in stars if x.get("mentor") == 1]:
-        rel = visible_official(official_text(r.get("desc"))) or "字串表沒有名稱"
+        rel = visible_official(official_text(r.get("desc"))) or "遊戲中文名稱表沒有對應名稱"
         rel_rows.append([str(r.get("star")), H(rel, terms)])
     add(p_html(f"羈絆（好感星級）官方名稱如下，兩位導師共用這套稱呼，共 {len(rel_rows)} 級。"))
     add(table(
@@ -235,7 +235,7 @@ def render_html() -> str:
     add(p_html(
         f"導師等級 {len(levels)} 列、技能 {len(data['royal_academy_skill.json'])} 列與故事 {len(data['royal_academy_story.json'])} 列不逐筆傾印數值。"
         "城建表沒有名為爐火大廳的建築；內部路徑名稱不是界面標題。"
-        "本頁不把未出現在字串表的詞寫成界面標題。"
+        "本頁不把遊戲中文名稱表沒有的詞寫成界面標題。"
         "也不把公會牧場連到本頁。"
     ))
     add("    </section>")

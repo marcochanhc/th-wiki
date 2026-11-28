@@ -89,8 +89,7 @@ def render_html() -> str:
     title = f"Top Heroes Wiki｜{hut}"
     lede = (
         f"本頁寫「{hut}」的合養、餵養、打工、互動、裝扮、任務與週里程碑規則。"
-        f"界面短名是「{short}」。名稱與說明依遊戲裡看得到的字照錄。"
-        "不把表上的分組或主題字串寫成官方第 N 季，不評定養成優先。"
+        f"界面短名是「{short}」。"
     )
     summary = f"{hut}圖鑑：短名「{short}」。合養規則、行動、食物、升級、裝扮與任務。"
     toc = toc_list([
@@ -119,17 +118,18 @@ def render_html() -> str:
         f"功能主名是「{H(hut, terms)}」，短名是「{H(short, terms)}」。"
         f"另有「{H(visible_official(official_text('season_preview_title_404')), terms)}」。"
         f"預告文案寫「{H(visible_official(official_text('season_preview_desc_411')), terms)}」。"
-        "「合養」與「共養」不是同一個詞，本頁並列照錄，不合併。"
+        "「合養」與「共養」不是同一個詞，本頁並列保留，不合併。"
     ))
     add(p_html(
         f"還有「{H(visible_official(official_text('elf_d113')), terms)}」、"
         f"「{H(visible_official(official_text('info_title_50030')), terms)}」、"
         f"「{H(visible_official(official_text('info_title_50049')), terms)}」。"
-        "字串表沒有「精靈圖鑑」這個名稱，本頁標題用官方功能名。"
+        "遊戲中文名稱表沒有「精靈圖鑑」這個名稱，本頁標題用官方功能名。"
     ))
     add(p_html(
-        "表上若分成多組，只說明列數與內容，不把分組寫成官方第 N 季。"
-        "名稱若與其他系統共用同一句官方用字，仍照錄該名稱，不改當成別種道具。"
+        "名稱與說明以遊戲裡看得到的為準。表上若分成多組，只說明列數與內容，不把分組或主題字串寫成官方第 N 季，也不評定養成優先。"
+        "名稱若與其他系統共用同一句官方用字，仍用該官方名稱，不改當成別種道具。"
+        "以下是表上的數字，沒有額外的官方中文欄名，不自行命名各段含義。"
     ))
     add("    </section>")
 
@@ -148,7 +148,7 @@ def render_html() -> str:
     add('    <section id="themes">')
     add("      <h2>主題字串</h2>")
     add(p_html(
-        "下列是字串表裡的主題名稱，只並列照錄。不把它們寫成官方第 N 季，也不與王國對決的輪次等號。"
+        "下列是遊戲裡看得到的主題名稱。不把它們與王國對決的輪次等號。"
     ))
     theme_rows = []
     for i in range(1, 7):
@@ -163,8 +163,8 @@ def render_html() -> str:
         card_title="主題字串",
     ))
     add(p_html(
-        "另有一張主題說明表，把上述字串與表上欄位寫在同一列。本頁不把那些欄位寫進可見正文，也不據此標第 N 季。"
-        "其中「地心探險」這個主題字串在字串表，但沒有出現在那張說明表的列裡。"
+        "另有一張主題說明表，把上述名稱與表上其他欄位寫在同一列。本頁不把那些欄位寫進可見正文，也不據此標第 N 季。"
+        "其中「地心探險」這個主題名稱出現在遊戲中文名稱表，但沒有出現在那張說明表的列裡。"
     ))
     add("    </section>")
 
@@ -197,11 +197,10 @@ def render_html() -> str:
             e(str(len(rows))),
         ])
     add(p_html(
-        "行動名稱與參數如下。相同名稱與參數若有多列，只列一次並註明列數，不把分組寫成官方第 N 季。"
-        "參數是表上原值，沒有官方欄位標題，不自行命名各段含義。"
+        "行動名稱與參數如下。相同名稱與參數若有多列，只列一次並註明列數。"
     ))
     add(table(
-        ["行動", "參數（表上原值）", "表上列數"],
+        ["行動", "參數", "列數"],
         act_rows,
         caption="互動與打工行動",
         mobile="cards",
@@ -236,9 +235,9 @@ def render_html() -> str:
             pet_table.append(row)
         else:
             food_rows.append(row)
-    add(p_html("食物名稱與好感相關原值如下。六組內容相同，下表只列一份，並註明表上列數。"))
+    add(p_html("食物名稱與好感相關數字如下。六組內容相同，下表只列一份，並註明列數。"))
     add(table(
-        ["名稱", "等級（表上原值）", "好感相關原值", "分段原值", "表上列數"],
+        ["名稱", "等級", "好感相關數字", "分段數字", "列數"],
         food_rows,
         caption="食物",
         mobile="cards",
@@ -246,11 +245,11 @@ def render_html() -> str:
     ))
     add(p_html(
         f"同一張表裡另有名稱為「{H(pet_name, terms)}」的列。這是官方名稱「{H(pet_name, terms)}」，"
-        "與互動行動同名，本頁照錄，不改標成一種食物。"
-        "分段原值與官方互動說明中的等級心情值可以對看，不另行換算。"
+        "與互動行動同名，本頁保留這個官方名稱，不改標成一種食物。"
+        "分段數字與官方互動說明中的等級心情值可以對看，不另行換算。"
     ))
     add(table(
-        ["名稱", "等級（表上原值）", "好感相關原值", "分段原值", "表上列數"],
+        ["名稱", "等級", "好感相關數字", "分段數字", "列數"],
         pet_table,
         caption="名稱為撫摸的列",
         mobile="cards",
@@ -274,12 +273,12 @@ def render_html() -> str:
             break
     add(p_html(
         f"升級表共 {len(lv)} 列，分成 {len(groups)} 組，各涵蓋 1 至 30 級。"
-        + ("六組升級所需經驗相同，下表只列一份。" if exp_same else "各組經驗若不同，本頁只照錄原值，仍不把分組寫成官方第 N 季。")
+        + ("六組升級所需經驗相同，下表只列一份。" if exp_same else "各組經驗若不同，本頁分列數字。")
         + "各組等級獎勵的道具編號並非全部相同；沒有官方短名的不寫名稱，也不推測獎勵內容。"
     ))
     if exp_same:
         add(table(
-            ["等級", "升級所需經驗（表上原值）"],
+            ["等級", "升級所需經驗"],
             [[e(str(r["level"])), e(str(r["exp"]))] for r in base],
             caption="共用升級經驗",
             mobile="cards",
@@ -298,7 +297,7 @@ def render_html() -> str:
         skin_meta[key] = r
     skin_rows = []
     for (name, unlock, rare, free), n in skin_map.items():
-        free_txt = "免費" if free == 1 else ("表上原值 " + str(free) if free not in (-1, None) else "不是標成免費")
+        free_txt = "免費" if free == 1 else (str(free) if free not in (-1, None) else "不是標成免費")
         # Don't invent quality names for rare
         skin_rows.append([
             H(name, terms) if name else "沒有官方名稱",
@@ -308,11 +307,11 @@ def render_html() -> str:
             e(str(n)),
         ])
     add(p_html(
-        "裝扮依官方名稱列出。相同名稱、解鎖等級與稀有欄原值若有多列，只列一次並註明列數。"
-        "稀有欄沒有官方中文名，只錄原值。"
+        "裝扮依官方名稱列出。相同名稱、解鎖等級與稀有欄數字若有多列，只列一次並註明列數。"
+        "稀有欄沒有官方中文名。"
     ))
     add(table(
-        ["裝扮", "解鎖等級（表上原值）", "稀有欄原值", "是否免費", "表上列數"],
+        ["裝扮", "解鎖等級", "稀有", "是否免費", "列數"],
         skin_rows,
         caption="精靈裝扮",
         mobile="cards",

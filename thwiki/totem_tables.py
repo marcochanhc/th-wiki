@@ -55,7 +55,7 @@ def attr_name_only(spec, terms: list[str]) -> str:
         return ""
     aid = str(spec[0] if isinstance(spec, (list, tuple)) else str(spec).split("|", 1)[0])
     name = visible_official(official_text(f"attribute_name_{aid}"))
-    return H(name, terms) if name else "字串表沒有名稱"
+    return H(name, terms) if name else "遊戲中文名稱表沒有對應名稱"
 
 
 def render_html() -> str:
@@ -79,7 +79,6 @@ def render_html() -> str:
     lede = (
         f"本頁寫「{name}」的等級範圍與屬性斷點。"
         f"表共 {len(rows)} 列，不逐列傾印。"
-        "名稱與說明依遊戲裡看得到的字照錄。"
         "說明裡的「賽季結束後將被回收」照錄原文，不把它對成官方第 N 季。"
     )
     summary = f"{name}圖鑑：三陣營等級範圍與斷點。"
@@ -101,6 +100,7 @@ def render_html() -> str:
     add('    <section id="lead">')
     add("      <h2>簡介與閱讀說明</h2>")
     add(p_html(
+        "名稱與說明以遊戲裡看得到的為準。"
         f"界面、城建與屬性名稱都寫「{H(name, terms)}」，是不同鍵的同一顯示名。"
         f"建築升級（上限與消耗）見"
         f"<a href=\"city-buildings.html\">{H('城建升級', terms)}</a>頁的「{H(name, terms)}」節；本頁只寫陣營效果等級表。"
@@ -111,7 +111,7 @@ def render_html() -> str:
     add("      <h2>官方說明</h2>")
     if rule:
         add(quote_block(rule, terms))
-        add(p_html("這句說明照錄。本頁不把它對成某一官方季數，也不另解釋回收規則。"))
+        add(p_html("本頁不另解釋回收規則。"))
     add("    </section>")
 
     add('    <section id="breakpoints">')
@@ -140,7 +140,7 @@ def render_html() -> str:
         + f"戰力欄在全部 {len(rows)} 列都是 0，本頁不另行解讀。"
         f"消耗以「{H(dust, terms)}」為主，部分等級另消耗「{H(essence, terms)}」。"
         f"回收欄是「{H(token, terms)}」。"
-        "技能欄只有編號，字串表沒有官方技能名，本頁不編造名稱；149 級起該欄的第二段數字改為 2。"
+        "技能欄只有編號，遊戲中文名稱表沒有對應的官方技能名，本頁不編造名稱；149 級起該欄的第二段數字改為 2。"
     ))
 
     # When attrs appear, from faction 1

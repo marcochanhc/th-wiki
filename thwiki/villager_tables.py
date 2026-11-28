@@ -76,13 +76,13 @@ def villager_display_name(row: dict, name_by_id: dict) -> str:
     if not rec:
         return "名稱編號未對上"
     text = visible_official(official_text(rec.get("name")))
-    return text or "字串表沒有名稱"
+    return text or "遊戲中文名稱表沒有對應名稱"
 
 
 def building_display_name(row: dict) -> str:
     key = row.get("name")
     text = visible_official(official_text(key)) if key else ""
-    return text or "字串表沒有名稱"
+    return text or "遊戲中文名稱表沒有對應名稱"
 
 
 def render_html() -> str:
@@ -103,13 +103,13 @@ def render_html() -> str:
     extra_terms = list(star_names)
     for row in skill_rows:
         keys = row.get("name") or []
-        names = [visible_official(official_text(k)) or "字串表沒有名稱" for k in keys]
+        names = [visible_official(official_text(k)) or "遊戲中文名稱表沒有對應名稱" for k in keys]
         bkey = row.get("buildingName")
         bname = visible_official(official_text(bkey)) if bkey and official_text(bkey) else (
-            "字串表沒有名稱" if bkey else "字串表沒有名稱"
+            "遊戲中文名稱表沒有對應名稱" if bkey else "遊戲中文名稱表沒有對應名稱"
         )
-        first = names[0] if names else "字串表沒有名稱"
-        last = names[-1] if names else "字串表沒有名稱"
+        first = names[0] if names else "遊戲中文名稱表沒有對應名稱"
+        last = names[-1] if names else "遊戲中文名稱表沒有對應名稱"
         sig = (tuple(names), bname)
         extra_terms.extend(names)
         extra_terms.append(bname)
@@ -146,7 +146,7 @@ def render_html() -> str:
 
     styles = []
     for row in data["village_style.json"]:
-        sname = visible_official(official_text(row.get("name"))) or "字串表沒有名稱"
+        sname = visible_official(official_text(row.get("name"))) or "遊戲中文名稱表沒有對應名稱"
         styles.append(sname)
         extra_terms.append(sname)
     style_ground = visible_official(official_text("village_style_6"))
@@ -165,7 +165,7 @@ def render_html() -> str:
         f"本頁寫功能名「{func_name}」的規則摘要、明星名冊與工作格對照。"
         f"功能名「{func_name}」與單位名「{unit_name}」是不同的官方字串，並列保留，不合併成一種用法。"
         f"界面列表標題是「{list_title}」，招募分頁是「{recruit}」。"
-        "名稱與說明依遊戲裡看得到的字照錄。技能只列系列名稱與生效建築，不傾印全部數值。"
+        "技能只列系列名稱與生效建築，不傾印全部數值。"
     )
     summary = f"{func_name}圖鑑：官方規則、明星名冊與工作格對照。"
     toc = toc_list([
@@ -188,6 +188,7 @@ def render_html() -> str:
     add('    <section id="lead">')
     add("      <h2>簡介與閱讀說明</h2>")
     add(p_html(
+        "名稱與說明以遊戲裡看得到的為準。"
         f"定義表共 {len(villagers)} 列，其中明星標記 {len(stars)} 列、其餘 {len(non_stars)} 列。"
         f"功能名來自界面分頁「{H(func_name, terms)}」；單位名「{H(unit_name, terms)}」出現在另一組名稱鍵，兩者同字不同鍵。"
         f"本頁不把跑酷地圖上的放置、地圖救援來源，或村莊區域表，當成可招募名冊。"
@@ -246,7 +247,7 @@ def render_html() -> str:
     ))
     ted_desc = visible_official(official_text("villagers_sp_10024"))
     if ted_desc:
-        add(p_html("其中一位非明星列「泰德」的官方特殊說明照錄如下，用字以字串表為準。"))
+        add(p_html("其中一位非明星列「泰德」的官方特殊說明如下，用字以遊戲裡看得到的為準。"))
         add(quote_block(ted_desc, terms))
     add("    </section>")
 
@@ -264,7 +265,7 @@ def render_html() -> str:
         else:
             series = f"{H(item['first'], terms)}至{H(item['last'], terms)}"
         bld = item["building"]
-        bld_h = H(bld, terms) if bld != "字串表沒有名稱" else "字串表沒有名稱"
+        bld_h = H(bld, terms) if bld != "遊戲中文名稱表沒有對應名稱" else "遊戲中文名稱表沒有對應名稱"
         skill_tbl.append([series, bld_h, str(item["count"])])
     add(table(
         ["技能系列", "生效建築", "列數"],
@@ -279,11 +280,11 @@ def render_html() -> str:
     add("      <h2>工作格對照</h2>")
     add(p_html(
         f"城建定義裡標記可派遣村民的建築共 {len(work_rows)} 座。"
-        "人數欄只在表有填時照錄；未填者不猜測格數。"
+        "人數欄只在表有填時列出；未填者不猜測格數。"
     ))
     add(table(
         ["建築", "表上人數"],
-        [[H(r["name"], terms) if r["name"] != "字串表沒有名稱" else "字串表沒有名稱", r["num"]] for r in work_rows],
+        [[H(r["name"], terms) if r["name"] != "遊戲中文名稱表沒有對應名稱" else "遊戲中文名稱表沒有對應名稱", r["num"]] for r in work_rows],
         caption="可派遣村民的建築",
         mobile="cards",
         card_title="建築",
@@ -297,7 +298,7 @@ def render_html() -> str:
     ))
     if styles:
         style_txt = "、".join(f"「{H(s, terms)}」" for s in styles)
-        extra = f"字串表另有「{H(style_ground, terms)}」，但樣式表沒有對應列。" if style_ground and style_ground not in styles else ""
+        extra = f"遊戲中文名稱表另有「{H(style_ground, terms)}」，但樣式表沒有對應列。" if style_ground and style_ground not in styles else ""
         add(p_html(
             f"村莊樣式官方名是{style_txt}。{extra}"
             "樣式表另有一欄數字，本頁不把它寫成官方第 N 季。"
@@ -327,7 +328,7 @@ def render_html() -> str:
     )
     add(
         "<li>明星標記原欄是 <code>is_star=1</code>。"
-        "鍛造系列生效建築鍵是 <code>UI_Villager_28</code>，字串表沒有這個鍵，可見正文寫「字串表沒有名稱」。</li>"
+        "鍛造系列生效建築鍵是 <code>UI_Villager_28</code>，字串表沒有這個鍵，可見正文寫「遊戲中文名稱表沒有對應名稱」。</li>"
     )
     add(
         "<li>「泰德」特殊說明鍵 <code>villagers_sp_10024</code> 原文是「部落陣營」，照錄，不改成「部族」。</li>"

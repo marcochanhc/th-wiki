@@ -64,7 +64,6 @@ def render_html() -> str:
     lede = (
         f"本頁寫官方活動「{act}」與界面用詞「{tank_word}」。"
         f"例如「{my_tank}」「魚缸容量」。這兩個是各自的官方用字，不是另造的合併名稱。"
-        "魚種名錄與規則依表與字串照錄；沒有官方中文名的欄位只錄原值。"
     )
     summary = f"{act}與{tank_word}圖鑑：二十種魚的名稱、說明與養魚、拜訪、圖鑑規則。"
     toc = toc_list([
@@ -92,9 +91,9 @@ def render_html() -> str:
         f"「{H(visible_official(official_text('season_memo_s4_photo1_title')), terms)}」。"
     ))
     add(p_html(
-        "名稱與說明依遊戲裡看得到的字照錄。品質欄沒有官方中文名，只錄表上原值，不套用其他系統的品質稱呼。"
-        "經驗與時間只錄原值；官方說明若寫每秒獲得經驗，與原值並列，不自行改標單位。"
-        "紀念標題或路徑裡若出現編號字樣，只引用官方字，不寫成已核對的官方第 N 季。"
+        "名稱與說明以遊戲裡看得到的為準。以下是表上的數字，沒有額外的官方中文欄名；品質欄不套用其他系統的品質稱呼。"
+        "官方說明若寫每秒獲得經驗，與表上的數字並列，不自行改標單位。"
+        "紀念標題或路徑裡若出現編號字樣，只引用官方用字，不寫成已核對的官方第 N 季。"
     ))
     add("    </section>")
 
@@ -110,7 +109,6 @@ def render_html() -> str:
     add("      <h2>魚種名錄</h2>")
     add(p_html(
         f"魚種表共 {len(fish)} 筆。名稱以該列對應的官方名稱為準，不假設表上順序與名稱一一對應。"
-        "品質欄是表上原值，沒有官方中文名。"
     ))
     rows = []
     for r in fish:
@@ -126,7 +124,7 @@ def render_html() -> str:
             e(str(r.get("chart_exp"))),
         ])
     add(table(
-        ["名稱", "說明", "品質（表上原值）", "成長經驗（表上原值）", "出售相關原值", "收益（表上原值）", "圖鑑經驗（表上原值）"],
+        ["名稱", "說明", "品質", "成長經驗", "出售相關數字", "收益", "圖鑑經驗"],
         rows,
         caption="魚種名錄",
         mobile="cards",
@@ -153,20 +151,20 @@ def render_html() -> str:
         ])
     add(p_html(
         f"魚苗表只有 {len(fry)} 列，對應「{H(sea, terms)}」，標記「{H(sea_mark, terms)}」。"
-        "內容欄是表上原值，沒有官方欄位標題，不自行解釋各段含義。"
-        "沒有官方短名時不編造；若有官方說明，只照錄說明。"
+        "內容欄沒有官方欄位標題，不自行解釋各段含義。"
+        "沒有官方短名時不編造；若有官方說明，只引用說明原文。"
     ))
     add(table(
-        ["名稱", "標記", "價格（表上原值）", "數量（表上原值）", "內容（表上原值）"],
+        ["名稱", "標記", "價格", "數量", "內容"],
         fry_rows,
         caption="魚苗表既有列",
         mobile="cards",
         card_title="名稱",
     ))
     add(p_html(
-        f"字串表另有「{H(deep, terms)}」，標記「{H(deep_mark, terms)}」。"
+        f"遊戲中文名稱表另有「{H(deep, terms)}」，標記「{H(deep_mark, terms)}」。"
         f"道具說明寫：「{H(visible_official(official_text('goods_desc_319')), terms)}」。"
-        "魚苗表沒有這一列，本頁只照錄字串，不補造內容或機率。"
+        "魚苗表沒有這一列，本頁不補造內容或機率。"
     ))
     if has_string("goods_desc_310"):
         add(p_html(
@@ -175,15 +173,15 @@ def render_html() -> str:
         ))
     food_r = food[0]
     add(p_html(
-        "飼料表有 1 列。價格與經驗是表上原值。"
+        "飼料表有 1 列。"
         "對應道具沒有官方短名，也沒有官方說明，不另起名。"
         f"價格 {e(str(food_r.get('price')))}，經驗 {e(str(food_r.get('exp')))}。"
     ))
     tank_r = tank[0]
     add(p_html(
-        f"魚缸設定表有 1 列。初始容量原值 {e(str(tank_r.get('size')))}，自動經驗原值 {e(str(tank_r.get('auto_exp')))}。"
-        f"擴充相關原值：{e(fmt_pipe(tank_r.get('expand')))}。"
-        f"投餵次數相關原值：{e(fmt_pipe(tank_r.get('food_extra_times')))}。"
+        f"魚缸設定表有 1 列。初始容量 {e(str(tank_r.get('size')))}，自動經驗 {e(str(tank_r.get('auto_exp')))}。"
+        f"擴充相關數字：{e(fmt_pipe(tank_r.get('expand')))}。"
+        f"投餵次數相關數字：{e(fmt_pipe(tank_r.get('food_extra_times')))}。"
         "這些欄沒有官方標題，不自行分段命名，也不改標單位。"
     ))
     add("    </section>")

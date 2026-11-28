@@ -1376,7 +1376,7 @@ def render_html(data: TablesData) -> str:
         <li>可見表標題對照：造型戰力原名 <code>add_power</code>；升星上限原名 <code>star_max</code>；成對屬性原名 <code>suit_attr</code>；賽季欄／賽季效果／賽季效果二原名 <code>season</code>、<code>season_effect</code>、<code>season_effect2</code>；賽季說明原名 <code>season_dec</code>；可見成對造型表不再在官方造型名後附加編號，改寫官方造型名；編號對照見此。可見套裝表成員欄不再在官方造型名後附加造型編號，改寫官方造型名；編號對照見此。可見可收集造型總覽表不再寫編號欄，改寫官方造型名；編號對照見此。可見表一說明不再在官方造型名後附加括號編號，改寫官方造型名；編號對照見此。外觀編號原名 <code>skin_id</code>；獎勵原值原名 <code>reward</code>；啟用條件原名 <code>suit_star_need</code>（例如 <code>4|0,6|0</code>）。成對欄原名 <code>hero_skin.suit</code>，寫的是另一把造型的 id，不是收集套裝 id。陣營來源「榮譽加成鏈」的組編號原名 <code>honor_group</code>；無陣營加成那筆是 <code>honor_group</code> 301。可見榮譽加成鏈只寫官方屬性名，編號見此：聯盟英雄攻擊 3103、聯盟英雄生命 3104、部族英雄攻擊 4103、部族英雄生命 4104、自然英雄攻擊 5103、自然英雄生命 5104。</li>
         <li>解鎖時間若是兩段日期，可見表寫成「A 至 B」；原值是 <code>A|B</code>，欄位原名 <code>unlocktime</code>。不把 <code>unlock_season</code>、<code>season</code> 或 <code>season_dec</code> 對成第幾賽季日曆，也不對成臨時擁有或臨時使用。</li>
         <li>本頁只收 {e("hero_skin")}／{e("hero_skin_suit")}／{e("hero_skin_voice")}。分組依戰力欄 {e("add_power")}。百分比類是 {e("show_type")}=2（原值÷100）；點數類是 {e("show_type")}=1。可升星造型的隊伍顯示值＝{e("team_attr")} 基礎＋當前星檔。不把 {e("unlock_season")}、{e("unlock_server")} 或 {e("unlocktime")} 自行標成未開放。</li>
-        <li>資料出自遊戲資料表與官方字串（{e("hero_skin")}、{e("hero_skin_suit")}、{e("hero_skin_voice")}、{e("skin")}、{e("hero_detail")}、{e("attribute")}、{e("strings_zh.json")}），資料截至 {SKIN_DATA_CUTOFF}（香港時間）。來源是 LocalLow 包 {e(SKIN_DATA_PACK)}（759 張表），打包時戳 {SKIN_DATA_PACKED}（香港時間）。顯示規則仍依攻略手冊「英雄造型圖鑑」第三版，但這包不是第 15 章第三版所用的同一日較早 StreamingAssets 解壓檔。這不是官方 wiki。</li>
+        <li>資料出自遊戲資料表與官方字串（{e("hero_skin")}、{e("hero_skin_suit")}、{e("hero_skin_voice")}、{e("skin")}、{e("hero_detail")}、{e("attribute")}、{e("strings_zh.json")}），資料截至 {SKIN_DATA_CUTOFF}（香港時間）。來源是 LocalLow 包 {e(SKIN_DATA_PACK)}（759 張表），打包時戳 {SKIN_DATA_PACKED}（香港時間）。顯示規則依攻略手冊「英雄造型圖鑑」第四版。第四版截稿已改對同一 live LocalLow 包。live 另有欄位序號殘件 <code>hero.json</code>（各列 <code>id</code> 皆為 0），不能當英雄名冊用。這不是官方 wiki。</li>
         <li>名稱、解鎖說明、賽季說明與介面標籤都照官方字串原樣引，包括「{H("占星學士·黑珍珠", terms)}」（英雄是{H("觀星學士", terms)}）、「{H("通靈者·威爾", terms)}」（英雄是{H("通靈師", terms)}）、「{H("喚潮使・海洋公主", terms)}」、「{H("主教‧八岐", terms)}」、「{H("樹人·聖誕", terms)}」等中點與用字。15033／15039 覺醒列名稱為「{H("沙漠王子·覺醒", terms)}」，照錄。</li>
         <li>屬性 3、4 的 {e("name")} 欄指向 {e("attribute_name_103")}／{e("attribute_name_104")}，但 {e("attribute_name_3")} 是「攻擊」、{e("attribute_name_4")} 是「生命值」，{e("show_type")} 為 1。本表實際用到的隊伍屬性是 103／104（英雄攻擊／英雄生命）。</li>
         <li>本頁出現的點數屬性是突破防禦（64）、成對欄位的防禦（22）、出征上限（1019）與英雄等級上限（1098）；其餘本頁出現的自身／隊伍／套裝英雄屬性，以及成對的「紅水晶採集速度」（1006），{e("show_type")} 皆為 2。賽季效果裡的點數屬性同樣寫成點數。</li>
@@ -1423,7 +1423,7 @@ def render_markdown(data: TablesData) -> str:
     add("")
     add("**本機預覽，尚未發佈。** 這不是線上目錄，也不會寫進公開站。")
     add("")
-    add(f"資料截至 {SKIN_DATA_CUTOFF}（香港時間）。這不是官方 wiki。來源是 LocalLow 包 {SKIN_DATA_PACK}（759 張表），打包時戳 {SKIN_DATA_PACKED}（香港時間）。顯示規則仍依攻略手冊「英雄造型圖鑑」第三版，但這包不是第 15 章第三版所用的同一日較早 StreamingAssets 解壓檔。")
+    add(f"資料截至 {SKIN_DATA_CUTOFF}（香港時間）。這不是官方 wiki。來源是 LocalLow 包 {SKIN_DATA_PACK}（759 張表），打包時戳 {SKIN_DATA_PACKED}（香港時間）。顯示規則依攻略手冊「英雄造型圖鑑」第四版。第四版截稿已改對同一 live LocalLow 包。live 另有欄位序號殘件 `hero.json`（各列 `id` 皆為 0），不能當英雄名冊用。")
     add("")
     add("## 簡介")
     add("")
@@ -1735,7 +1735,7 @@ def render_markdown(data: TablesData) -> str:
     add("")
     add("## 資料說明")
     add("")
-    add(f"- 資料出自遊戲資料表與官方字串（hero_skin、hero_skin_suit、hero_skin_voice、skin、hero_detail、attribute、strings_zh.json），資料截至 {SKIN_DATA_CUTOFF}（香港時間）。來源是 LocalLow 包 {SKIN_DATA_PACK}（759 張表），打包時戳 {SKIN_DATA_PACKED}（香港時間）。顯示規則仍依攻略手冊「英雄造型圖鑑」第三版，但這包不是第 15 章第三版所用的同一日較早 StreamingAssets 解壓檔。")
+    add(f"- 資料出自遊戲資料表與官方字串（hero_skin、hero_skin_suit、hero_skin_voice、skin、hero_detail、attribute、strings_zh.json），資料截至 {SKIN_DATA_CUTOFF}（香港時間）。來源是 LocalLow 包 {SKIN_DATA_PACK}（759 張表），打包時戳 {SKIN_DATA_PACKED}（香港時間）。顯示規則依攻略手冊「英雄造型圖鑑」第四版。第四版截稿已改對同一 live LocalLow 包。live 另有欄位序號殘件 `hero.json`（各列 `id` 皆為 0），不能當英雄名冊用。")
     add("- 名稱、解鎖說明、賽季說明與介面標籤都照官方字串原樣引，包括「占星學士·黑珍珠」（英雄是觀星學士）、「通靈者·威爾」（英雄是通靈師）、「喚潮使・海洋公主」、「主教‧八岐」、「樹人·聖誕」等中點與用字。15033／15039 覺醒列名稱為「沙漠王子·覺醒」，照錄。")
     add("- 屬性 3、4 的 name 欄指向 attribute_name_103／attribute_name_104，但 attribute_name_3 是「攻擊」、attribute_name_4 是「生命值」，show_type 為 1。本表實際用到的隊伍屬性是 103／104（英雄攻擊／英雄生命）。")
     add("- 本頁出現的點數屬性是突破防禦（64）、成對欄位的防禦（22）、出征上限（1019）與英雄等級上限（1098）；其餘本頁出現的自身／隊伍／套裝英雄屬性，以及成對的「紅水晶採集速度」（1006），show_type 皆為 2。賽季效果裡的點數屬性同樣寫成點數。")

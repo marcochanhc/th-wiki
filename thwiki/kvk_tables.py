@@ -177,11 +177,11 @@ def render_html() -> str:
     title = f"Top Heroes Wiki｜{sys_name}"
     lede = (
         f"本頁寫界面總稱「{sys_name}」的兩個已有完整主題參數與介紹表的主題：「{t1}」與「{t2}」。"
-        f"「{t3}」與子活動「{hunt}」目前沒有對得上的主題參數、介紹或地圖列，只照錄官方字串並標明表列未齊，不補造表。"
-        "這不是全賽季圖鑑，也不把主題名寫成官方第 N 季或第 N 輪。"
+        f"「{t3}」與子活動「{hunt}」目前沒有對得上的主題參數、介紹或地圖列，本頁只列出已有的官方字串並標明表列未齊，不補造表。"
+        "這不是全賽季圖鑑。"
     )
     summary = (
-        f"{sys_name}圖鑑：{t1}、{t2} 的名錄與規則摘要；{t3}與{hunt}僅照錄官方字串。"
+        f"{sys_name}圖鑑：{t1}、{t2} 的名錄與規則摘要；{t3}與{hunt}只列出已有的官方字串。"
     )
     toc = toc_list([
         {"id": "lead", "label": "簡介與閱讀說明"},
@@ -207,15 +207,13 @@ def render_html() -> str:
     add(p_html(
         f"界面總稱是「{H(sys_name, terms)}」，說明標題是「{H(help_title, terms)}」。"
         f"另有短句「{H(visible_official(official_text('king_cross_1_2')), terms)}」。"
-        "名稱與說明依遊戲裡看得到的字照錄。不評定主題強弱，不排佔領優先，不編造戰鬥公式。"
+        "名稱與說明以遊戲裡看得到的為準。不評定主題強弱，不排佔領優先，不編造戰鬥公式。"
+        "時間整數若沒有單位欄，不自行換成日或小時。官方文案若寫時區，只對該句有效，不套到其他沒寫時區的欄。"
+        "界面若有「未開放」一類句子，不據此把整套系統標成未開放。"
     ))
     add(p_html(
-        f"「{H(t2, terms)}」是這個系統裡一個主題的官方名，只照錄。"
+        f"「{H(t2, terms)}」是這個系統裡一個主題的官方名。"
         "不把它寫成已核對的官方第六季，也不把其他主題字串或路徑後綴合併成官方第 N 季、第 N 輪。"
-    ))
-    add(p_html(
-        "時間整數若沒有單位欄，不自行換成日或小時。官方文案若寫時區，只照錄該句，不套到其他沒寫時區的欄。"
-        "界面若有「未開放」一類句子，只照錄，不據此把整套系統標成未開放。"
     ))
     add("    </section>")
 
@@ -269,7 +267,7 @@ def render_html() -> str:
     add("      <h2>共用規則</h2>")
     add(p_html(
         f"階段名稱有「{H(visible_official(official_text('king_cross_10_1')), terms)}」與「{H(visible_official(official_text('king_cross_10_2')), terms)}」。"
-        "界面有兩則總說明，用字略有不同，以下並列照錄，不以其中一則覆寫另一則。"
+        "界面有兩則總說明，用字略有不同，以下並列，不以其中一則覆寫另一則。"
     ))
     add(quote_block(official_text("king_cross_function_tips_1"), terms))
     add(quote_block(official_text("king_cross_function_tips_1_new"), terms))
@@ -284,7 +282,7 @@ def render_html() -> str:
             add(p_html("主題說明："))
             add(quote_block(official_text(desc_key), terms))
         items = introduce_unique(intro, theme)
-        add(p_html("介紹頁標題與說明如下，只照錄官方字："))
+        add(p_html("介紹頁標題與說明如下："))
         add(table(
             ["標題", "說明"],
             [[H(a, terms) if a else "", H(b, terms) if b else ""] for a, b in items],
@@ -312,7 +310,7 @@ def render_html() -> str:
             ))
         intros = map_intro_rows(data.get("kvk_map_intro.json") or [], theme)
         if intros:
-            add(p_html("地圖介紹的標籤與說明如下，只照錄官方字；說明裡的佔位不自行填入。"))
+            add(p_html("地圖介紹的標籤與說明如下；說明裡的佔位不自行填入。"))
             add(table(
                 ["標籤", "說明"],
                 [[H(a, terms) if a else "", H(b, terms) if b else ""] for a, b in intros],
@@ -330,7 +328,7 @@ def render_html() -> str:
             add(p_html(
                 "王城名稱表與王國建築表出現的官方名有："
                 + quoted
-                + "。這些名稱與地圖介紹裡的用字可能不是同一鍵，並列照錄，不以其中一個覆寫另一個。"
+                + "。這些名稱與地圖介紹裡的用字可能不是同一鍵，並列保留，不以其中一個覆寫另一個。"
                 "本批表沒有寫明客戶端實際顯示哪一個。"
             ))
         if theme == 1:
@@ -341,7 +339,7 @@ def render_html() -> str:
                 "地圖介紹與介紹頁的陣營用字也不全相同：地圖介紹寫「沙漠陣營」，介紹頁標題是「"
                 + H(sand_page, terms)
                 + "」。這是不同鍵，不合併。"
-                + (f"地圖介紹另寫「{H(dragon, terms)}」，王國建築表寫「{H(court, terms)}」，同樣並列照錄。" if dragon and court else "")
+                + (f"地圖介紹另寫「{H(dragon, terms)}」，王國建築表寫「{H(court, terms)}」，同樣並列保留。" if dragon and court else "")
             ))
         add("    </section>")
 
@@ -349,8 +347,7 @@ def render_html() -> str:
     add(f"      <h2>{e(t3)}</h2>")
     add(p_html(
         f"「{H(t3, terms)}」是官方主題名。主題參數表、介紹表與地圖表都沒有對應列，"
-        "說明主要在字串表。以下只照錄官方字串，不補造次數上限、座標、授獎或開放條件，也不寫成與前兩個主題同規格的表。"
-        "不把這些說明寫成官方第 N 輪。"
+        "目前對得上的主要是遊戲裡的說明文字。以下只列出這些官方字串，不補造次數上限、座標、授獎或開放條件，也不寫成與前兩個主題同規格的表。"
     ))
     if has_string("kvk_activity_desc_20003001"):
         add(p_html("主題說明："))
@@ -377,7 +374,7 @@ def render_html() -> str:
     add(f"<h3>{H(hunt, terms)}</h3>")
     add(p_html(
         f"子活動官方名是「{H(hunt, terms)}」。"
-        "目前沒有找到以這個名稱為標題的活動配置表，只照錄字串，不補造表。"
+        "目前沒有找到以這個名稱為標題的活動配置表，只列出已有的官方字串，不補造表。"
     ))
     if has_string("k3_activity_20003104_desc"):
         add(quote_block(official_text("k3_activity_20003104_desc"), terms))
@@ -395,12 +392,12 @@ def render_html() -> str:
     add(p_html(
         f"另有官方名「{H(cave, terms)}」。"
         + (f"說明標題「{H(visible_official(official_text('k3_info_tittle_50060')), terms)}」。" if has_string("k3_info_tittle_50060") else "")
-        + "同樣沒有在本頁展開未對上的配置表。以下只照錄官方說明原文。"
+        + "同樣沒有在本頁展開未對上的配置表。官方說明原文如下。"
     ))
     if has_string("k3_info_50060_2"):
         add(quote_block(official_text("k3_info_50060_2"), terms))
         add(p_html(
-            "這則官方說明寫有「UTC-2」。只照錄該句，不把這個時區套到其他沒寫時區的欄位。"
+            "這則官方說明寫有「UTC-2」。這個時區只對這一句，不套到其他沒寫時區的欄位。"
         ))
     add(p_html(
         "說明頁字串對應的資料列，在本批說明表裡找不到；只記錄這件事，不把那些說明標成未開放。"

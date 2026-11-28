@@ -1240,9 +1240,9 @@ def _verify(data: TablesData) -> dict:
         failures.append(f"啟動 ids {start_ids}")
 
     chapter_diffs = [
-        "屬性表 5,810 筆／513 件，第 16 章依 2026-11-05 解壓檔寫 5,780 筆／511 件。多出的兩件是幸運火雞（133524）、豐饒果籃（133525），已列入環球佳節（套裝 3301）成員（該套由 15 件增至 17 件）。",
-        "citybuilding_DIY_name_* 現行 331 鍵，第 16 章寫 324 鍵。除上述兩件有屬性列的新名稱外，另有 5 個只有名稱、沒有屬性列的編號：鎮脈塔、地脈樞紐、深岩礦場、霜焰地泉、幽光岩蕈（159501–159505）。這 7 個鍵在 2026-11-05 字串表沒有，2026-11-22 與 LocalLow 字串表都有。",
-        "15 級件 342（第 16 章 340）；有城堡條件的 340 件（第 16 章 338），全部仍是 15 級件。新增兩件採標準城堡條件。沒有城堡條件的 15 級件仍是鷹之圖騰（108501）、熊之圖騰（108502）。",
+        "屬性表 5,810 筆／513 件，第 16 章第二版已改為同一數字。相對 2026-11-05 解壓檔的 5,780 筆／511 件，多出的兩件是幸運火雞（133524）、豐饒果籃（133525），已列入環球佳節（套裝 3301）成員（該套由 15 件增至 17 件）。",
+        "citybuilding_DIY_name_* 現行 331 鍵，第 16 章第二版已是 331 鍵。相對 2026-11-05 解壓檔的 324 鍵，多出的包括上述兩件有屬性列的名稱，以及 5 個只有名稱、沒有屬性列的編號：鎮脈塔、地脈樞紐、深岩礦場、霜焰地泉、幽光岩蕈（159501–159505）。這 7 個鍵在 2026-11-05 字串表沒有，2026-11-22 與 LocalLow 字串表都有。",
+        "15 級件 342、有城堡條件 340 件，第 16 章第二版已是同一數字。相對 2026-11-05 解壓檔為 340／338。新增兩件採標準城堡條件。沒有城堡條件的 15 級件仍是鷹之圖騰（108501）、熊之圖騰（108502）。",
         "第 16 章寫「15 級裝飾物從第 6 級起有城堡等級條件」。現行包與 2026-11-05 解壓檔都已是：334 件從第 6 級起；幽蘭路燈（107404）、雪中舞（501501）、雙生玫瑰（501502）只在 14–15 級有 117|75／117|80；統治神像、平衡神像、征服神像（111501–111503）從第 10 級起有 117|55。本頁照表記錄，不改寫成一律從第 6 級起。",
         "第 16 章寫「套裝定義列上的屬性等於套裝等級表第 1 級（若有等級表）」。現行包與 2026-11-05 解壓檔已有例外：永世名將定義列公會礦採集速度（1263）為 4、戰力 30,000，等級表第 1 級為 400、戰力 26,000；雲海巡航定義列是出征上限／暴擊／抗暴，等級表第 1 級與滿級是所有士兵攻擊／生命與增傷。本頁兩種都照錄，不另寫合併公式。",
         "LocalLow／現行包另有 citybuilding_DIY.json（515 筆）與 citybuilding_DIY_switch.json（15 筆），2026-11-05 與 2026-11-22 解壓檔沒有這兩張表。本頁名錄仍以屬性表 group_id 為準，不用定義表去補一般城鎮裝飾與萬能裝飾物的顏色對照（該項維持待補）。定義表多出、屬性表沒有的編號是門廊（1009998）、獸骨帳篷（1009999），名稱取自 collection_name_*。",
@@ -1588,7 +1588,7 @@ def _build_html_tables(data: TablesData, terms: list[str]) -> dict[str, str]:
     for item in data.name_only:
         name_only_rows.append([
             official_term_html(item.name) if item.name else e("（無名稱）"),
-            e("後續包新增" if item.later else "第 16 章已列"),
+            e("相對 2026-11-05 解壓檔新增" if item.later else "第 16 章已列"),
             official_term_html(item.desc) if item.desc else EMPTY,
         ])
     out["name_only"] = table(
@@ -1657,9 +1657,10 @@ def _data_notes(data: TablesData) -> str:
         f"資料截至 {DECORATION_DATA_CUTOFF}（香港時間）。這不是官方 wiki。"
         f"來源是 LocalLow 包 {DECORATION_DATA_PACK}（{data.table_meta['table_count']} 張表），"
         f"打包時戳 {DECORATION_DATA_PACKED}（香港時間）。"
-        f"第 16 章第一版寫於 {CHAPTER_FIRST_EDITION}（香港時間），標題仍寫來源解壓日期 2026-11-05"
+        f"第 16 章第二版截稿已改對 live LocalLow（2026-11-27，香港時間），與本頁同一資料包。"
+        f"第一版寫於 {CHAPTER_FIRST_EDITION}（香港時間），當時標題寫來源解壓日期 2026-11-05"
         f"（{data.table_meta['extract_2026_11_05_table_count']} 張表）。"
-        "本頁正文改用現行 LocalLow 包，與章節不一致的數字會在下面單獨列出。"
+        "相對 2026-11-05 解壓檔的件數差異，以及第 16 章仍寫成一律從第 6 級起的城堡條件例外，見資料說明。"
         + pack_note("citybuilding_DIY_property.json", "城鎮裝飾屬性，名錄以 group_id 為準")
         + pack_note("citybuilding_DIY_suit.json", "城鎮裝飾套裝定義")
         + pack_note("citybuilding_DIY_suit_property.json", "套裝等級表")
@@ -1784,12 +1785,11 @@ def render_html(data: TablesData) -> str:
         official_term_html(item.name) for item in data.name_only if item.later
     )
     add(p_html(
-        f"另有 {len([x for x in data.name_only if not x.later])} 個只有名稱、沒有屬性列的編號（第 16 章已列）："
-        f"{chapter_only}。"
-        f"後來又多了兩個有屬性列的名稱，以及另外 "
-        f"{len([x for x in data.name_only if x.later])} 個只有名稱、沒有屬性列的編號："
-        f"{later_only}。"
-        "編號對照見資料說明。與第 16 章摘錄、解壓檔的鍵數差異見資料說明。"
+        f"另有 {len(data.name_only)} 個只有名稱、沒有屬性列的編號："
+        f"{chapter_only}、{later_only}。"
+        "第 16 章第二版已列入這 10 個。"
+        "其中後五件的說明寫「地心探險賽季紀念」或地脈／深岩題材，本頁只列出名稱與說明，不把它們對成官方第 N 季，也不編造屬性。"
+        "相對 2026-11-05 解壓檔，後五件與幸運火雞、豐饒果籃是後來才有的名稱。編號對照見資料說明。"
     ))
     add(tbl["name_only"])
     filt_names = "、".join(official_term_html(n) for n in o.filter_names)
@@ -2174,8 +2174,8 @@ def render_html(data: TablesData) -> str:
         "功能表 <code>function.json</code> 編號 223 名稱鍵是 <code>ui_shop_name_1001</code>，開啟面板見正文所述商店；"
         "可見升級節不再寫建築 117，條件所指建築編號 117 對照見此。編號 224 的 <code>func_open_param</code> 為 <code>7|117|5</code>（117 是城堡，<code>citybuilding_name_117</code>）。"
         "三座聖塔兩套技能列對應 <code>season</code> 0、<code>type</code> 1 與 <code>season</code> 1、<code>type</code> 2。"
-        "<code>citybuilding_DIY_name_*</code> 在 2026-11-05 解壓檔（第 16 章摘錄所用）是 324 鍵；"
-        "現行 LocalLow 包鍵數見下表摘錄，包括後來新增的名稱。此差異只記在資料說明，不用來標未開放。定義列欄位名在表上拼成 <code>attibute</code>，引用欄位時照這個拼寫；有等級表時多數等於第 1 級的 <code>attrs</code>。</p>"
+        "<code>citybuilding_DIY_name_*</code> 在 2026-11-05 解壓檔（第 16 章第一版摘錄所用）是 324 鍵；"
+        "第 16 章第二版與現行 LocalLow 包已是 331 鍵。相對 11-05 多出的名稱見下表摘錄。此差異只記在資料說明，不用來標未開放。定義列欄位名在表上拼成 <code>attibute</code>，引用欄位時照這個拼寫；有等級表時多數等於第 1 級的 <code>attrs</code>。</p>"
     )
     add(p_html(_data_notes(data)))
     add("<ul>")
@@ -2388,7 +2388,7 @@ def _build_md_tables(data: TablesData) -> dict[str, str]:
     out["name_only"] = md_table(
         ["名稱", "編號", "來源", "說明"],
         [
-            [item.name, str(item.group_id), "後續包新增" if item.later else "第 16 章已列", item.desc or EMPTY]
+            [item.name, str(item.group_id), "相對 2026-11-05 解壓檔新增" if item.later else "第 16 章已列", item.desc or EMPTY]
             for item in data.name_only
         ],
     )
@@ -2462,9 +2462,10 @@ def render_markdown(data: TablesData) -> str:
     chapter_only = "、".join(f"{item.name}（{item.group_id}）" for item in data.name_only if not item.later)
     later_only = "、".join(f"{item.name}（{item.group_id}）" for item in data.name_only if item.later)
     add(
-        f"另有 {len([x for x in data.name_only if not x.later])} 個只有名稱、沒有屬性列的編號（第 16 章已列）：{chapter_only}。"
-        f"`citybuilding_DIY_name_*` 在 2026-11-05 解壓檔是 324 鍵；現行包是 {comma(data.table_meta['diy_name_keys'])} 鍵，"
-        f"包括後來新增的兩件有屬性列名稱，以及另外 {len([x for x in data.name_only if x.later])} 個只有名稱、沒有屬性列的編號：{later_only}。"
+        f"另有 {len(data.name_only)} 個只有名稱、沒有屬性列的編號：{chapter_only}、{later_only}。"
+        "第 16 章第二版已列入這 10 個。"
+        "其中後五件的說明寫「地心探險賽季紀念」或地脈／深岩題材，本頁只列出名稱與說明，不把它們對成官方第 N 季，也不編造屬性。"
+        "相對 2026-11-05 解壓檔，後五件與幸運火雞、豐饒果籃是後來才有的名稱。"
     )
     add("")
     add(tbl["name_only"])

@@ -86,7 +86,7 @@ def _info_row(rows: list[dict], info_id: int):
 def _station_name(row: dict) -> str:
     key = row.get("name")
     text = visible_official(official_text(key)) if key else ""
-    return text or "字串表沒有名稱"
+    return text or "遊戲中文名稱表沒有對應名稱"
 
 
 def render_html() -> str:
@@ -113,7 +113,6 @@ def render_html() -> str:
     lede = (
         f"本頁寫「{trade}」，並並列「{group}」的「{sea}」與「{sky}」，以及「{post}」。"
         "這幾套系統名稱並列保留，不自行合併。"
-        "名稱與說明依遊戲裡看得到的字照錄。"
         "只見於說明文、表上沒有對上常數的次數上限，會標成未驗證。"
     )
     summary = f"{trade}圖鑑：品質與官方規則，並並列貿易商團與貿易站。"
@@ -136,9 +135,10 @@ def render_html() -> str:
     add('    <section id="lead">')
     add("      <h2>簡介與閱讀說明</h2>")
     add(p_html(
+        "名稱與說明以遊戲裡看得到的為準。"
         f"快捷列官方名是「{H(trade, terms)}」。"
         f"另有「{H(group, terms)}」，其變體是「{H(sea, terms)}」與「{H(sky, terms)}」，二者不是同一名稱，本頁不合併書寫。"
-        f"「{H(sea, terms)}」的說明文另寫「{H('深海貿易商團', terms)}」，這是另一句官方原文，與標題並列照錄，不改字。"
+        f"「{H(sea, terms)}」的說明文另寫「{H('深海貿易商團', terms)}」，這是另一句官方原文，與標題並列保留，不改字。"
         f"「{H(post, terms)}」與「{H(shop, terms)}」是再並列的一套界面，不是把商團併進商隊貿易。"
         f"過濾示例還有「{H(personal, terms)}」、「{H(guild, terms)}」、「{H(team, terms)}」。"
         f"城建顯示名「{H(hall, terms)}」是建築名，本頁不展開升級。"
@@ -175,12 +175,12 @@ def render_html() -> str:
     for q in sorted(qcounts):
         key = QUALITY_KEYS.get(q)
         name = visible_official(official_text(key)) if key else ""
-        label = H(name, terms) if name else "字串表沒有名稱"
+        label = H(name, terms) if name else "遊戲中文名稱表沒有對應名稱"
         qtable.append([str(q), label, str(qcounts[q])])
     add(p_html(
         f"品質表 {len(quality_rows)} 列、車隊報酬表 {len(car_rows)} 列，不逐列傾印。"
         "品質 1 至 6 有官方品質名；另有一列品質編號沒有官方名稱，不編造稱呼。"
-        "時間欄是原值，表沒有單位欄，本頁不自行標成秒或小時。"
+        "時間欄是表上的數字，表沒有單位欄，本頁不自行標成秒或小時。"
     ))
     add(table(
         ["品質編號", "官方名稱", "列數"],
@@ -213,7 +213,7 @@ def render_html() -> str:
     ))
     posts = data["trade_post.json"]
     post_names = unique_keep_order(
-        visible_official(official_text(r.get("name"))) or "字串表沒有名稱" for r in posts
+        visible_official(official_text(r.get("name"))) or "遊戲中文名稱表沒有對應名稱" for r in posts
     )
     add(p_html(
         f"「{H(post, terms)}」定義表有 {len(posts)} 列，官方顯示名是"

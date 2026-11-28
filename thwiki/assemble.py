@@ -1156,7 +1156,12 @@ def assemble(hero_id: int) -> HeroPage:
     else:
         second_prose = "第二組標籤本頁不推算。"
 
-    rec_title = f"最佳{faction}" if faction in {"聯盟", "自然", "部族"} else "最佳聯盟"
+    official_rec_title = {
+        "聯盟": t("hero_recommend_1") or "最佳聯盟",
+        "自然": t("hero_recommend_2") or "最佳自然",
+        "部族": t("hero_recommend_8") or "最佳部族",
+    }
+    rec_title = official_rec_title.get(faction) or official_rec_title["聯盟"]
     if recs:
         rec_intro = f"並出現在官方「{rec_title}」名單（{rec_join}）"
     else:
@@ -1185,6 +1190,15 @@ def assemble(hero_id: int) -> HeroPage:
     rec_text = ""
     if recs:
         rec_text = f"官方「{rec_title}」出場：{rec_join}。{rec_cutoff_note(faction)}"
+        if faction == "部族":
+            tribe_title = t("hero_recommend_8") or "最佳部族"
+            tribe_short = t("hero_recommend_dec_3") or "最好的部落陣容，有著快速又猛烈的攻擊"
+            rec_text = (
+                f"官方「{rec_title}」出場：{rec_join}。"
+                f"早期未標具體賽季名稱的標題是「{tribe_title}」，"
+                f"短述是「{tribe_short}」，兩者並列，不把短述裡的「部落」改成「部族」。"
+                f"{rec_cutoff_note(faction)}"
+            )
 
     # notes
     notes = _build_notes(

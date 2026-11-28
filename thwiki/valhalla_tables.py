@@ -765,6 +765,7 @@ def render_html(data: TablesData, *, include_charts: bool = True) -> str:
       <h2>資料說明</h2>
       <ul>
         <li>資料出自遊戲資料表與官方字串（{e("hero_valhalla")}、{e("hero_valhalla_lvup")}、{e("hero_component")}、{e("strings_zh.json")}），資料截至 {VALHALLA_DATA_CUTOFF}（香港時間）。本頁是英靈，不是神器；沒有使用神器表。</li>
+        <li>live LocalLow 另有 <code>goods.json</code>，但是欄位序號殘件（各列 <code>id</code> 皆為 0），不能當物品主表用。字串表另有 <code>hero_valhalla_name_10052</code>「英靈「虛空領主」」、<code>hero_valhalla_name_10053</code>「英靈「魔壺執事」」、<code>hero_valhalla_name_10054</code>「英靈「森語菇靈」」，以及 <code>goods_name_12052</code> 至 <code>12054</code> 碎片名，但 <code>hero_valhalla.json</code> 仍只有 15 列，本頁不把它們寫成已登錄的英靈。</li>
         <li>以下是整理用註記，查效果與數值可略過。屬性顯示依 show_type，並以 {VALHALLA_DATA_CUTOFF} 前服審判官英靈「誓約之獅」100 級「升級效果預覽」核對。表頭用點數／百分比區分，不再掛屬性編號：點數對應 3、4、1098，百分比對應 103、104 以及第 6 項專屬屬性與技能自身屬性（attribute_self）。show_type 1 寫點數，無百分號、無千位分符、不加加號；show_type 2 為原值÷100，兩位小數加百分號。表頭寫成{h3}、{h4}、{h103}、{h104}、{h1098}；官方字串名稱 3 與 103 都是{official_3}，4 與 104 都是{official_4}。戰力滿級為 627500，畫面寫 628K 是四捨五入，本表維持 627500。這套規則只用於本頁英靈屬性。unlock_season、unlock_server 只照錄欄位原值，不自行改寫成第幾賽季，也不據此標成已開放或未開放。</li>
         <li>妖精碎片說明官方寫「{H("集齊一定數量的碎片即可解鎖妖精英靈。碎片還可以用於英靈強化", terms)}」（「妖精英靈」中間沒有「的」），照錄。</li>
         <li>織夢花靈專屬技能「{H("惡作劇", terms)}」第 4、5 階原文兩個位置都寫 {e("{0}")}。第 4 階兩個參數都是 8，填入後是「暴擊率+8%，暴擊抗性+8%」。第 5 階參數是 60 與 100，但兩個位置都只代入第一個參數，照錄為「分身從本體繼承的屬性提升60%。【花香】造成的傷害提升60%」。</li>
@@ -991,6 +992,7 @@ def render_markdown(data: TablesData) -> str:
     lines.append("## 資料說明")
     lines.append("")
     lines.append(f"- 資料出自遊戲資料表與官方字串，資料截至 {VALHALLA_DATA_CUTOFF}（香港時間）。本頁是英靈，不是神器。")
+    lines.append("- live LocalLow 另有 `goods.json`，但是欄位序號殘件（各列 `id` 皆為 0），不能當物品主表用。字串表另有 `hero_valhalla_name_10052`「英靈「虛空領主」」、`hero_valhalla_name_10053`「英靈「魔壺執事」」、`hero_valhalla_name_10054`「英靈「森語菇靈」」，以及 `goods_name_12052` 至 `12054` 碎片名，但 `hero_valhalla.json` 仍只有 15 列，本頁不把它們寫成已登錄的英靈。")
     lines.append(
         f"- 屬性顯示依 show_type，並以 {VALHALLA_DATA_CUTOFF} 前服審判官英靈「誓約之獅」100 級「升級效果預覽」核對。"
         f"表頭寫成{attr_header(3)}、{attr_header(4)}、{attr_header(103)}、{attr_header(104)}、{attr_header(1098)}；"
